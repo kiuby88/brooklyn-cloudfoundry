@@ -35,11 +35,9 @@
 
     <name>Brooklyn CloudFoundry parent project</name>
 
-
     <modules>
-        <module>launcher</module>
+        <module>brookyn-cloudfoundry-launcher</module>
     </modules>
-
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

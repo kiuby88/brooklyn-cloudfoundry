@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package io.brooklyn.cloudfoundry;
+package org.apache.brooklyn.cloudfoundry;
 
 import java.util.Arrays;
 
