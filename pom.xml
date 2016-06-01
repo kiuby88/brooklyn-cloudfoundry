@@ -37,6 +37,7 @@
     <modules>
         <module>brookyn-cloudfoundry-launcher</module>
         <module>brooklyn-cloudfoundry-location</module>
+        <module>brooklyn-cloudfoundry-entity</module>
     </modules>
 
     <properties>
