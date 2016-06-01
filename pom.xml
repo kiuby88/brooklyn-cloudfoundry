@@ -28,7 +28,6 @@
         <version>0.10.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
-    <groupId>io.brooklyn</groupId>
     <artifactId>brooklyn-cloudfoundry</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
@@ -37,13 +36,14 @@
 
     <modules>
         <module>brookyn-cloudfoundry-launcher</module>
+        <module>brooklyn-cloudfoundry-location</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.entry>io.brooklyn.cloudfoundry.BrooklynCloudFoundryMain</project.entry>
-        <brooklyn.version>0.9.0</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <project.entry>org.apache.brooklyn.cloudfoundry.BrooklynCloudFoundryMain</project.entry>
+        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
     </properties>
 
     <licenses>
@@ -60,6 +60,26 @@
                 <artifactId>brooklyn-all</artifactId>
                 <version>${brooklyn.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.apache.brooklyn</groupId>
+                <artifactId>brooklyn-core</artifactId>
+                <version>${brooklyn.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.brooklyn</groupId>
+                <artifactId>brooklyn-api</artifactId>
+                <version>${brooklyn.version}</version>
+            </dependency>
+
+            <dependency>
+                <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->
+                <groupId>org.apache.brooklyn</groupId>
+                <artifactId>brooklyn-logback-xml</artifactId>
+                <version>${brooklyn.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
