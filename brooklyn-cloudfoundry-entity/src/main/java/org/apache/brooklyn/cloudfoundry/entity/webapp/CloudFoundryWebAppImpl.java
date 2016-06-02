@@ -121,6 +121,10 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
         configureEnv();
     }
 
+    private void configureEnv() {
+        //TODO a sensor with the custom-environment variables?
+    }
+
     private void launch() {
         getClient().startApplication(applicationName);
     }
@@ -132,8 +136,15 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
         sensors().set(CloudFoundryWebApp.ROOT_URL, domainUri);
     }
 
-    private void configureEnv() {
-        //TODO a sensor with the custom-environment variables?
+    @Override
+    protected void customStop() {
+        getClient().stopApplication(applicationName);
+        deleteApplication();
+
+    }
+
+    private void deleteApplication() {
+        getClient().deleteApplication(applicationName);
     }
 
     private String inferApplicationDomainUri(String name) {

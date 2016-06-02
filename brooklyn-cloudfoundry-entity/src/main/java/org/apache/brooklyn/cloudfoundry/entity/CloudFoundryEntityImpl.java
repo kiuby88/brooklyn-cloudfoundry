@@ -52,9 +52,10 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
     /**
      * @see #connectServiceUpIsRunning()
      */
-    private volatile FunctionFeed serviceProcessIsRunning;
-    protected boolean connectedSensors = false;
     private CloudFoundryPaasLocation cfLocation;
+    private volatile FunctionFeed serviceProcessIsRunning;
+    private FunctionFeed serviceProcessUp;
+    protected boolean connectedSensors = false;
 
     public CloudFoundryEntityImpl() {
         super(MutableMap.of(), null);
@@ -141,8 +142,52 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
 
     @Override
     public void stop() {
-        //TODO
+        if (DynamicTasks.getTaskQueuingContext() != null) {
+            doStop();
+        } else {
+            Task<?> task = Tasks.builder().name("stop").body(new Runnable() {
+                public void run() {
+                    doStop();
+                }
+            }).build();
+            Entities.submit(this, task).getUnchecked();
+        }
     }
+
+    /**
+     * To be overridden instead of {@link #stop()}; sub-classes should call {@code super.doStop()}
+     * and should add do additional work via tasks, executed using
+     * {@link org.apache.brooklyn.util.core.task.DynamicTasks#queue(String, java.util.concurrent.Callable)}.
+     */
+    protected final void doStop() {
+
+        log.info("Stopping {} in {}", new Object[]{this, getLocationOrNull()});
+
+        if (getAttribute(SERVICE_STATE_ACTUAL)
+                .equals(Lifecycle.STOPPED)) {
+            log.warn("The entity {} is already stopped", new Object[]{this});
+            return;
+        }
+
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
+        try {
+            preStop();
+            customStop();
+            ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
+            log.info("The entity stop operation {} is completed without errors",
+                    new Object[]{this});
+        } catch (Throwable t) {
+            ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+            throw Exceptions.propagate(t);
+        }
+    }
+
+    protected void preStop() {
+        this.sensors().set(SERVICE_UP, false);
+        disconnectSensors();
+    }
+
+    protected abstract void customStop();
 
     @Override
     public void restart() {
@@ -183,7 +228,7 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
     }
 
     protected void connectServiceUp() {
-        serviceProcessIsRunning = FunctionFeed.builder()
+        serviceProcessUp = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.FIVE_SECONDS)
                 .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
@@ -216,8 +261,8 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
     }
 
     protected void disconnectServiceUp() {
-        if (serviceProcessIsRunning != null) {
-            serviceProcessIsRunning.stop();
+        if (serviceProcessUp != null) {
+            serviceProcessUp.stop();
         }
         sensors().set(SERVICE_UP, null);
         sensors().remove(SERVICE_UP);

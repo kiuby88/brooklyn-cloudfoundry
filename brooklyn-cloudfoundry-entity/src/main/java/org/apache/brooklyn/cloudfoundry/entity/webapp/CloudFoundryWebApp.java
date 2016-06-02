@@ -23,11 +23,8 @@ import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.cloudfoundry.entity.CloudFoundryEntity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.config.MapConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Generic web application to be deployed on a CloudFoundry location.

@@ -18,12 +18,17 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.entity.webapp.CloudFoundryWebApp;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.EntityAsserts;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
 import org.testng.annotations.Test;
@@ -53,6 +58,28 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
                         .SERVICE_PROCESS_IS_RUNNING));
                 assertNotNull(server.getAttribute(Attributes.MAIN_URI));
                 assertNotNull(server.getAttribute(CloudFoundryWebApp.ROOT_URL));
+            }
+        });
+    }
+
+    @Test(groups = {"Live"})
+    protected void stopApplicationTest() throws Exception {
+        final CloudFoundryWebApp server = app.
+                createAndManageChild(EntitySpec.create(CloudFoundryWebApp.class)
+                        .configure(CloudFoundryWebApp.APPLICATION_NAME, "stop-" + APPLICATION_NAME)
+                        .configure(CloudFoundryWebApp.ARTIFACT_URL, APPLICATION_ARTIFACT_URL));
+
+        app.start(ImmutableList.of(cloudFoundryPaasLocation));
+        EntityAsserts.assertAttributeEqualsEventually(app, Startable.SERVICE_UP, true);
+
+        app.stop();
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertEquals(server.getAttribute(CloudFoundryWebApp
+                        .SERVICE_STATE_ACTUAL), Lifecycle.STOPPED);
+                assertNull(server.getAttribute(Startable.SERVICE_UP));
+                assertNull(server.getAttribute(CloudFoundryWebApp
+                        .SERVICE_PROCESS_IS_RUNNING));
             }
         });
     }
