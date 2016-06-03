@@ -48,7 +48,7 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
     private final static String TEST_ENV_VALUE = "test-env-value";
 
     @Test(groups = {"Live"})
-    protected void deployApplicationTest() throws Exception {
+    protected void testDeployApplication() throws Exception {
         final CloudFoundryWebApp server = app.
                 createAndManageChild(EntitySpec.create(CloudFoundryWebApp.class)
                         .configure(CloudFoundryWebApp.APPLICATION_NAME, APPLICATION_NAME)
@@ -68,7 +68,7 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
     }
 
     @Test(groups = {"Live"})
-    protected void stopApplicationTest() throws Exception {
+    protected void testStopApplication() throws Exception {
         final CloudFoundryWebApp server = app.
                 createAndManageChild(EntitySpec.create(CloudFoundryWebApp.class)
                         .configure(CloudFoundryWebApp.APPLICATION_NAME, "stop-" + APPLICATION_NAME)
@@ -90,7 +90,7 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
     }
 
     @Test(groups = {"Live"})
-    protected void settingEnvsTest() throws Exception {
+    protected void testSettingEnvs() throws Exception {
         String envApplicationName = APPLICATION_NAME + "-envs";
         app.createAndManageChild(EntitySpec.create(CloudFoundryWebApp.class)
                 .configure(CloudFoundryWebApp.APPLICATION_NAME, envApplicationName)

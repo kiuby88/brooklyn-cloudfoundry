@@ -70,7 +70,7 @@ public class CloudFoundryPaasLocationResolverTest {
     }
 
     @Test
-    public void cloudFoundryTakesProvidersScopedPropertiesTest() {
+    public void testCloudFoundryTakesProvidersScopedProperties() {
         CloudFoundryPaasLocation cloudFoundryPaasLocation = resolve(LOCATION_SPEC_NAME);
         assertEquals(cloudFoundryPaasLocation.getConfig(CloudFoundryPaasLocation.CF_USER), USER);
         assertEquals(cloudFoundryPaasLocation.getConfig(CloudFoundryPaasLocation.CF_PASSWORD), PASSWORD);
@@ -87,7 +87,7 @@ public class CloudFoundryPaasLocationResolverTest {
     }
 
     @Test
-    void cloudFoundryClientInitilizedTest() {
+    void testCloudFoundryClientInitilized() {
         CloudFoundryPaasLocation cloudFoundryPaasLocation = resolve(LOCATION_SPEC_NAME);
         assertNull(cloudFoundryPaasLocation.getClient());
     }
