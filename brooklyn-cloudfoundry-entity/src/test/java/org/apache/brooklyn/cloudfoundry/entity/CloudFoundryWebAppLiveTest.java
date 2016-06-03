@@ -19,10 +19,11 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.Map;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.entity.webapp.CloudFoundryWebApp;
@@ -31,6 +32,8 @@ import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -41,6 +44,9 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
             "brooklyn-example-hello-world-sql-webapp-in-paas.war";
     private final String APPLICATION_ARTIFACT_URL =
             getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
+
+    private final static String TEST_ENV_NAME = "test-env-name";
+    private final static String TEST_ENV_VALUE = "test-env-value";
 
     @Test(groups = {"Live"})
     protected void deployApplicationTest() throws Exception {
@@ -82,6 +88,25 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
                         .SERVICE_PROCESS_IS_RUNNING));
             }
         });
+    }
+
+    @Test(groups = {"Live"})
+    protected void settingEnvsTest() throws Exception {
+        String envApplicationName = APPLICATION_NAME + "-envs";
+        app.createAndManageChild(EntitySpec.create(CloudFoundryWebApp.class)
+                .configure(CloudFoundryWebApp.APPLICATION_NAME, envApplicationName)
+                .configure(CloudFoundryWebApp.ARTIFACT_URL, APPLICATION_ARTIFACT_URL)
+                .configure(CloudFoundryWebApp.ENV, MutableMap.of(TEST_ENV_NAME, TEST_ENV_VALUE)));
+
+        app.start(ImmutableList.of(cloudFoundryPaasLocation));
+        EntityAsserts.assertAttributeEqualsEventually(app, Startable.SERVICE_UP, true);
+
+        CloudApplication cfApplication =
+                cloudFoundryPaasLocation.getCloudFoundryClient().getApplication(envApplicationName);
+        Map<String, String> envMap = cfApplication.getEnvAsMap();
+        assertNotNull(envMap);
+        assertTrue(cfApplication.getEnvAsMap().containsKey(TEST_ENV_NAME));
+        assertEquals(cfApplication.getEnvAsMap().get(TEST_ENV_NAME), TEST_ENV_VALUE);
     }
 
 

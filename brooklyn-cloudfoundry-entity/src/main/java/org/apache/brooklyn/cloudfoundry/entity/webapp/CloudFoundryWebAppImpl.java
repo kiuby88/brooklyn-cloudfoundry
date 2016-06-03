@@ -122,7 +122,20 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
     }
 
     private void configureEnv() {
-        //TODO a sensor with the custom-environment variables?
+        setEnv(getConfig(CloudFoundryWebApp.ENV));
+        updateApplicationEnvSensor();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setEnv(Map<String, String> envs) {
+        CloudApplication app = getClient().getApplication(applicationName);
+        Map oldEnv = app.getEnvAsMap();
+        oldEnv.putAll(envs);
+        getClient().updateApplicationEnv(applicationName, oldEnv);
+    }
+
+    private void updateApplicationEnvSensor() {
+        getClient().getApplication(applicationName).getEnvAsMap();
     }
 
     private void launch() {
