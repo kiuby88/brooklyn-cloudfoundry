@@ -39,7 +39,7 @@ public class CloudFoundryPaasLocationLiveTest {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        if (managementContext != null){
+        if (managementContext != null) {
             Entities.destroyAll(managementContext);
         }
     }
@@ -54,15 +54,15 @@ public class CloudFoundryPaasLocationLiveTest {
     @Test(groups = {"Live"})
     public void testClientSetUp() {
         cloudFoundryPaasLocation.setUpClient();
-        assertNotNull(cloudFoundryPaasLocation.getCloudFoundryClient());
+        assertNotNull(cloudFoundryPaasLocation.getClient());
     }
 
     @Test(groups = {"Live"})
     public void testClientSetUpPerLocationInstance() {
         cloudFoundryPaasLocation.setUpClient();
-        CloudFoundryClient client1 = cloudFoundryPaasLocation.getCloudFoundryClient();
+        CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
         cloudFoundryPaasLocation.setUpClient();
-        CloudFoundryClient client2 = cloudFoundryPaasLocation.getCloudFoundryClient();
+        CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
         assertEquals(client1, client2);
     }
 

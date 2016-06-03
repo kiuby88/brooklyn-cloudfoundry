@@ -18,67 +18,149 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
 
-        public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
+    public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
-        public static ConfigKey<String> CF_USER = ConfigKeys.newStringConfigKey("user");
-        public static ConfigKey<String> CF_PASSWORD = ConfigKeys.newStringConfigKey("password");
-        public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org");
-        public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
-        public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
+    public static ConfigKey<String> CF_USER = ConfigKeys.newStringConfigKey("user");
+    public static ConfigKey<String> CF_PASSWORD = ConfigKeys.newStringConfigKey("password");
+    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org");
+    public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
+    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
 
-        CloudFoundryClient client;
+    private static final String DOMAIN_KEYWORD = "-domain.";
 
-        public CloudFoundryPaasLocation() {
-            super();
+    CloudFoundryClient client;
+
+    public CloudFoundryPaasLocation() {
+        super();
+    }
+
+    @Override
+    public void init() {
+        super.init();
+    }
+
+    public void setUpClient() {
+        if (client == null) {
+            CloudCredentials credentials =
+                    new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD));
+            client = new CloudFoundryClient(credentials,
+                    getTargetURL(getConfig(CF_ENDPOINT)),
+                    getConfig(CF_ORG), getConfig(CF_SPACE), true);
+            client.login();
+        }
+    }
+
+    @Override
+    public String getPaasProviderName() {
+        return "CloudFoundry";
+    }
+
+    public String deploy(String applicationName, String buildpack, String localArtifactPath) {
+        List<String> uris = MutableList.of();
+        Staging staging;
+        staging = new Staging(null, buildpack);
+        uris.add(inferApplicationDomainUri(applicationName));
+
+        getClient().createApplication(applicationName, staging,
+                getConfig(CloudFoundryPaasLocation.REQUIRED_MEMORY),
+                uris, null);
+        pushApplication(applicationName, localArtifactPath);
+        return getDomainUri(applicationName);
+    }
+
+    private void pushApplication(String applicationName, String localArtifactPath) {
+        try {
+            getClient().uploadApplication(applicationName, localArtifactPath);
+        } catch (IOException e) {
+            log.error("Error deploying application {} ", this);
+            throw Exceptions.propagate(e);
         }
 
-        @Override
-        public void init() {
-            super.init();
-        }
+    }
 
-        public void setUpClient() {
-            if (client == null) {
-                CloudCredentials credentials =
-                        new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD));
-                client = new CloudFoundryClient(credentials,
-                        getTargetURL(getConfig(CF_ENDPOINT)),
-                        getConfig(CF_ORG), getConfig(CF_SPACE), true);
-                client.login();
-            }
+    private String getDomainUri(String applicationName) {
+        String domainUri = null;
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            domainUri = "https://" + optional.get().getUris().get(0);
         }
+        return domainUri;
+    }
 
-        @Override
-        public String getPaasProviderName() {
-            return "CloudFoundry";
-        }
+    public void startApplication(String applicationName) {
+        getClient().startApplication(applicationName);
+    }
 
-        private static URL getTargetURL(String target) {
-            try {
-                return URI.create(target).toURL();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("The target URL is not valid: " + e.getMessage());
-            }
-        }
+    public void stopApplication(String applicationName) {
+        getClient().stopApplication(applicationName);
+    }
 
-        public CloudFoundryClient getCloudFoundryClient() {
-            return client;
+    public void deleteApplication(String applicationName) {
+        getClient().deleteApplication(applicationName);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setEnv(String applicationName, Map<String, String> envs) {
+        Map oldEnv = getEnv(applicationName);
+        oldEnv.putAll(envs);
+        getClient().updateApplicationEnv(applicationName, oldEnv);
+    }
+
+    public Map<String, String> getEnv(String applicationName) {
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            return optional.get().getEnvAsMap();
+        } else {
+            throw new RuntimeException("Application " + applicationName + " is not contained in " +
+                    "organization " + getConfig(CF_ORG));
         }
+    }
+
+    private String inferApplicationDomainUri(String name) {
+        String defaultDomainName = getClient().getDefaultDomain().getName();
+        return name + DOMAIN_KEYWORD + defaultDomainName;
+    }
+
+    private Optional<CloudApplication> getApplication(String applicationName) {
+        return Optional.fromNullable(getClient().getApplication(applicationName));
+    }
+
+    private static URL getTargetURL(String target) {
+        try {
+            return URI.create(target).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
+        }
+    }
+
+    public CloudFoundryClient getClient() {
+        return client;
+    }
+
 
 }

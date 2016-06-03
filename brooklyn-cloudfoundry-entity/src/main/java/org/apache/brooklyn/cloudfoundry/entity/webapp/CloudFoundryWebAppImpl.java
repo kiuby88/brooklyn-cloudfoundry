@@ -22,23 +22,17 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.cloudfoundry.entity.CloudFoundryEntityImpl;
 import org.apache.brooklyn.cloudfoundry.entity.utils.LocalResourcesDownloader;
-import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.http.HttpTool;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +40,9 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
         implements CloudFoundryWebApp {
 
     private static final Logger log = LoggerFactory.getLogger(CloudFoundryWebAppImpl.class);
-    private static final String DOMAIN_KEYWORD = "-domain.";
     private String applicationName;
     private String artifactUrl;
+    private String applicationDomanin;
 
     public CloudFoundryWebAppImpl() {
         super(MutableMap.of(), null);
@@ -79,6 +73,7 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
             applicationName = "cf-app-" + Identifiers.makeRandomId(8);
         }
         artifactUrl = getConfig(CloudFoundryWebApp.ARTIFACT_URL);
+        applicationDomanin = Strings.EMPTY;
     }
 
     @Override
@@ -95,26 +90,18 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
     }
 
     private void deploy() {
-        getCloudFoundryLocation();
-
-        List<String> uris = MutableList.of();
-        Staging staging;
-        File war;
         try {
-            staging = new Staging(null, getBuildpack());
-            uris.add(inferApplicationDomainUri(getApplicationName()));
-
+            File war;
             war = LocalResourcesDownloader
                     .downloadResourceInLocalDir(getArtifactUrl());
-
-            getClient().createApplication(getApplicationName(), staging,
-                    getCloudFoundryLocation().getConfig(CloudFoundryPaasLocation.REQUIRED_MEMORY),
-                    uris, null);
-            getClient().uploadApplication(getApplicationName(), war.getCanonicalPath());
+            String path = war.getCanonicalPath();
+            applicationDomanin =
+                    getCloudFoundryLocation().deploy(applicationName, getBuildpack(), path);
         } catch (IOException e) {
             log.error("Error deploying application {} ", this);
             throw Exceptions.propagate(e);
         }
+
     }
 
     private void preLaunch() {
@@ -123,23 +110,14 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
 
     private void configureEnv() {
         setEnv(getConfig(CloudFoundryWebApp.ENV));
-        updateApplicationEnvSensor();
     }
 
-    @SuppressWarnings("unchecked")
     private void setEnv(Map<String, String> envs) {
-        CloudApplication app = getClient().getApplication(applicationName);
-        Map oldEnv = app.getEnvAsMap();
-        oldEnv.putAll(envs);
-        getClient().updateApplicationEnv(applicationName, oldEnv);
-    }
-
-    private void updateApplicationEnvSensor() {
-        getClient().getApplication(applicationName).getEnvAsMap();
+        getCloudFoundryLocation().setEnv(applicationName, envs);
     }
 
     private void launch() {
-        getClient().startApplication(applicationName);
+        getCloudFoundryLocation().startApplication(applicationName);
     }
 
     private void postLaunch() {
@@ -151,38 +129,16 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
 
     @Override
     protected void customStop() {
-        getClient().stopApplication(applicationName);
+        getCloudFoundryLocation().stopApplication(applicationName);
         deleteApplication();
-
     }
 
     private void deleteApplication() {
-        getClient().deleteApplication(applicationName);
-    }
-
-    private String inferApplicationDomainUri(String name) {
-        String defaultDomainName = getClient().getDefaultDomain().getName();
-        return name + DOMAIN_KEYWORD + defaultDomainName;
-    }
-
-    private String getDomainUri() {
-        String domainUri = null;
-        CloudApplication application = getClient().getApplication(applicationName);
-        if (application != null) {
-            domainUri = "https://" + application.getUris().get(0);
-        }
-        return domainUri;
+        getCloudFoundryLocation().deleteApplication(applicationName);
     }
 
     public boolean isRunning() {
-        try {
-            CloudApplication app = getClient().getApplication(applicationName);
-            return (app != null)
-                    && app.getState().equals(CloudApplication.AppState.STARTED)
-                    && isApplicationDomainAvailable();
-        } catch (Exception e) {
-            return false;
-        }
+        return  isApplicationDomainAvailable();
     }
 
     private boolean isApplicationDomainAvailable() {
@@ -195,16 +151,12 @@ public class CloudFoundryWebAppImpl extends CloudFoundryEntityImpl
         return result;
     }
 
-    private CloudFoundryClient getClient() {
-        return getCloudFoundryLocation().getCloudFoundryClient();
-    }
-
-    private String getApplicationName() {
-        return applicationName;
-    }
-
     private String getArtifactUrl() {
         return artifactUrl;
+    }
+
+    private String getDomainUri() {
+        return applicationDomanin;
     }
 
 }

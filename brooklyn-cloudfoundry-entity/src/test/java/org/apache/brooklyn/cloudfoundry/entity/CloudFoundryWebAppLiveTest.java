@@ -33,7 +33,6 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -101,12 +100,10 @@ public class CloudFoundryWebAppLiveTest extends AbstractCloudFoundryPaasLocation
         app.start(ImmutableList.of(cloudFoundryPaasLocation));
         EntityAsserts.assertAttributeEqualsEventually(app, Startable.SERVICE_UP, true);
 
-        CloudApplication cfApplication =
-                cloudFoundryPaasLocation.getCloudFoundryClient().getApplication(envApplicationName);
-        Map<String, String> envMap = cfApplication.getEnvAsMap();
+        Map<String, String> envMap = cloudFoundryPaasLocation.getEnv(envApplicationName);
         assertNotNull(envMap);
-        assertTrue(cfApplication.getEnvAsMap().containsKey(TEST_ENV_NAME));
-        assertEquals(cfApplication.getEnvAsMap().get(TEST_ENV_NAME), TEST_ENV_VALUE);
+        assertTrue(envMap.containsKey(TEST_ENV_NAME));
+        assertEquals(envMap.get(TEST_ENV_NAME), TEST_ENV_VALUE);
     }
 
 

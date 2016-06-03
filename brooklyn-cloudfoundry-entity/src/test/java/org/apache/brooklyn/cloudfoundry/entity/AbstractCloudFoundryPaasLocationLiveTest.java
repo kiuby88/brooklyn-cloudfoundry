@@ -20,7 +20,6 @@ package org.apache.brooklyn.cloudfoundry.entity;
 
 import java.util.UUID;
 
-import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.internal.BrooklynProperties;

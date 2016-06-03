@@ -89,7 +89,7 @@ public class CloudFoundryPaasLocationResolverTest {
     @Test
     void cloudFoundryClientInitilizedTest() {
         CloudFoundryPaasLocation cloudFoundryPaasLocation = resolve(LOCATION_SPEC_NAME);
-        assertNull(cloudFoundryPaasLocation.getCloudFoundryClient());
+        assertNull(cloudFoundryPaasLocation.getClient());
     }
 
     private CloudFoundryPaasLocation resolve(String spec) {
