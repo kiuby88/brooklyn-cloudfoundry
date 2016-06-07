@@ -31,7 +31,7 @@ brooklyn.location.named.cloudfoundry-instance.space = development
 
 Then, you can run the project by using:
 ````
-cd brookyn-cloudfoundry-launcher/target/brooklyn-cloudfoundry-launcher-1.0-SNAPSHOT-launcher/
+cd brooklyn-cloudfoundry-launcher/target/brooklyn-cloudfoundry-launcher-1.0-SNAPSHOT-launcher/
 nohup ./brooklyn launch
 ````
 
