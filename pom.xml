@@ -32,13 +32,12 @@
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
-    <name>Brooklyn CloudFoundry parent project</name>
+    <name>Brooklyn CloudFoundry project</name>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.entry>org.apache.brooklyn.cloudfoundry.BrooklynCloudFoundryMain</project.entry>
-        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version>
+        <cloudfoundry.client.version>1.1.2</cloudfoundry.client.version>
+        <mockito.version>1.10.19</mockito.version>
     </properties>
 
     <licenses>
@@ -48,35 +47,53 @@
         </license>
     </licenses>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.brooklyn</groupId>
-                <artifactId>brooklyn-all</artifactId>
-                <version>${brooklyn.version}</version>
-            </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-all</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
 
-            <dependency>
-                <groupId>org.apache.brooklyn</groupId>
-                <artifactId>brooklyn-core</artifactId>
-                <version>${brooklyn.version}</version>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
 
-            <dependency>
-                <groupId>org.apache.brooklyn</groupId>
-                <artifactId>brooklyn-api</artifactId>
-                <version>${brooklyn.version}</version>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-api</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
 
-            <dependency>
-                <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->
-                <groupId>org.apache.brooklyn</groupId>
-                <artifactId>brooklyn-logback-xml</artifactId>
-                <version>${brooklyn.version}</version>
-            </dependency>
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-client-lib</artifactId>
+            <version>${cloudfoundry.client.version}</version>
+        </dependency>
 
-        </dependencies>
-    </dependencyManagement>
+        <!-- http://mvnrepository.com/artifact/org.mockito/mockito-all -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+        </dependency>
+
+        <dependency>
+            <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-logback-xml</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
