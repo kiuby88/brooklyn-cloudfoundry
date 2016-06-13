@@ -29,16 +29,10 @@
     </parent>
 
     <artifactId>brooklyn-cloudfoundry</artifactId>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
     <name>Brooklyn CloudFoundry parent project</name>
-
-    <modules>
-        <module>brooklyn-cloudfoundry-launcher</module>
-        <module>brooklyn-cloudfoundry-location</module>
-        <module>brooklyn-cloudfoundry-entity</module>
-    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
