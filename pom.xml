@@ -114,6 +114,7 @@
                         <!-- files not requiring licence -->
                         <exclude>README.md</exclude>
                         <exclude>LICENSE.md</exclude>
+                        <exclude>.travis.yml</exclude>
                         <exclude>**/*.yaml</exclude>
                     </excludes>
                 </configuration>
