@@ -18,18 +18,26 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
 
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
@@ -41,6 +49,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org");
     public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
     public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
+
+    private static final String DOMAIN_KEYWORD = "-domain.";
 
     CloudFoundryClient client;
 
@@ -67,6 +77,58 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     @Override
     public String getPaasProviderName() {
         return "CloudFoundry";
+    }
+
+    public String deploy(String applicationName, String buildpack, String localArtifactPath) {
+        List<String> uris = MutableList.of();
+        Staging staging;
+        staging = new Staging(null, buildpack);
+        uris.add(inferApplicationDomainUri(applicationName));
+
+        getClient().createApplication(applicationName, staging,
+                getConfig(CloudFoundryPaasLocation.REQUIRED_MEMORY),
+                uris, null);
+        pushApplication(applicationName, localArtifactPath);
+        return getDomainUri(applicationName);
+    }
+
+    private void pushApplication(String applicationName, String localArtifactPath) {
+        try {
+            getClient().uploadApplication(applicationName, localArtifactPath);
+        } catch (IOException e) {
+            log.error("Error deploying application {} ", this);
+            throw Exceptions.propagate(e);
+        }
+    }
+
+    private String getDomainUri(String applicationName) {
+        String domainUri = null;
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            domainUri = "https://" + optional.get().getUris().get(0);
+        }
+        return domainUri;
+    }
+
+    public void startApplication(String applicationName) {
+        getClient().startApplication(applicationName);
+    }
+
+    public void stopApplication(String applicationName) {
+        getClient().stopApplication(applicationName);
+    }
+
+    public void deleteApplication(String applicationName) {
+        getClient().deleteApplication(applicationName);
+    }
+
+    private String inferApplicationDomainUri(String name) {
+        String defaultDomainName = getClient().getDefaultDomain().getName();
+        return name + DOMAIN_KEYWORD + defaultDomainName;
+    }
+
+    private Optional<CloudApplication> getApplication(String applicationName) {
+        return Optional.fromNullable(getClient().getApplication(applicationName));
     }
 
     private static URL getTargetURL(String target) {
