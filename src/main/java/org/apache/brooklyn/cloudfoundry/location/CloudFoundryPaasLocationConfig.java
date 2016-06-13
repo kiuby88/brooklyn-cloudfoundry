@@ -30,14 +30,14 @@ public interface CloudFoundryPaasLocationConfig {
 
     @SetFromFlag("cloudfoundry.instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.instances", "Required instances to deploy the application", 1);
+            "cloudfoundry.profile.instances", "Number of instances of the application", 1);
 
     @SetFromFlag("cloudfoundry.instances")
     ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.memory", "Required memory to deploy the application (MB)", 512);
+            "cloudfoundry.profile.memory", "Memory allocated for the application (MB)", 512);
 
     @SetFromFlag("cloudfoundry.instances")
     ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.disk", "Required disk to deploy the application (MB)", 1024);
+            "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
 
 }
