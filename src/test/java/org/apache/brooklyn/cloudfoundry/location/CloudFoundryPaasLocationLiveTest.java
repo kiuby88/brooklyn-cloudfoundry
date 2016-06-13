@@ -21,57 +21,56 @@ package org.apache.brooklyn.cloudfoundry.location;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import java.util.Map;
-
-import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
-import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.internal.BrooklynProperties;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
+public class CloudFoundryPaasLocationLiveTest {
 
+    protected final String LOCATION_SPEC_NAME = "cloudfoundry-instance";
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
+    protected LocalManagementContext managementContext;
+    protected BrooklynProperties brooklynProperties;
 
-    @Mock
-    protected CloudFoundryClient client;
+    @AfterMethod
+    public void tearDown() throws Exception {
+        if (managementContext != null) {
+            Entities.destroyAll(managementContext);
+        }
+    }
 
     @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
-        MockitoAnnotations.initMocks(this);
-        cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
+        managementContext = newLocalManagementContext();
+        brooklynProperties = new LocalManagementContext().getBrooklynProperties();
+        cloudFoundryPaasLocation = newSampleCloudFoundryLocationForTesting(LOCATION_SPEC_NAME);
     }
 
-    @Test
-    public void testSetUpClient() {
-        cloudFoundryPaasLocation.setClient(client);
+    @Test(groups = {"Live"})
+    public void testClientSetUp() {
         cloudFoundryPaasLocation.setUpClient();
         assertNotNull(cloudFoundryPaasLocation.getClient());
     }
 
-    @Test
-    public void testClientSingletonManagement() {
-        cloudFoundryPaasLocation.setClient(client);
-
+    @Test(groups = {"Live"})
+    public void testClientSetUpPerLocationInstance() {
+        cloudFoundryPaasLocation.setUpClient();
         CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
         cloudFoundryPaasLocation.setUpClient();
         CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
         assertEquals(client1, client2);
     }
 
-    private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
-        Map<String, String> m = MutableMap.of();
-        m.put("user", "super_user");
-        m.put("password", "super_secret");
-        m.put("org", "secret_organization");
-        m.put("endpoint", "https://api.super.secret.io");
-        m.put("space", "development");
-
-        return (CloudFoundryPaasLocation)
-                mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
+    protected CloudFoundryPaasLocation newSampleCloudFoundryLocationForTesting(String spec) {
+        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().resolve(spec);
     }
 
+    protected LocalManagementContext newLocalManagementContext() {
+        return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
+    }
 }

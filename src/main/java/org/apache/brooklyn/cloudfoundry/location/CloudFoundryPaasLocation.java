@@ -81,8 +81,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return client;
     }
 
-    public void setClient(CloudFoundryClient client){
-        this.client =  client;
+    public void setClient(CloudFoundryClient client) {
+        this.client = client;
     }
 
 }
