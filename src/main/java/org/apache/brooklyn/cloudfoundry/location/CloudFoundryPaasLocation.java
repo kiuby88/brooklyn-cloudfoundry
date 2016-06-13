@@ -101,7 +101,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    private String getDomainUri(String applicationName) {
+    public String getDomainUri(String applicationName) {
         String domainUri = null;
         Optional<CloudApplication> optional = getApplication(applicationName);
         if (optional.isPresent()) {

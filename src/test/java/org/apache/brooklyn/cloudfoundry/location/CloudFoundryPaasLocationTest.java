@@ -18,22 +18,44 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import java.util.Map;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.UUID;
 
-import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
-import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudDomain;
+import org.cloudfoundry.client.lib.domain.Staging;
+import org.mockito.Matchers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
+public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
-    protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
+    protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
+    protected static final String APPLICATION_ARTIFACT_NAME =
+            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
+    protected final String APPLICATION_ARTIFACT_URL =
+            getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
+
+    private static final String DEFAULT_DOMAIN = "brooklyndomain.io";
+    private static final String DEFAULT_APPLICATION_DOMAIN
+            = APPLICATION_NAME + "." + DEFAULT_DOMAIN;
+    private static final String DEFAULT_APPLICATION_ADDRESS
+            = "https://" + APPLICATION_NAME + "." + DEFAULT_DOMAIN;
 
     @Mock
     protected CloudFoundryClient client;
@@ -41,8 +63,6 @@ public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        MockitoAnnotations.initMocks(this);
-        cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
     }
 
     @Test
@@ -62,16 +82,51 @@ public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
         assertEquals(client1, client2);
     }
 
-    private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
-        Map<String, String> m = MutableMap.of();
-        m.put("user", "super_user");
-        m.put("password", "super_secret");
-        m.put("org", "secret_organization");
-        m.put("endpoint", "https://api.super.secret.io");
-        m.put("space", "development");
+    @Test
+    public void testDeployApplication() throws IOException {
+        doNothing().when(client).
+                createApplication(
+                        Matchers.anyString(),
+                        Matchers.any(Staging.class),
+                        Matchers.anyInt(),
+                        Matchers.anyList(),
+                        Matchers.anyList());
+        doNothing().when(client).uploadApplication(Matchers.anyString(), anyString());
 
-        return (CloudFoundryPaasLocation)
-                mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_DOMAIN));
+        when(client.getApplication(anyString())).thenReturn(cloudApp);
+
+        CloudDomain cloudDomain = mock(CloudDomain.class);
+        when(cloudDomain.getName()).thenReturn(DEFAULT_DOMAIN);
+        when(client.getDefaultDomain()).thenReturn(cloudDomain);
+
+        cloudFoundryPaasLocation.setClient(client);
+        String applicationDomain = cloudFoundryPaasLocation
+                .deploy(APPLICATION_NAME, Strings.makeRandomId(15), APPLICATION_ARTIFACT_URL);
+
+        assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeployNonExistentArtifact() throws IOException {
+        doNothing().when(client).
+                createApplication(
+                        Matchers.anyString(),
+                        Matchers.any(Staging.class),
+                        Matchers.anyInt(),
+                        Matchers.anyList(),
+                        Matchers.anyList());
+        doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
+                .when(client).uploadApplication(Matchers.anyString(), anyString());
+
+        CloudDomain cloudDomain = mock(CloudDomain.class);
+        when(cloudDomain.getName()).thenReturn(DEFAULT_DOMAIN);
+        when(client.getDefaultDomain()).thenReturn(cloudDomain);
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation
+                .deploy(APPLICATION_NAME, Strings.makeRandomId(15), Strings.makeRandomId(15));
     }
 
 }
