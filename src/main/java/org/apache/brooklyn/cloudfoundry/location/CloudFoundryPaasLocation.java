@@ -117,6 +117,14 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return getClient().startApplication(applicationName);
     }
 
+    public void stopApplication(String applicationName) {
+        getClient().stopApplication(applicationName);
+    }
+
+    public void deleteApplication(String applicationName) {
+        getClient().deleteApplication(applicationName);
+    }
+
     private String inferApplicationDomainUri(String name) {
         String defaultDomainName = getClient().getDefaultDomain().getName();
         return name + DOMAIN_KEYWORD + defaultDomainName;
@@ -141,6 +149,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         } catch (MalformedURLException e) {
             throw new RuntimeException("The target URL is not valid: " + e.getMessage());
         }
+    }
+
+    public boolean isDeployed(String applicationName) {
+        return getApplication(applicationName).isPresent();
     }
 
     public CloudFoundryClient getClient() {

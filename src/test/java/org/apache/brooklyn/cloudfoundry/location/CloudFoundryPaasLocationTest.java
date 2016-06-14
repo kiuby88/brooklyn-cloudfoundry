@@ -24,7 +24,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -86,6 +88,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testDeployApplication() throws IOException {
         doNothing().when(client).
                 createApplication(
@@ -111,6 +114,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testDeployNonExistentArtifact() throws IOException {
         doNothing().when(client).
@@ -152,6 +156,51 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test
+    public void testStopApplication() {
+        doNothing().when(client).stopApplication(Matchers.anyString());
+
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STOPPED);
+        when(client.getApplication(anyString())).thenReturn(cloudApp);
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.stopApplication(APPLICATION_NAME);
+        CloudApplication.AppState state = cloudFoundryPaasLocation
+                .getApplicationStatus(APPLICATION_NAME);
+        assertEquals(state, CloudApplication.AppState.STOPPED);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testStopNonExistentApplication() {
+        when(client.getApplication(anyString())).thenReturn(null);
+
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(client).stopApplication(Matchers.anyString());
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.stopApplication(APPLICATION_NAME);
+    }
+
+    @Test
+    public void testDeleteApplication() {
+        doNothing().when(client).deleteApplication(Matchers.anyString());
+        when(client.getApplication(anyString())).thenReturn(null);
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.deleteApplication(APPLICATION_NAME);
+        assertFalse(cloudFoundryPaasLocation.isDeployed(APPLICATION_NAME));
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testDeleteNonExistentApplication() {
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(client).stopApplication(Matchers.anyString());
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.getApplicationStatus(APPLICATION_NAME);
+    }
+
+    @Test
     public void testGetApplicationStatus() {
         CloudApplication cloudApp = mock(CloudApplication.class);
         when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STARTED);
@@ -164,11 +213,28 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test(expectedExceptions = CloudFoundryException.class)
-    public void testNonExtistentApplicationStatus() {
+    public void testNonExistentApplicationStatus() {
         doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
                 .when(client).getApplication(Matchers.anyString());
         cloudFoundryPaasLocation.setClient(client);
         cloudFoundryPaasLocation.getApplicationStatus(APPLICATION_NAME);
+    }
+
+    @Test
+    public void testIfAnApplicationIsDeployed() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(client.getApplication(anyString())).thenReturn(cloudApp);
+
+        cloudFoundryPaasLocation.setClient(client);
+        assertTrue(cloudFoundryPaasLocation.isDeployed(Strings.makeRandomId(10)));
+    }
+
+    @Test
+    public void testIfAnApplicationIsNotDeployed() {
+        when(client.getApplication(anyString())).thenReturn(null);
+
+        cloudFoundryPaasLocation.setClient(client);
+        assertFalse(cloudFoundryPaasLocation.isDeployed(Strings.makeRandomId(10)));
     }
 
 }

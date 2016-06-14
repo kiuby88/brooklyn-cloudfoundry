@@ -19,10 +19,12 @@
 package org.apache.brooklyn.cloudfoundry.location;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 import java.io.File;
 import java.net.HttpURLConnection;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.entity.utils.LocalResourcesDownloader;
@@ -33,9 +35,12 @@ import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.http.HttpTool;
-import org.cloudfoundry.client.lib.StartingInfo;
+import org.apache.brooklyn.util.time.Duration;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport {
 
@@ -66,22 +71,59 @@ public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport
     }
 
     @Test(groups = {"Live"})
-    public void testDeployApplication() throws Exception {
+    public void testWebApplicationManagement() throws Exception {
         cloudFoundryPaasLocation.setUpClient();
         File war;
         war = LocalResourcesDownloader
                 .downloadResourceInLocalDir(APPLICATION_ARTIFACT_URL);
         String path = war.getCanonicalPath();
-        final String applicationDomain = cloudFoundryPaasLocation
+        String applicationDomain = cloudFoundryPaasLocation
                 .deploy(APPLICATION_NAME, JAVA_BUILDPACK, path);
-        cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
-        Asserts.succeedsEventually(new Runnable() {
+
+        startApplication(APPLICATION_NAME, applicationDomain);
+        stopApplication(APPLICATION_NAME, applicationDomain);
+        deleteApplicatin(APPLICATION_NAME);
+    }
+
+    private void startApplication(final String applicationName, final String applicationDomain) {
+        cloudFoundryPaasLocation.startApplication(applicationName);
+
+        Map<String, ?> flags = ImmutableMap.of("timeout", Duration.ONE_MINUTE);
+
+        Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {
                 try {
                     assertEquals(HttpTool.getHttpStatusCode(applicationDomain), HttpURLConnection.HTTP_OK);
+                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
+                            CloudApplication.AppState.STARTED);
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
                 }
+            }
+        });
+    }
+
+    private void stopApplication(final String applicationName, final String applicationDomain) {
+        cloudFoundryPaasLocation.stopApplication(applicationName);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                try {
+                    assertEquals(HttpTool.getHttpStatusCode(applicationDomain),
+                            HttpURLConnection.HTTP_NOT_FOUND);
+                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(APPLICATION_NAME),
+                            CloudApplication.AppState.STOPPED);
+                } catch (Exception e) {
+                    throw Exceptions.propagate(e);
+                }
+            }
+        });
+    }
+
+    private void deleteApplicatin(final String applicationName) {
+        cloudFoundryPaasLocation.deleteApplication(applicationName);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertFalse(cloudFoundryPaasLocation.isDeployed(applicationName));
             }
         });
     }
