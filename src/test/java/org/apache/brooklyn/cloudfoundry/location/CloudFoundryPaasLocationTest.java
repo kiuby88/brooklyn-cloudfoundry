@@ -48,16 +48,14 @@ public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
     @Test
     public void testSetUpClient() {
         cloudFoundryPaasLocation.setClient(client);
-        cloudFoundryPaasLocation.setUpClient();
+        cloudFoundryPaasLocation.getClient();
         assertNotNull(cloudFoundryPaasLocation.getClient());
     }
 
     @Test
     public void testClientSingletonManagement() {
         cloudFoundryPaasLocation.setClient(client);
-
         CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
-        cloudFoundryPaasLocation.setUpClient();
         CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
         assertEquals(client1, client2);
     }

@@ -53,15 +53,15 @@ public class CloudFoundryPaasLocationLiveTest {
 
     @Test(groups = {"Live"})
     public void testClientSetUp() {
-        cloudFoundryPaasLocation.setUpClient();
+        cloudFoundryPaasLocation.getClient();
         assertNotNull(cloudFoundryPaasLocation.getClient());
     }
 
     @Test(groups = {"Live"})
     public void testClientSetUpPerLocationInstance() {
-        cloudFoundryPaasLocation.setUpClient();
+        cloudFoundryPaasLocation.getClient();
         CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
-        cloudFoundryPaasLocation.setUpClient();
+        cloudFoundryPaasLocation.getClient();
         CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
         assertEquals(client1, client2);
     }
@@ -73,4 +73,5 @@ public class CloudFoundryPaasLocationLiveTest {
     protected LocalManagementContext newLocalManagementContext() {
         return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
     }
+
 }

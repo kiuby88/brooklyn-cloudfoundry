@@ -19,7 +19,6 @@
 package org.apache.brooklyn.cloudfoundry.location;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
@@ -84,12 +83,6 @@ public class CloudFoundryPaasLocationResolverTest {
                 CloudFoundryPaasLocationConfig.REQUIRED_MEMORY.getDefaultValue());
         assertEquals(cloudFoundryPaasLocation.getConfig(CloudFoundryPaasLocationConfig.REQUIRED_INSTANCES),
                 CloudFoundryPaasLocationConfig.REQUIRED_INSTANCES.getDefaultValue());
-    }
-
-    @Test
-    void testCloudFoundryClientInitilized() {
-        CloudFoundryPaasLocation cloudFoundryPaasLocation = resolve(LOCATION_SPEC_NAME);
-        assertNull(cloudFoundryPaasLocation.getClient());
     }
 
     private CloudFoundryPaasLocation resolve(String spec) {

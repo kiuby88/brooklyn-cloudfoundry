@@ -42,7 +42,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
     public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
 
-    CloudFoundryClient client;
+    private CloudFoundryClient client;
 
     public CloudFoundryPaasLocation() {
         super();
@@ -53,7 +53,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         super.init();
     }
 
-    public void setUpClient() {
+    private synchronized void setUpClient() {
         if (client == null) {
             CloudCredentials credentials =
                     new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD));
@@ -77,7 +77,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public CloudFoundryClient getClient() {
+    protected CloudFoundryClient getClient() {
+        setUpClient();
         return client;
     }
 
