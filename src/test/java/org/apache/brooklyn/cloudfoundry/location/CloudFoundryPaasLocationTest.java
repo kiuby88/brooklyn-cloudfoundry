@@ -35,11 +35,14 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.mockito.Matchers;
 import org.mockito.Mock;
+import org.springframework.http.HttpStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -127,6 +130,25 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.setClient(client);
         cloudFoundryPaasLocation
                 .deploy(APPLICATION_NAME, Strings.makeRandomId(15), Strings.makeRandomId(15));
+    }
+
+    @Test
+    public void testStartApplication() throws IOException {
+        when(client.startApplication(anyString())).thenReturn(new StartingInfo(Strings.EMPTY));
+
+        cloudFoundryPaasLocation.setClient(client);
+        StartingInfo startingInfo = cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
+        assertNotNull(startingInfo);
+        assertEquals(startingInfo.getStagingFile(), Strings.EMPTY);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testStartNonExistentApplication() {
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(client).startApplication(Matchers.anyString());
+
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
     }
 
 }

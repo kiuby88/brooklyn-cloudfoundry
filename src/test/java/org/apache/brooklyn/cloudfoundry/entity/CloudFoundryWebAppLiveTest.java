@@ -47,14 +47,15 @@ public class CloudFoundryWebAppLiveTest extends BrooklynAppLiveTestSupport {
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
+    protected final String APPLICATION_NAME = "test-brooklyn-application-" + UUID.randomUUID()
+            .toString().substring(0, 8);
+
     private final String APPLICATION_ARTIFACT_NAME =
             "brooklyn-example-hello-world-sql-webapp-in-paas.war";
     private final String APPLICATION_ARTIFACT_URL =
             getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
 
     protected final String LOCATION_SPEC_NAME = "cloudfoundry-instance";
-    protected final String APPLICATION_NAME = "test-brooklyn-application-" + UUID.randomUUID()
-            .toString().substring(0, 8);
 
     @BeforeMethod
     public void setUp() throws Exception {

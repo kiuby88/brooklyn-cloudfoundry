@@ -32,6 +32,7 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
@@ -110,8 +111,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return domainUri;
     }
 
-    public void startApplication(String applicationName) {
-        getClient().startApplication(applicationName);
+    public StartingInfo startApplication(String applicationName) {
+        return getClient().startApplication(applicationName);
     }
 
     public void stopApplication(String applicationName) {
