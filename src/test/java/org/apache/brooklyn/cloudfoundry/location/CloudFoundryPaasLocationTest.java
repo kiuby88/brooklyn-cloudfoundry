@@ -151,4 +151,24 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
     }
 
+    @Test
+    public void testGetApplicationStatus() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STARTED);
+        when(client.getApplication(anyString())).thenReturn(cloudApp);
+
+        cloudFoundryPaasLocation.setClient(client);
+        CloudApplication.AppState state = cloudFoundryPaasLocation
+                .getApplicationStatus(APPLICATION_NAME);
+        assertEquals(state, CloudApplication.AppState.STARTED);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testNonExtistentApplicationStatus() {
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(client).getApplication(Matchers.anyString());
+        cloudFoundryPaasLocation.setClient(client);
+        cloudFoundryPaasLocation.getApplicationStatus(APPLICATION_NAME);
+    }
+
 }

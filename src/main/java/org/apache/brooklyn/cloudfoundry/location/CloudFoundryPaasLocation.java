@@ -32,11 +32,13 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import com.google.common.base.Optional;
 
@@ -122,6 +124,15 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     private Optional<CloudApplication> getApplication(String applicationName) {
         return Optional.fromNullable(getClient().getApplication(applicationName));
+    }
+
+    public CloudApplication.AppState getApplicationStatus(String applicationName) {
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            return optional.get().getState();
+        } else {
+            throw Exceptions.propagate(new CloudFoundryException(HttpStatus.NOT_FOUND));
+        }
     }
 
     private static URL getTargetURL(String target) {
