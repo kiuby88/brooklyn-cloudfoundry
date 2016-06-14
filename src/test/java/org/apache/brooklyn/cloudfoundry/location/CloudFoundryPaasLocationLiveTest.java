@@ -21,33 +21,41 @@ package org.apache.brooklyn.cloudfoundry.location;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import org.apache.brooklyn.core.entity.Entities;
+import java.io.File;
+import java.net.HttpURLConnection;
+import java.util.UUID;
+
+import org.apache.brooklyn.cloudfoundry.entity.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
 import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.testng.annotations.AfterMethod;
+import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class CloudFoundryPaasLocationLiveTest {
+public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport {
+
+    protected final String APPLICATION_NAME = "test-brooklyn-app" + UUID.randomUUID()
+            .toString().substring(0, 8);
+
+    protected static final String APPLICATION_ARTIFACT_NAME =
+            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
+    protected final String APPLICATION_ARTIFACT_URL =
+            getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
 
     protected final String LOCATION_SPEC_NAME = "cloudfoundry-instance";
-    protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
-    protected LocalManagementContext managementContext;
-    protected BrooklynProperties brooklynProperties;
+    protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
 
-    @AfterMethod
-    public void tearDown() throws Exception {
-        if (managementContext != null) {
-            Entities.destroyAll(managementContext);
-        }
-    }
+    protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        managementContext = newLocalManagementContext();
-        brooklynProperties = new LocalManagementContext().getBrooklynProperties();
+        super.setUp();
+        mgmt = newLocalManagementContext();
         cloudFoundryPaasLocation = newSampleCloudFoundryLocationForTesting(LOCATION_SPEC_NAME);
     }
 
@@ -58,19 +66,35 @@ public class CloudFoundryPaasLocationLiveTest {
     }
 
     @Test(groups = {"Live"})
-    public void testClientSetUpPerLocationInstance() {
+    public void testDeployApplication() throws Exception {
         cloudFoundryPaasLocation.setUpClient();
-        CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
-        cloudFoundryPaasLocation.setUpClient();
-        CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
-        assertEquals(client1, client2);
+        File war;
+        war = LocalResourcesDownloader
+                .downloadResourceInLocalDir(APPLICATION_ARTIFACT_URL);
+        String path = war.getCanonicalPath();
+        final String applicationDomain = cloudFoundryPaasLocation
+                .deploy(APPLICATION_NAME, JAVA_BUILDPACK, path);
+        cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                try {
+                    assertEquals(HttpTool.getHttpStatusCode(applicationDomain), HttpURLConnection.HTTP_OK);
+                } catch (Exception e) {
+                    throw Exceptions.propagate(e);
+                }
+            }
+        });
     }
 
     protected CloudFoundryPaasLocation newSampleCloudFoundryLocationForTesting(String spec) {
-        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().resolve(spec);
+        return (CloudFoundryPaasLocation) mgmt.getLocationRegistry().resolve(spec);
     }
 
     protected LocalManagementContext newLocalManagementContext() {
         return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
+    }
+
+    public String getClasspathUrlForResource(String resourceName) {
+        return "classpath://" + resourceName;
     }
 }
