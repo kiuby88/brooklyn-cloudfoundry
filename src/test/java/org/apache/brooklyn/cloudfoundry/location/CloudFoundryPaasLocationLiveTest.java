@@ -63,6 +63,7 @@ public class CloudFoundryPaasLocationLiveTest {
         CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
         cloudFoundryPaasLocation.getClient();
         CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
+        assertNotNull(client1);
         assertEquals(client1, client2);
     }
 

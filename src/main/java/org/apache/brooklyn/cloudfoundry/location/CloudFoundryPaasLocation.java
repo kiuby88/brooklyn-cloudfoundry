@@ -21,6 +21,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Map;
 
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
@@ -48,18 +49,21 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         super();
     }
 
+    public CloudFoundryPaasLocation(Map<?, ?> properties) {
+        super(properties);
+    }
+
+    public CloudFoundryPaasLocation(CloudFoundryClient client) {
+        super();
+        this.client = client;
+    }
+
     @Override
     public void init() {
         super.init();
-    }
-
-    private synchronized void setUpClient() {
         if (client == null) {
-            CloudCredentials credentials =
-                    new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD));
-            client = new CloudFoundryClient(credentials,
-                    getTargetURL(getConfig(CF_ENDPOINT)),
-                    getConfig(CF_ORG), getConfig(CF_SPACE), true);
+            client = new CloudFoundryClient(new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD)),
+                    getTargetURL(getConfig(CF_ENDPOINT)), getConfig(CF_ORG), getConfig(CF_SPACE), true);
             client.login();
         }
     }
@@ -77,13 +81,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    protected CloudFoundryClient getClient() {
-        setUpClient();
+    public CloudFoundryClient getClient() {
         return client;
-    }
-
-    public void setClient(CloudFoundryClient client) {
-        this.client = client;
     }
 
 }

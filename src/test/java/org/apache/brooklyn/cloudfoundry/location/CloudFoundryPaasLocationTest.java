@@ -21,10 +21,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import java.util.Map;
-
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
-import org.apache.brooklyn.util.collections.MutableMap;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -42,34 +39,25 @@ public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);
-        cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
+        cloudFoundryPaasLocation = createCloudFoundryPaasLocation(client);
     }
 
     @Test
     public void testSetUpClient() {
-        cloudFoundryPaasLocation.setClient(client);
         cloudFoundryPaasLocation.getClient();
         assertNotNull(cloudFoundryPaasLocation.getClient());
     }
 
     @Test
     public void testClientSingletonManagement() {
-        cloudFoundryPaasLocation.setClient(client);
         CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
         CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
+        assertNotNull(client1);
         assertEquals(client1, client2);
     }
 
-    private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
-        Map<String, String> m = MutableMap.of();
-        m.put("user", "super_user");
-        m.put("password", "super_secret");
-        m.put("org", "secret_organization");
-        m.put("endpoint", "https://api.super.secret.io");
-        m.put("space", "development");
-
-        return (CloudFoundryPaasLocation)
-                mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
+    private CloudFoundryPaasLocation createCloudFoundryPaasLocation(CloudFoundryClient client) {
+        return new CloudFoundryPaasLocation(client);
     }
 
 }
