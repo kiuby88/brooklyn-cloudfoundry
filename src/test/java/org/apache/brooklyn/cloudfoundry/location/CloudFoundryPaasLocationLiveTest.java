@@ -18,14 +18,12 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
 import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -53,18 +51,8 @@ public class CloudFoundryPaasLocationLiveTest {
 
     @Test(groups = {"Live"})
     public void testClientSetUp() {
-        cloudFoundryPaasLocation.getClient();
+        cloudFoundryPaasLocation.login();
         assertNotNull(cloudFoundryPaasLocation.getClient());
-    }
-
-    @Test(groups = {"Live"})
-    public void testClientSetUpPerLocationInstance() {
-        cloudFoundryPaasLocation.getClient();
-        CloudFoundryClient client1 = cloudFoundryPaasLocation.getClient();
-        cloudFoundryPaasLocation.getClient();
-        CloudFoundryClient client2 = cloudFoundryPaasLocation.getClient();
-        assertNotNull(client1);
-        assertEquals(client1, client2);
     }
 
     protected CloudFoundryPaasLocation newSampleCloudFoundryLocationForTesting(String spec) {

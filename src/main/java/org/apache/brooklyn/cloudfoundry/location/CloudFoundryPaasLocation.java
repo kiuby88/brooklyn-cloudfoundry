@@ -55,11 +55,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         super(properties);
     }
 
-    public CloudFoundryPaasLocation(CloudFoundryClient client) {
-        super();
-        this.client = client;
-    }
-
     @Override
     public void init() {
         super.init();
@@ -69,7 +64,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    private synchronized void login() {
+    public synchronized void login() {
         if ((accessToken == null) || (accessToken.isExpired())) {
             accessToken = client.login();
         }
@@ -89,7 +84,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public CloudFoundryClient getClient() {
-        login();
         return client;
     }
 
