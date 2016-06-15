@@ -31,6 +31,7 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
@@ -44,6 +45,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
 
     private CloudFoundryClient client;
+    private OAuth2AccessToken accessToken;
 
     public CloudFoundryPaasLocation() {
         super();
@@ -64,7 +66,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         if (client == null) {
             client = new CloudFoundryClient(new CloudCredentials(getConfig(CF_USER), getConfig(CF_PASSWORD)),
                     getTargetURL(getConfig(CF_ENDPOINT)), getConfig(CF_ORG), getConfig(CF_SPACE), true);
-            client.login();
+        }
+    }
+
+    private synchronized void login() {
+        if ((accessToken == null) || (accessToken.isExpired())) {
+            accessToken = client.login();
         }
     }
 
@@ -82,6 +89,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public CloudFoundryClient getClient() {
+        login();
         return client;
     }
 
