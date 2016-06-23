@@ -18,23 +18,44 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
+import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.CloudFoundryClient;
 
 public class CloudFoundryPaasApplication implements PaasApplication {
 
     private final CloudFoundryPaasLocation platform;
+    private CloudFoundryClient client;
 
     public CloudFoundryPaasApplication(CloudFoundryPaasLocation platform) {
         this.platform = platform;
         init();
     }
 
-    protected void init() {
+    public void init() {
+        setUpClient();
+    }
 
+    private void setUpClient() {
+        CloudCredentials credentials = new CloudCredentials(platform.getConfig(CloudFoundryPaasLocation.CF_USER),
+                platform.getConfig(CloudFoundryPaasLocation.CF_PASSWORD));
+        client = new CloudFoundryClient(credentials, getTargetURL(platform.getConfig(CloudFoundryPaasLocation.CF_ENDPOINT)),
+                platform.getConfig(CloudFoundryPaasLocation.CF_ORG), platform.getConfig(CloudFoundryPaasLocation.CF_SPACE), true);
     }
 
     public CloudFoundryPaasLocation getPlatform() {
         return platform;
     }
 
+    private static URL getTargetURL(String target) {
+        try {
+            return URI.create(target).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
+        }
+    }
 }

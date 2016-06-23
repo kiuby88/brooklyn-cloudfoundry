@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.util.List;
+
 import org.apache.brooklyn.cloudfoundry.location.paas.DeploymentPaasApplicationLocation;
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
 import org.apache.brooklyn.config.ConfigKey;
@@ -25,6 +27,8 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements DeploymentPaasApplicationLocation {
@@ -37,18 +41,30 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
     public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
 
-    @Override
-    public String getPaasProviderName() {
-        return "CloudFoundry";
+    private List<CloudFoundryPaasApplication> deployedApplications;
+
+    public void init() {
+        deployedApplications = ImmutableList.of();
     }
 
     @Override
     public PaasApplication deploy() {
+        CloudFoundryPaasApplication application = createApplication();
+        deployedApplications.add(application);
+        return application;
+    }
+
+    protected CloudFoundryPaasApplication createApplication() {
         return new CloudFoundryPaasApplication(this);
     }
 
     @Override
     public void undeploy(PaasApplication application) {
+        //TODO
+    }
 
+    @Override
+    public String getPaasProviderName() {
+        return "CloudFoundry";
     }
 }
