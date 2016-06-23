@@ -18,25 +18,18 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation {
+public class CloudFoundryPaasLocation extends AbstractLocation
+        implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
-    public static ConfigKey<String> CF_USER = ConfigKeys.newStringConfigKey("user");
-    public static ConfigKey<String> CF_PASSWORD = ConfigKeys.newStringConfigKey("password");
-    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org");
-    public static ConfigKey<String> CF_ENDPOINT = ConfigKeys.newStringConfigKey("endpoint");
-    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space");
-
     @Override
     public String getPaasProviderName() {
-        return "CloudFoundry";
+        return "cloudfoundry";
     }
 }

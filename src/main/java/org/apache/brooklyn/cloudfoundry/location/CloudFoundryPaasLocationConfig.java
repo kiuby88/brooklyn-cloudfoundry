@@ -18,26 +18,16 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-/**
- * It contains the parameters needed to configure an CloudFoundryPaasLocation. For example, the ConfigKey
- * {@link #REQUIRED_MEMORY} allows to specify a initial memory amount used in a location.
- */
-public interface CloudFoundryPaasLocationConfig {
+public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
 
-    @SetFromFlag("cloudfoundry.instances")
-    ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.instances", "Number of instances of the application", 1);
+    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
+            "Organization where paas resources will live.");
 
-    @SetFromFlag("cloudfoundry.instances")
-    ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.memory", "Memory allocated for the application (MB)", 512);
-
-    @SetFromFlag("cloudfoundry.instances")
-    ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
-            "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
+    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
+            "Space from the CloudFoundry services will be managed.");
 
 }

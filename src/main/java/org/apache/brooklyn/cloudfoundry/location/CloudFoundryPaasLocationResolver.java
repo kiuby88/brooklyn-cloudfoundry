@@ -63,9 +63,7 @@ public class CloudFoundryPaasLocationResolver implements LocationResolver {
 
     @Override
     public LocationSpec<? extends Location> newLocationSpecFromString(String s, Map<?, ?> map, LocationRegistry locationRegistry) {
-        return LocationSpec
-                .create(CloudFoundryPaasLocation.class)
-                .configure(map);
+        return LocationSpec.create(CloudFoundryPaasLocation.class).configure(map);
     }
 
 }
