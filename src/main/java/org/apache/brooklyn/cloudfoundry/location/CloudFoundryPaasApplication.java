@@ -28,8 +28,26 @@ public class CloudFoundryPaasApplication implements PaasApplication {
         this.platform = platform;
     }
 
-    public CloudFoundryPaasLocation getPlatform() {
-        return platform;
+    public void init() {
+        deployApplication();
     }
 
+    private void deployApplication() {
+        //TODO client.createApplication(...)
+    }
+
+    @Override
+    public void start() {
+        //TODO client...
+    }
+
+    @Override
+    public void stop() {
+        //TODO client...
+    }
+
+    @Override
+    public void restart() {
+        //TODO client...
+    }
 }

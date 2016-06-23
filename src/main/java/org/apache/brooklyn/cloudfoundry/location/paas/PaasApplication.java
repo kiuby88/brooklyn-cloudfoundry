@@ -19,4 +19,11 @@
 package org.apache.brooklyn.cloudfoundry.location.paas;
 
 public interface PaasApplication {
+
+    public void start();
+
+    public void stop();
+
+    public void restart();
+
 }
