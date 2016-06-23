@@ -16,17 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.location.paas;
+package org.apache.brooklyn.cloudfoundry.location;
 
-import java.util.Set;
-
+import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplicationFactory;
 import org.apache.brooklyn.location.paas.PaasLocation;
 
-public interface DeploymentPaasApplicationLocation extends PaasLocation {
+public class CloudFoundryPaasApplicationFactory implements PaasApplicationFactory {
 
-    public PaasApplication deploy();
-    public void undeploy(PaasApplication application);
-
-    public Set<PaasApplication> getDeployedApplications();
-
+    @Override
+    public CloudFoundryPaasApplication createApplication(PaasLocation platform) {
+        return new CloudFoundryPaasApplication((CloudFoundryPaasLocation) platform);
+    }
 }

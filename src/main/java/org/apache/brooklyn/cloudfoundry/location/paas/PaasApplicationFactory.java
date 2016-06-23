@@ -18,15 +18,10 @@
  */
 package org.apache.brooklyn.cloudfoundry.location.paas;
 
-import java.util.Set;
-
 import org.apache.brooklyn.location.paas.PaasLocation;
 
-public interface DeploymentPaasApplicationLocation extends PaasLocation {
+public interface PaasApplicationFactory {
 
-    public PaasApplication deploy();
-    public void undeploy(PaasApplication application);
-
-    public Set<PaasApplication> getDeployedApplications();
+    public PaasApplication createApplication(PaasLocation platform);
 
 }
