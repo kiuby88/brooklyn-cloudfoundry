@@ -18,29 +18,18 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import org.apache.brooklyn.cloudfoundry.location.paas.DeploymentPaasApplicationLocation;
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
-import org.apache.brooklyn.core.location.AbstractLocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation
-        implements DeploymentPaasApplicationLocation, CloudFoundryPaasLocationConfig {
+public class CloudFoundryPaasApplication implements PaasApplication {
 
-    public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
+    private final CloudFoundryPaasLocation platform;
 
-    @Override
-    public String getPaasProviderName() {
-        return "cloudfoundry";
+    public CloudFoundryPaasApplication(CloudFoundryPaasLocation platform) {
+        this.platform = platform;
     }
 
-    @Override
-    public PaasApplication deploy() {
-        return new CloudFoundryPaasApplication(this);
+    public CloudFoundryPaasLocation getPlatform() {
+        return platform;
     }
 
-    @Override
-    public void undeploy(PaasApplication application) {
-
-    }
 }
