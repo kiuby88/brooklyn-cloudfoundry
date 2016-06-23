@@ -18,14 +18,16 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import org.apache.brooklyn.cloudfoundry.location.paas.DeploymentPaasApplicationLocation;
+import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
-import org.apache.brooklyn.location.paas.PaasLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation {
+public class CloudFoundryPaasLocation extends AbstractLocation
+        implements DeploymentPaasApplicationLocation {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
@@ -38,5 +40,15 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
     @Override
     public String getPaasProviderName() {
         return "CloudFoundry";
+    }
+
+    @Override
+    public PaasApplication deploy() {
+        return new CloudFoundryPaasApplication(this);
+    }
+
+    @Override
+    public void undeploy(PaasApplication application) {
+
     }
 }

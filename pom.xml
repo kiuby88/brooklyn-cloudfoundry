@@ -86,6 +86,7 @@
                 <configuration>
                     <excludes combine.children="append">
                         <exclude>README.md</exclude>
+                        <exclude>*.log</exclude>
                     </excludes>
                 </configuration>
             </plugin>
