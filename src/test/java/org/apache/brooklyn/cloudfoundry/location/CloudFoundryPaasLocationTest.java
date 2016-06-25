@@ -46,6 +46,15 @@ public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
         assertTrue(cloudFoundryPaasLocation.getDeployedApplications().contains(deployedApplication));
     }
 
+    @Test
+    public void testUndeploy() {
+        CloudFoundryPaasApplication deployedApplication = cloudFoundryPaasLocation.deploy();
+        assertEquals(cloudFoundryPaasLocation.getDeployedApplications().size(), 1);
+
+        cloudFoundryPaasLocation.undeploy(deployedApplication);
+        assertTrue(cloudFoundryPaasLocation.getDeployedApplications().isEmpty());
+    }
+
     private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
         Map<String, String> m = MutableMap.of();
         m.put("identity", "super_user");

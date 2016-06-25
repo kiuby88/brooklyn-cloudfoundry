@@ -51,7 +51,9 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     @Override
     public void undeploy(PaasApplication application) {
-        //TODO
+        if (deployedApplications.contains(application)) {
+            deployedApplications.remove(application);
+        }
     }
 
     @Override
