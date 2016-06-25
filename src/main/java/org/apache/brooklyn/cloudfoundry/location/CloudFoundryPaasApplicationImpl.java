@@ -18,7 +18,34 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
+public class CloudFoundryPaasApplicationImpl implements CloudFoundryPaasApplication {
 
-public interface CloudFoundryPaasApplication extends PaasApplication {
+    private final CloudFoundryPaasLocation platform;
+
+    public CloudFoundryPaasApplicationImpl(CloudFoundryPaasLocation platform) {
+        this.platform = platform;
+    }
+
+    public void init() {
+        deployApplication();
+    }
+
+    private void deployApplication() {
+        //TODO client.createApplication(...)
+    }
+
+    @Override
+    public void start() {
+        //TODO client...
+    }
+
+    @Override
+    public void stop() {
+        //TODO client...
+    }
+
+    @Override
+    public void restart() {
+        //TODO client...
+    }
 }

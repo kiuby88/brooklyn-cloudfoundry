@@ -46,7 +46,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     private CloudFoundryPaasApplication createApplication() {
-        return new CloudFoundryPaasApplication(this);
+        return new CloudFoundryPaasApplicationImpl(this);
     }
 
     @Override
