@@ -45,8 +45,4 @@ public interface PaasLocationConfig {
     @SetFromFlag("paas.disk")
     ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
             "paas.profile.disk", "Disk size allocated for the application (MB)", 1024);
-
-
-
-
 }
