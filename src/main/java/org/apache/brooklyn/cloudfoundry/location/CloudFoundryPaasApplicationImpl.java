@@ -18,12 +18,14 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import org.cloudfoundry.client.lib.CloudFoundryClient;
+
 public class CloudFoundryPaasApplicationImpl implements CloudFoundryPaasApplication {
 
-    private final CloudFoundryPaasLocation platform;
+    private final CloudFoundryClient client;
 
-    public CloudFoundryPaasApplicationImpl(CloudFoundryPaasLocation platform) {
-        this.platform = platform;
+    public CloudFoundryPaasApplicationImpl(CloudFoundryClient client) {
+        this.client = client;
     }
 
     public void init() {
@@ -48,4 +50,5 @@ public class CloudFoundryPaasApplicationImpl implements CloudFoundryPaasApplicat
     public void restart() {
         //TODO client...
     }
+
 }

@@ -18,12 +18,17 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.Set;
 
 import org.apache.brooklyn.cloudfoundry.location.paas.DeployingPaasApplicationLocation;
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasApplication;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.util.collections.MutableSet;
+import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +50,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return application;
     }
 
-    private CloudFoundryPaasApplication createApplication() {
-        return new CloudFoundryPaasApplicationImpl(this);
+    protected CloudFoundryPaasApplication createApplication() {
+        return new CloudFoundryPaasApplicationImpl(getClient());
     }
 
     @Override
@@ -65,5 +70,21 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public String getPaasProviderName() {
         return "cloudfoundry";
     }
+
+    private CloudFoundryClient getClient() {
+        CloudCredentials credentials = new CloudCredentials(getConfig(CloudFoundryPaasLocation.ACCESS_IDENTITY),
+                getConfig(CloudFoundryPaasLocation.ACCESS_CREDENTIAL));
+        return new CloudFoundryClient(credentials, getTargetURL(getConfig(CloudFoundryPaasLocation.CLOUD_ENDPOINT)),
+                getConfig(CloudFoundryPaasLocation.CF_ORG), getConfig(CloudFoundryPaasLocation.CF_SPACE), true);
+    }
+
+    private static URL getTargetURL(String target) {
+        try {
+            return URI.create(target).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
+        }
+    }
+
 
 }

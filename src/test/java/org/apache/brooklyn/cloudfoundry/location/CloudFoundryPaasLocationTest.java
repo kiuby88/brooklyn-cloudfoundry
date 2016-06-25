@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -25,17 +27,24 @@ import java.util.Map;
 
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class CloudFoundryPaasLocationTest extends BrooklynAppUnitTestSupport {
 
-    protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
+    private CloudFoundryPaasLocation cloudFoundryPaasLocation;
+
+    @Mock
+    private CloudFoundryPaasApplication application;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
+        MockitoAnnotations.initMocks(this);
+        cloudFoundryPaasLocation = spy(createCloudFoundryPaasLocation());
+        doReturn(application).when(cloudFoundryPaasLocation).createApplication();
     }
 
     @Test
