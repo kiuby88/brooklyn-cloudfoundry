@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.util.Map;
+
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
 import org.slf4j.Logger;
@@ -28,8 +30,44 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
+    private CloudFoundryPaasClient client;
+
+    @Override
+    public void init() {
+        super.init();
+    }
+
+    protected CloudFoundryPaasClient getClient() {
+        if (client == null) {
+            client = new CloudFoundryPaasClient(this);
+        }
+        return client;
+    }
+
     @Override
     public String getPaasProviderName() {
         return "cloudfoundry";
+    }
+
+    /**
+     * Deploy an application in the cloud through client and retrieves the application domain.
+     *
+     * @param params contains the params to deploy and configure the application in the cloud.
+     * @return the application domain.
+     */
+    public String deploy(Map<?, ?> params) {
+        return getClient().deploy(params);
+    }
+
+    public void configureEnv(String applicationName, Map<Object, Object> envs) {
+        getClient().setEnv(applicationName, (Map<Object, Object>) envs);
+    }
+
+    public void startApplication(String applicationName) {
+        getClient().startApplication(applicationName);
+    }
+
+    public void stop(String applicationName) {
+        getClient().stop(applicationName);
     }
 }
