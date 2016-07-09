@@ -18,13 +18,32 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.Staging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 
 public class CloudFoundryPaasClient {
+
+    private static final String DOMAIN_KEYWORD = "-domain.";
+
+    private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
+
 
     private final CloudFoundryPaasLocation location;
     private CloudFoundryClient client;
@@ -46,23 +65,73 @@ public class CloudFoundryPaasClient {
     }
 
     public String deploy(Map<?, ?> params) {
-        String domain;
-        //TODO using client to deploy application
-        //client.createApplication(applicationName, buildpack, memory, disk,...)
-        //pushArtifact(applicationName, artifact);
+        ConfigBag appSetUp = ConfigBag.newInstance(params);
+        String artifactLocalPath =
+                getLocalPath(appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH));
+        String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
 
-        //returns the domain of the deployed application
-        return null;
+        client.createApplication(applicationName, getStaging(appSetUp),
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_DISK),
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
+                getUris(appSetUp), null);
+
+        client.updateApplicationInstances(applicationName,
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+
+        pushArtifact(applicationName, artifactLocalPath);
+        return getDomainUri(applicationName);
+    }
+
+    protected Staging getStaging(ConfigBag config) {
+        String buildpack = config.get(VanillaCloudfoundryApplication.BUILDPACK);
+        return new Staging(null, buildpack);
+    }
+
+    protected List<String> getUris(ConfigBag config) {
+        return MutableList.of(inferApplicationDomainUri(config));
+    }
+
+    private String getLocalPath(String uri) {
+        try {
+            File war;
+            war = LocalResourcesDownloader
+                    .downloadResourceInLocalDir(uri);
+            return war.getCanonicalPath();
+        } catch (IOException e) {
+            log.error("Error obtaining local path in {} for artifact {}", this, uri);
+            throw Exceptions.propagate(e);
+        }
+    }
+
+    private String inferApplicationDomainUri(ConfigBag config) {
+        String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
+        if (Strings.isBlank(domain)) {
+            domain = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
+                    + DOMAIN_KEYWORD
+                    + client.getDefaultDomain().getName();
+        }
+        return domain;
+    }
+
+    private String getDomainUri(String applicationName) {
+        String domainUri = null;
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            domainUri = "https://" + optional.get().getUris().get(0);
+        }
+        return domainUri;
+    }
+
+    private Optional<CloudApplication> getApplication(String applicationName) {
+        return Optional.fromNullable(client.getApplication(applicationName));
     }
 
     public void pushArtifact(String applicationName, String artifact) {
-        //TODO
         try {
-
             client.uploadApplication(applicationName, artifact);
-
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error deploying application {} ", this);
+            throw Exceptions.propagate(e);
         }
     }
 

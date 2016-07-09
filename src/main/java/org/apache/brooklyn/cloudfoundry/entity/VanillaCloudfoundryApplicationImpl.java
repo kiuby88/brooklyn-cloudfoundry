@@ -19,6 +19,8 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 
@@ -27,6 +29,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.AbstractEntity;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
@@ -34,6 +37,12 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.text.Identifiers;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.CountdownTimer;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +51,12 @@ import com.google.common.collect.Iterables;
 public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implements VanillaCloudfoundryApplication {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaCloudfoundryApplicationImpl.class);
+    private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private CloudFoundryPaasLocation cfLocation;
     protected boolean connectedSensors = false;
     private String applicationName;
-    private String domain;
+    private String applicationUrl;
 
     public VanillaCloudfoundryApplicationImpl() {
         super(MutableMap.of(), null);
@@ -66,6 +76,22 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     public void init() {
         super.init();
+        initApplicationName();
+    }
+
+    @Override
+    protected void initEnrichers() {
+        super.initEnrichers();
+        ServiceStateLogic.ServiceNotUpLogic
+                .updateNotUpIndicator(this, SERVICE_PROCESS_IS_RUNNING,
+                        "No information yet on whether this service is running");
+    }
+
+    private void initApplicationName() {
+        applicationName = getConfig(APPLICATION_NAME);
+        if(Strings.isBlank(applicationName)) {
+            applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
+        }
     }
 
     /**
@@ -131,9 +157,9 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void deploy() {
-        //TODO deploy application
-        Map<?, ?> params = null;  //params has to contain applicationName, buildpack, path, etc.
-        domain = cfLocation.deploy(params);
+        Map<String, Object> params = this.config().getBag().getAllConfig();
+        params.put(APPLICATION_NAME.getName(), applicationName);
+        applicationUrl = cfLocation.deploy(params);
     }
 
     private void preLaunch() {
@@ -151,9 +177,9 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void postLaunch() {
-        //waitForEntityStart();
-        //sensors().set(Attributes.MAIN_URI, domain);
-        sensors().set(VanillaCloudfoundryApplication.ROOT_URL, domain);
+        waitForEntityStart();
+        sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
+        sensors().set(VanillaCloudfoundryApplication.ROOT_URL, applicationUrl);
     }
 
     protected void postStart() {
@@ -239,6 +265,57 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     protected CloudFoundryPaasLocation getCloudFoundryLocation() {
         return cfLocation;
+    }
+
+
+    private void waitForEntityStart() {
+        if (log.isDebugEnabled()) {
+            log.debug("waiting to ensure {} doesn't abort prematurely", this);
+        }
+        Duration startTimeout = getConfig(START_TIMEOUT);
+        CountdownTimer timer = startTimeout.countdownTimer();
+        boolean isRunningResult = false;
+        long delay = 100;
+        while (!isRunningResult && !timer.isExpired()) {
+            Time.sleep(delay);
+            try {
+                isRunningResult = isRunning();
+            } catch (Exception e) {
+                ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+                // provide extra context info, as we're seeing this happen in strange circumstances
+                throw new IllegalStateException("Error detecting whether " + this +
+                        " is running: " + e, e);
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("checked {}, is running returned: {}", this, isRunningResult);
+            }
+            // slow exponential delay -- 1.1^N means after 40 tries and 50s elapsed, it reaches
+            // the max of 5s intervals
+            // TODO use Repeater
+            delay = Math.min(delay * 11 / 10, 5000);
+        }
+        if (!isRunningResult) {
+            String msg = "Software process entity " + this + " did not pass is-running " +
+                    "check within the required " + startTimeout + " limit (" +
+                    timer.getDurationElapsed().toStringRounded() + " elapsed)";
+            log.warn(msg + " (throwing)");
+            ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    public boolean isRunning() {
+        return isApplicationDomainAvailable();
+    }
+
+    protected boolean isApplicationDomainAvailable() {
+        boolean result;
+        try {
+            result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
     }
 
 }

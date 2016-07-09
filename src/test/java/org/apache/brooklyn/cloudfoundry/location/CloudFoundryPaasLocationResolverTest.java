@@ -53,13 +53,6 @@ public class CloudFoundryPaasLocationResolverTest {
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".endpoint", ENDPOINT);
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".space", SPACE);
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".address", ADDRESS);
-
-        brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".disk",
-                CloudFoundryPaasLocationConfig.REQUIRED_DISK.getDefaultValue());
-        brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".memory",
-                CloudFoundryPaasLocationConfig.REQUIRED_MEMORY.getDefaultValue());
-        brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".instances",
-                CloudFoundryPaasLocationConfig.REQUIRED_INSTANCES.getDefaultValue());
     }
 
     @AfterMethod
@@ -77,13 +70,6 @@ public class CloudFoundryPaasLocationResolverTest {
         assertEquals(config.get(CloudFoundryPaasLocation.CLOUD_ENDPOINT), ENDPOINT);
         assertEquals(config.get(CloudFoundryPaasLocation.CF_ORG), ORG);
         assertEquals(config.get(CloudFoundryPaasLocation.CF_SPACE), SPACE);
-
-        assertEquals(config.get(CloudFoundryPaasLocationConfig.REQUIRED_DISK),
-                CloudFoundryPaasLocationConfig.REQUIRED_DISK.getDefaultValue());
-        assertEquals(config.get(CloudFoundryPaasLocationConfig.REQUIRED_MEMORY),
-                CloudFoundryPaasLocationConfig.REQUIRED_MEMORY.getDefaultValue());
-        assertEquals(config.get(CloudFoundryPaasLocationConfig.REQUIRED_INSTANCES),
-                CloudFoundryPaasLocationConfig.REQUIRED_INSTANCES.getDefaultValue());
     }
 
     private CloudFoundryPaasLocation resolve(String spec) {
