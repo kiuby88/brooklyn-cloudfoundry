@@ -31,6 +31,7 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
@@ -50,10 +51,9 @@ public class CloudFoundryPaasClient {
 
     public CloudFoundryPaasClient(CloudFoundryPaasLocation location) {
         this.location = location;
-        setUpClient();
     }
 
-    private void setUpClient() {
+    protected CloudFoundryClient getClient() {
         if (client == null) {
             CloudCredentials credentials =
                     new CloudCredentials(
@@ -62,6 +62,7 @@ public class CloudFoundryPaasClient {
             client = new CloudFoundryClient(credentials, null);
             client.login();
         }
+        return client;
     }
 
     public String deploy(Map<?, ?> params) {
@@ -70,12 +71,12 @@ public class CloudFoundryPaasClient {
                 getLocalPath(appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH));
         String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
 
-        client.createApplication(applicationName, getStaging(appSetUp),
+        getClient().createApplication(applicationName, getStaging(appSetUp),
                 appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_DISK),
                 appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
                 getUris(appSetUp), null);
 
-        client.updateApplicationInstances(applicationName,
+        getClient().updateApplicationInstances(applicationName,
                 appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
 
         pushArtifact(applicationName, artifactLocalPath);
@@ -91,6 +92,16 @@ public class CloudFoundryPaasClient {
         return MutableList.of(inferApplicationDomainUri(config));
     }
 
+    private String inferApplicationDomainUri(ConfigBag config) {
+        String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
+        if (Strings.isBlank(domain)) {
+            domain = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
+                    + DOMAIN_KEYWORD
+                    + getClient().getDefaultDomain().getName();
+        }
+        return domain;
+    }
+
     private String getLocalPath(String uri) {
         try {
             File war;
@@ -103,16 +114,6 @@ public class CloudFoundryPaasClient {
         }
     }
 
-    private String inferApplicationDomainUri(ConfigBag config) {
-        String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
-        if (Strings.isBlank(domain)) {
-            domain = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
-                    + DOMAIN_KEYWORD
-                    + client.getDefaultDomain().getName();
-        }
-        return domain;
-    }
-
     private String getDomainUri(String applicationName) {
         String domainUri = null;
         Optional<CloudApplication> optional = getApplication(applicationName);
@@ -123,30 +124,34 @@ public class CloudFoundryPaasClient {
     }
 
     private Optional<CloudApplication> getApplication(String applicationName) {
-        return Optional.fromNullable(client.getApplication(applicationName));
+        return Optional.fromNullable(getClient().getApplication(applicationName));
     }
 
     public void pushArtifact(String applicationName, String artifact) {
         try {
-            client.uploadApplication(applicationName, artifact);
+            getClient().uploadApplication(applicationName, artifact);
         } catch (IOException e) {
-            log.error("Error deploying application {} ", this);
+            log.error("Error updating the application artifact {} in {} ", artifact, this);
             throw Exceptions.propagate(e);
         }
     }
 
-    public void startApplication(String applicationName) {
-        client.startApplication(applicationName);
+    public StartingInfo startApplication(String applicationName) {
+        return getClient().startApplication(applicationName);
     }
 
     public void setEnv(String applicationName, Map<Object, Object> envs) {
         //TODO
-        client.getApplication(applicationName).setEnv(envs);
+        getClient().getApplication(applicationName).setEnv(envs);
     }
 
     public void stop(String applicationName) {
         //TODO
-        client.stopApplication(applicationName);
+        getClient().stopApplication(applicationName);
+    }
+
+    public void restart(String applicationName) {
+        //TODO
     }
 
 }

@@ -32,15 +32,16 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     private CloudFoundryPaasClient client;
 
+    public CloudFoundryPaasLocation() {
+        client = new CloudFoundryPaasClient(this);
+    }
+
     @Override
     public void init() {
         super.init();
     }
 
     protected CloudFoundryPaasClient getClient() {
-        if (client == null) {
-            client = new CloudFoundryPaasClient(this);
-        }
         return client;
     }
 
@@ -49,12 +50,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return "cloudfoundry";
     }
 
-    /**
-     * Deploy an application in the cloud through client and retrieves the application domain.
-     *
-     * @param params contains the params to deploy and configure the application in the cloud.
-     * @return the application domain.
-     */
     public String deploy(Map<?, ?> params) {
         return getClient().deploy(params);
     }
