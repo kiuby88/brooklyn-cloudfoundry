@@ -31,7 +31,6 @@ import static org.testng.AssertJUnit.assertFalse;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
@@ -53,22 +52,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
-
-    protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
-    protected static final String APPLICATION_ARTIFACT_NAME =
-            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
-    protected final String APPLICATION_ARTIFACT_URL =
-            getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
-
-    private static final String DOMAIN = "brooklyndomain.io";
-    private static final String DEFAULT_APPLICATION_DOMAIN
-            = APPLICATION_NAME + "." + DOMAIN;
-    private static final String DEFAULT_APPLICATION_ADDRESS
-            = "https://" + DEFAULT_APPLICATION_DOMAIN;
-
-    private static final int MEMORY = 512;
-    private static final int INSTANCES = 1;
-    private static final int DISK = 1024;
 
     @Mock
     private CloudFoundryClient cloudFoundryClient;

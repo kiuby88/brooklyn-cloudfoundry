@@ -158,7 +158,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void deploy() {
-        Map<String, Object> params = this.config().getBag().getAllConfig();
+        Map<String, Object> params = MutableMap.copyOf(this.config().getBag().getAllConfig());
         params.put(APPLICATION_NAME.getName(), applicationName);
         applicationUrl = cfLocation.deploy(params);
     }
@@ -321,6 +321,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     public void destroy() {
         super.destroy();
         disconnectSensors();
+        getCloudFoundryLocation().delete(applicationName);
     }
 
     protected CloudFoundryPaasLocation getCloudFoundryLocation() {

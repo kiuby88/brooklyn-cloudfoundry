@@ -25,11 +25,8 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
-import org.apache.brooklyn.core.internal.BrooklynProperties;
-import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
-import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
-import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -42,33 +39,14 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-public class CloudFoundryPaasClientLiveTest extends BrooklynAppLiveTestSupport {
+public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest {
 
-    protected static final String APPLICATION_NAME_PREFIX = "test-brooklyn-app";
-
-    protected static final String APPLICATION_ARTIFACT_NAME =
-            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
-    protected final String APPLICATION_ARTIFACT_URL =
-            getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
-
-    private static final String DEFAULT_DOMAIN = "cfapps.io";
-
-    protected final String LOCATION_SPEC_NAME = "cloudfoundry-instance";
-    protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
-
-    private static final int MEMORY = 512;
-    private static final int INSTANCES = 1;
-    private static final int DISK = 1024;
-
-    protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
     private CloudFoundryPaasClient cloudFoundryPaasClient;
     private String applicationName;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        mgmt = newLocalManagementContext();
-        cloudFoundryPaasLocation = newSampleCloudFoundryLocationForTesting(LOCATION_SPEC_NAME);
         cloudFoundryPaasClient = new CloudFoundryPaasClient(cloudFoundryPaasLocation);
 
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
@@ -146,14 +124,6 @@ public class CloudFoundryPaasClientLiveTest extends BrooklynAppLiveTestSupport {
                 assertFalse(cloudFoundryPaasClient.isDeployed(applicationName));
             }
         });
-    }
-
-    protected CloudFoundryPaasLocation newSampleCloudFoundryLocationForTesting(String spec) {
-        return (CloudFoundryPaasLocation) mgmt.getLocationRegistry().resolve(spec);
-    }
-
-    protected LocalManagementContext newLocalManagementContext() {
-        return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
     }
 
     private ConfigBag getDefaultResourcesProfile() {
