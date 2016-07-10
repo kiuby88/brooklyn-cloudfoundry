@@ -98,7 +98,9 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_DOMAIN));
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
 
-        when(cloudFoundryClient.getDomains()).thenReturn(MutableList.<CloudDomain>of());
+        CloudDomain cloudDomain = mock(CloudDomain.class);
+        when(cloudDomain.getName()).thenReturn(DOMAIN);
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(cloudDomain));
 
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
@@ -111,8 +113,8 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
     }
 
-    @Test
-    public void testDeployApplicationWithExistentDomain() throws IOException {
+    @Test(expectedExceptions = RuntimeException.class)
+    public void testDeployApplicationWithNonExistentDomain() throws IOException {
         doNothing().when(cloudFoundryClient).
                 createApplication(
                         Matchers.anyString(),
@@ -127,15 +129,10 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_DOMAIN));
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
 
-        CloudDomain cloudDomain = mock(CloudDomain.class);
-        when(cloudDomain.getName()).thenReturn(DOMAIN);
-        when(cloudFoundryClient.getDomains()).thenReturn(MutableList.of(cloudDomain));
+        when(cloudFoundryClient.getDomains()).thenReturn(MutableList.<CloudDomain>of());
 
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
         params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20));
 
         String applicationDomain = client.deploy(params.getAllConfig());
 

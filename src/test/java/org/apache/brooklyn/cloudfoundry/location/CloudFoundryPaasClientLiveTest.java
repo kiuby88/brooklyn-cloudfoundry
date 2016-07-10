@@ -42,17 +42,16 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport {
+public class CloudFoundryPaasClientLiveTest extends BrooklynAppLiveTestSupport {
 
-    protected static final String APPLICATION_NAME = "test-brooklyn-app" + UUID.randomUUID()
-            .toString().substring(0, 8);
+    protected static final String APPLICATION_NAME_PREFIX = "test-brooklyn-app";
 
     protected static final String APPLICATION_ARTIFACT_NAME =
             "brooklyn-example-hello-world-sql-webapp-in-paas.war";
     protected final String APPLICATION_ARTIFACT_URL =
             getClasspathUrlForResource(APPLICATION_ARTIFACT_NAME);
 
-    private static final String DEFAULT_DOMAIN = "brooklyndomain.io";
+    private static final String DEFAULT_DOMAIN = "cfapps.io";
 
     protected final String LOCATION_SPEC_NAME = "cloudfoundry-instance";
     protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
@@ -63,6 +62,7 @@ public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
     private CloudFoundryPaasClient cloudFoundryPaasClient;
+    private String applicationName;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -70,12 +70,15 @@ public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport
         mgmt = newLocalManagementContext();
         cloudFoundryPaasLocation = newSampleCloudFoundryLocationForTesting(LOCATION_SPEC_NAME);
         cloudFoundryPaasClient = new CloudFoundryPaasClient(cloudFoundryPaasLocation);
+
+        applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
+                .toString().substring(0, 8);
     }
 
     @Test(groups = {"Live"})
     public void testWebApplicationDeployment() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
         params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
         params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
@@ -83,26 +86,29 @@ public class CloudFoundryPaasLocationLiveTest extends BrooklynAppLiveTestSupport
         String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
 
         assertFalse(Strings.isBlank(applicationUrl));
-        testStartApplication(APPLICATION_NAME, applicationUrl);
+        testStartApplication(applicationName, applicationUrl);
+
+        cloudFoundryPaasClient.deleteApplication(applicationName);
     }
 
     @Test(groups = {"Live"})
     public void testWebApplicationDeploymentWithoutDomain() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
         params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
 
         assertFalse(Strings.isBlank(applicationUrl));
-        testStartApplication(APPLICATION_NAME, applicationUrl);
+        testStartApplication(applicationName, applicationUrl);
+        //cloudFoundryPaasClient.deleteApplication(applicationName);
     }
 
     private void testStartApplication(final String applicationName, final String applicationDomain) {
         cloudFoundryPaasLocation.startApplication(applicationName);
 
-        Map<String, ?> flags = ImmutableMap.of("timeout", Duration.ONE_MINUTE);
+        Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
 
         Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {

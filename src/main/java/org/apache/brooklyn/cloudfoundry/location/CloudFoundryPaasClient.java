@@ -49,8 +49,6 @@ import com.google.common.collect.Iterables;
 
 public class CloudFoundryPaasClient {
 
-    private static final String DOMAIN_KEYWORD = "-domain.";
-
     private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
 
 
@@ -106,25 +104,17 @@ public class CloudFoundryPaasClient {
 
     private String inferApplicationRouteUri(ConfigBag config) {
         String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
-        if (!Strings.isBlank(domain)) {
-            createDomainIfNotExist(domain);
-        } else {
+        if (Strings.isBlank(domain)) {
             domain = getClient().getDefaultDomain().getName();
         }
-        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
-                + DOMAIN_KEYWORD
-                + domain;
-    }
-
-    private CloudDomain createDomainIfNotExist(String domain) {
-        if (findDomain(domain) == null) {
-            getClient().addDomain(domain);
+        if(findSharedDomain(domain) == null){
+            throw new RuntimeException("The target shared domain " +domain + " does not exist");
         }
-        return findDomain(domain);
+        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME) + "." + domain;
     }
 
-    private CloudDomain findDomain(final String domainName) {
-        return Iterables.find(getClient().getDomains(), new Predicate<CloudDomain>() {
+    private CloudDomain findSharedDomain(final String domainName) {
+        return Iterables.find(getClient().getSharedDomains(), new Predicate<CloudDomain>() {
             @Override
             public boolean apply(CloudDomain domain) {
                 return domainName.equals(domain.getName());
@@ -175,9 +165,12 @@ public class CloudFoundryPaasClient {
         getClient().getApplication(applicationName).setEnv(envs);
     }
 
-    public void stop(String applicationName) {
-        //TODO
+    public void stopApplication(String applicationName) {
         getClient().stopApplication(applicationName);
+    }
+
+    public void deleteApplication(String applicationName) {
+        getClient().deleteApplication(applicationName);
     }
 
     public void restart(String applicationName) {
