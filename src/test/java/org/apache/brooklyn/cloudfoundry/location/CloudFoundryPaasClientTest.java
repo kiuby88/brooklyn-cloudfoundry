@@ -219,6 +219,22 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         client.startApplication(APPLICATION_NAME);
     }
 
+    @Test
+    public void testGetApplicationStatus() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STARTED);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STARTED);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testGetStateUnexistentApplication() {
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
+
+        client.getApplicationStatus(APPLICATION_NAME);
+    }
+
     private ConfigBag getDefaultResourcesProfile() {
         ConfigBag params = new ConfigBag();
         params.configure(VanillaCloudfoundryApplication.REQUIRED_INSTANCES, INSTANCES);
