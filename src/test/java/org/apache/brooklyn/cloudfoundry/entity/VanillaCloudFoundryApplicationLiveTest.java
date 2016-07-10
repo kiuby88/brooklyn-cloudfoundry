@@ -51,6 +51,17 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
     }
 
     @Test(groups = {"Live"})
+    public void testDeployApplicationWithoutDomain() throws IOException {
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+
+        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+    }
+
+    @Test(groups = {"Live"})
     public void testStopApplication() {
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)

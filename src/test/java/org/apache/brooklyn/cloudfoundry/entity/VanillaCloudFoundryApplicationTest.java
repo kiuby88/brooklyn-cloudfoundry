@@ -92,6 +92,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
         doNothing().when(location).startApplication(anyString());
         doNothing().when(location).stop(anyString());
+        doNothing().when(location).delete(anyString());
         doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
 
         final VanillaCloudfoundryApplication entity =

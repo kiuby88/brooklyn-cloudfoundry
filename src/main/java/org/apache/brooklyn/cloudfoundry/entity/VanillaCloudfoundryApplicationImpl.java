@@ -288,6 +288,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     protected void customStop() {
         cfLocation.stop(applicationName);
+        cfLocation.delete(applicationName);
     }
 
     protected void disconnectSensors() {
