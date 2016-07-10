@@ -23,6 +23,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
@@ -30,9 +32,12 @@ import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.AbstractEntity;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.feed.function.FunctionFeed;
+import org.apache.brooklyn.feed.function.FunctionPollConfig;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
@@ -46,6 +51,7 @@ import org.apache.brooklyn.util.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
 public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implements VanillaCloudfoundryApplication {
@@ -54,9 +60,12 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private CloudFoundryPaasLocation cfLocation;
-    protected boolean connectedSensors = false;
     private String applicationName;
     private String applicationUrl;
+
+    protected boolean connectedSensors = false;
+    private FunctionFeed serviceProcessIsRunning;
+    private FunctionFeed serviceProcessUp;
 
     public VanillaCloudfoundryApplicationImpl() {
         super(MutableMap.of(), null);
@@ -79,6 +88,13 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         initApplicationName();
     }
 
+    private void initApplicationName() {
+        applicationName = getConfig(APPLICATION_NAME);
+        if (Strings.isBlank(applicationName)) {
+            applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
+        }
+    }
+
     @Override
     protected void initEnrichers() {
         super.initEnrichers();
@@ -87,17 +103,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
                         "No information yet on whether this service is running");
     }
 
-    private void initApplicationName() {
-        applicationName = getConfig(APPLICATION_NAME);
-        if (Strings.isBlank(applicationName)) {
-            applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
-        }
-    }
-
-    /**
-     * If custom behaviour is required by sub-classes, consider overriding
-     * {@link #doStart(java.util.Collection)})}.
-     */
     @Override
     public final void start(final Collection<? extends Location> locations) {
         if (DynamicTasks.getTaskQueuingContext() != null) {
@@ -112,10 +117,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    /**
-     * It is the first approach.
-     * It does not start the entity children.
-     */
     protected final void doStart(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         try {
@@ -173,7 +174,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void launch() {
-        //TODO, starting the application
         cfLocation.startApplication(applicationName);
     }
 
@@ -184,12 +184,57 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     protected void postStart() {
-        //waitEntityIsUp
+        Entities.waitForServiceUp(this, Duration.of(
+                getConfig(BrooklynConfigKeys.START_TIMEOUT).toMilliseconds(),
+                TimeUnit.MILLISECONDS));
     }
 
     protected void connectSensors() {
         connectedSensors = true;
-        //TODO connectServiceIsRunning() and connectServiceUp()
+        connectServiceIsRunning();
+        connectServiceUp();
+    }
+
+    protected void connectServiceIsRunning() {
+        serviceProcessIsRunning = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.FIVE_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_PROCESS_IS_RUNNING)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return isRunning();
+                            }
+                        }))
+                .build();
+    }
+
+    protected void connectServiceUp() {
+        serviceProcessUp = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.FIVE_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return isRunning();
+                            }
+                        }))
+                .build();
+    }
+
+    public boolean isRunning() {
+        return isApplicationDomainAvailable();
+    }
+
+    protected boolean isApplicationDomainAvailable() {
+        boolean result;
+        try {
+            result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
     }
 
     @Override
@@ -241,16 +286,30 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         disconnectSensors();
     }
 
-    /**
-     * For disconnecting from the running service. Will be called on stop.
-     */
-    protected void disconnectSensors() {
-        connectedSensors = false;
-        //TODO disconnect
-    }
-
     protected void customStop() {
         cfLocation.stop(applicationName);
+    }
+
+    protected void disconnectSensors() {
+        connectedSensors = false;
+        disconnectServiceIsRunning();
+        disconnectServiceUp();
+    }
+
+    protected void disconnectServiceIsRunning() {
+        if (serviceProcessIsRunning != null) {
+            serviceProcessIsRunning.stop();
+        }
+        sensors().set(SERVICE_PROCESS_IS_RUNNING, null);
+        sensors().remove(SERVICE_PROCESS_IS_RUNNING);
+    }
+
+    protected void disconnectServiceUp() {
+        if (serviceProcessUp != null) {
+            serviceProcessUp.stop();
+        }
+        sensors().set(SERVICE_UP, null);
+        sensors().remove(SERVICE_UP);
     }
 
     @Override
@@ -303,20 +362,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
             ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
             throw new IllegalStateException(msg);
         }
-    }
-
-    public boolean isRunning() {
-        return isApplicationDomainAvailable();
-    }
-
-    protected boolean isApplicationDomainAvailable() {
-        boolean result;
-        try {
-            result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
-        } catch (Exception e) {
-            result = false;
-        }
-        return result;
     }
 
 }
