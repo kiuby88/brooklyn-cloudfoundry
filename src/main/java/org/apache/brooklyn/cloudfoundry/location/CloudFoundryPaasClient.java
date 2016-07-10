@@ -20,6 +20,9 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -31,13 +34,18 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 public class CloudFoundryPaasClient {
 
@@ -59,7 +67,11 @@ public class CloudFoundryPaasClient {
                     new CloudCredentials(
                             location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_IDENTITY),
                             location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_CREDENTIAL));
-            client = new CloudFoundryClient(credentials, null);
+            client = new CloudFoundryClient(credentials,
+                    getTargetURL(location.getConfig(CloudFoundryPaasLocationConfig.CLOUD_ENDPOINT)),
+                    location.getConfig(CloudFoundryPaasLocationConfig.CF_ORG),
+                    location.getConfig(CloudFoundryPaasLocationConfig.CF_SPACE), true);
+
             client.login();
         }
         return client;
@@ -89,17 +101,35 @@ public class CloudFoundryPaasClient {
     }
 
     protected List<String> getUris(ConfigBag config) {
-        return MutableList.of(inferApplicationDomainUri(config));
+        return MutableList.of(inferApplicationRouteUri(config));
     }
 
-    private String inferApplicationDomainUri(ConfigBag config) {
+    private String inferApplicationRouteUri(ConfigBag config) {
         String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
-        if (Strings.isBlank(domain)) {
-            domain = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
-                    + DOMAIN_KEYWORD
-                    + getClient().getDefaultDomain().getName();
+        if (!Strings.isBlank(domain)) {
+            createDomainIfNotExist(domain);
+        } else {
+            domain = getClient().getDefaultDomain().getName();
         }
-        return domain;
+        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME)
+                + DOMAIN_KEYWORD
+                + domain;
+    }
+
+    private CloudDomain createDomainIfNotExist(String domain) {
+        if (findDomain(domain) == null) {
+            getClient().addDomain(domain);
+        }
+        return findDomain(domain);
+    }
+
+    private CloudDomain findDomain(final String domainName) {
+        return Iterables.find(getClient().getDomains(), new Predicate<CloudDomain>() {
+            @Override
+            public boolean apply(CloudDomain domain) {
+                return domainName.equals(domain.getName());
+            }
+        }, null);
     }
 
     private String getLocalPath(String uri) {
@@ -154,4 +184,20 @@ public class CloudFoundryPaasClient {
         //TODO
     }
 
+    public CloudApplication.AppState getApplicationStatus(String applicationName) {
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            return optional.get().getState();
+        } else {
+            throw Exceptions.propagate(new CloudFoundryException(HttpStatus.NOT_FOUND));
+        }
+    }
+
+    private static URL getTargetURL(String target) {
+        try {
+            return URI.create(target).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
+        }
+    }
 }
