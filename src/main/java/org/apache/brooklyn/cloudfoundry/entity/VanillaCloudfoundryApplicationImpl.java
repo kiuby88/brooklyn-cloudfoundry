@@ -89,7 +89,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     private void initApplicationName() {
         applicationName = getConfig(APPLICATION_NAME);
-        if(Strings.isBlank(applicationName)) {
+        if (Strings.isBlank(applicationName)) {
             applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
         }
     }
@@ -167,8 +167,9 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void configureEnv() {
-        Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
-        cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
+        //TODO
+        //Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
+        //cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
     }
 
     private void launch() {

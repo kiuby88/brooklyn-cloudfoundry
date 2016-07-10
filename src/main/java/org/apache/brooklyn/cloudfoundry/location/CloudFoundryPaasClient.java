@@ -107,8 +107,8 @@ public class CloudFoundryPaasClient {
         if (Strings.isBlank(domain)) {
             domain = getClient().getDefaultDomain().getName();
         }
-        if(findSharedDomain(domain) == null){
-            throw new RuntimeException("The target shared domain " +domain + " does not exist");
+        if (findSharedDomain(domain) == null) {
+            throw new RuntimeException("The target shared domain " + domain + " does not exist");
         }
         return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME) + "." + domain;
     }
@@ -144,7 +144,13 @@ public class CloudFoundryPaasClient {
     }
 
     private Optional<CloudApplication> getApplication(String applicationName) {
-        return Optional.fromNullable(getClient().getApplication(applicationName));
+        Optional<CloudApplication> app;
+        try {
+            app = Optional.fromNullable(getClient().getApplication(applicationName));
+        } catch (CloudFoundryException e) {
+            app = Optional.absent();
+        }
+        return app;
     }
 
     public void pushArtifact(String applicationName, String artifact) {
@@ -184,6 +190,10 @@ public class CloudFoundryPaasClient {
         } else {
             throw Exceptions.propagate(new CloudFoundryException(HttpStatus.NOT_FOUND));
         }
+    }
+
+    public boolean isDeployed(String applicationName) {
+        return getApplication(applicationName).isPresent();
     }
 
     private static URL getTargetURL(String target) {

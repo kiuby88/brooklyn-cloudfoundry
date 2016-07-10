@@ -27,6 +27,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.AssertJUnit.assertFalse;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -158,7 +159,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         CloudDomain cloudDomain = mock(CloudDomain.class);
         when(cloudDomain.getName()).thenReturn(DOMAIN);
         when(cloudFoundryClient.getDefaultDomain()).thenReturn(cloudDomain);
-
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(cloudDomain));
 
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
@@ -226,8 +227,49 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test(expectedExceptions = CloudFoundryException.class)
-    public void testGetStateUnexistentApplication() {
+    public void testGetStateNonExistentApplication() {
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
+        client.getApplicationStatus(APPLICATION_NAME);
+    }
+
+    @Test
+    public void testStopApplication() {
+        doNothing().when(client).stopApplication(Matchers.anyString());
+
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STOPPED);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+
+
+        client.stopApplication(APPLICATION_NAME);
+        CloudApplication.AppState state = client
+                .getApplicationStatus(APPLICATION_NAME);
+        assertEquals(state, CloudApplication.AppState.STOPPED);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testStopNonExistentApplication() {
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
+
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(cloudFoundryClient).stopApplication(Matchers.anyString());
+
+        client.stopApplication(APPLICATION_NAME);
+    }
+
+    @Test
+    public void testDeleteApplication() {
+        doNothing().when(cloudFoundryClient).deleteApplication(Matchers.anyString());
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
+
+        client.deleteApplication(APPLICATION_NAME);
+        assertFalse(client.isDeployed(APPLICATION_NAME));
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
+    public void testDeleteNonExistentApplication() {
+        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
+                .when(cloudFoundryClient).stopApplication(Matchers.anyString());
 
         client.getApplicationStatus(APPLICATION_NAME);
     }

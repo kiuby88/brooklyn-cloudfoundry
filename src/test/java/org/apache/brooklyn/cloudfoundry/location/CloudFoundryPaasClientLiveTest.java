@@ -76,37 +76,37 @@ public class CloudFoundryPaasClientLiveTest extends BrooklynAppLiveTestSupport {
     }
 
     @Test(groups = {"Live"})
-    public void testWebApplicationDeployment() throws Exception {
+    public void testWebApplicationManagement() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
         params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
         params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
-
-        assertFalse(Strings.isBlank(applicationUrl));
-        testStartApplication(applicationName, applicationUrl);
-
-        cloudFoundryPaasClient.deleteApplication(applicationName);
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
 
     @Test(groups = {"Live"})
-    public void testWebApplicationDeploymentWithoutDomain() throws Exception {
+    public void testWebApplicationManagementWithoutDomain() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
         params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
-
-        assertFalse(Strings.isBlank(applicationUrl));
-        testStartApplication(applicationName, applicationUrl);
-        //cloudFoundryPaasClient.deleteApplication(applicationName);
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
 
-    private void testStartApplication(final String applicationName, final String applicationDomain) {
-        cloudFoundryPaasLocation.startApplication(applicationName);
+    private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
+        String applicationUrl = cloudFoundryPaasClient.deploy(params);
+        assertFalse(Strings.isBlank(applicationUrl));
+
+        startApplication(applicationName, applicationUrl);
+        stopApplication(applicationName, applicationUrl);
+        deleteApplicatin(applicationName);
+    }
+
+    private void startApplication(final String applicationName, final String applicationDomain) {
+        cloudFoundryPaasClient.startApplication(applicationName);
 
         Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
 
@@ -119,6 +119,31 @@ public class CloudFoundryPaasClientLiveTest extends BrooklynAppLiveTestSupport {
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
                 }
+            }
+        });
+    }
+
+    private void stopApplication(final String applicationName, final String applicationDomain) {
+        cloudFoundryPaasClient.stopApplication(applicationName);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                try {
+                    assertEquals(HttpTool.getHttpStatusCode(applicationDomain),
+                            HttpURLConnection.HTTP_NOT_FOUND);
+                    assertEquals(cloudFoundryPaasClient.getApplicationStatus(applicationName),
+                            CloudApplication.AppState.STOPPED);
+                } catch (Exception e) {
+                    throw Exceptions.propagate(e);
+                }
+            }
+        });
+    }
+
+    private void deleteApplicatin(final String applicationName) {
+        cloudFoundryPaasClient.deleteApplication(applicationName);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertFalse(cloudFoundryPaasClient.isDeployed(applicationName));
             }
         });
     }
