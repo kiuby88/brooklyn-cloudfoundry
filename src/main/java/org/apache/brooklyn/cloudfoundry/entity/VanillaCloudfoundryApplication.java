@@ -18,7 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-
+import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -35,6 +35,7 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
+@Catalog(name = "Vanilla CloudFoundry Application")
 @ImplementedBy(VanillaCloudfoundryApplicationImpl.class)
 public interface VanillaCloudfoundryApplication extends Entity, Startable {
 
@@ -45,7 +46,6 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
     @SetFromFlag("path")
     ConfigKey<String> ARTIFACT_PATH = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.artifact", "URI of the application");
-
 
     @SetFromFlag("buildpack")
     ConfigKey<String> BUILDPACK = ConfigKeys.newStringConfigKey(
@@ -86,6 +86,5 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
             "Whether the process for the service is confirmed as running");
 
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
-
 
 }

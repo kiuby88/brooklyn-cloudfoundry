@@ -18,7 +18,6 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Collection;
@@ -26,8 +25,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.AbstractEntity;
@@ -36,12 +38,15 @@ import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.feed.function.FunctionFeed;
 import org.apache.brooklyn.feed.function.FunctionPollConfig;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.http.HttpTool;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
@@ -120,7 +125,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     protected final void doStart(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         try {
-            preStart(locations);
+            preStart(findLocation(locations));
             customStart();
             log.info("Entity {} was started", new Object[]{this});
             connectSensors();
@@ -134,8 +139,8 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    protected void preStart(Collection<? extends Location> locations) {
-        this.addLocations(locations);
+    protected void preStart(Location location) {
+        this.addLocations(MutableList.of(location));
         if (getLocationOrNull() != null) {
             cfLocation = getLocationOrNull();
         } else {
@@ -144,7 +149,28 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    //Probably it would be better an Optional object
+    /*
+     * TODO: avoiding boilerplate code
+     * This method is a copy of getLocations in MachineLifecycleEffectorTasks
+     */
+    protected Location findLocation(@Nullable Collection<? extends Location> locations) {
+        if (locations == null || locations.isEmpty()) {
+            locations = this.getLocations();
+        }
+
+        locations = Locations.getLocationsCheckingAncestors(locations, this);
+
+        Maybe<MachineLocation> ml = Locations.findUniqueMachineLocation(locations);
+        if (ml.isPresent()) return ml.get();
+
+        if (locations.isEmpty())
+            throw new IllegalArgumentException("No locations specified when starting " + this);
+        if (locations.size() != 1 || Iterables.getOnlyElement(locations) == null)
+            throw new IllegalArgumentException("Ambiguous locations detected when starting " + this + ": " + locations);
+        return Iterables.getOnlyElement(locations);
+    }
+
+    //TODO: Probably it would be better an Optional object
     private CloudFoundryPaasLocation getLocationOrNull() {
         return Iterables.get(Iterables
                 .filter(getLocations(), CloudFoundryPaasLocation.class), 0, null);
