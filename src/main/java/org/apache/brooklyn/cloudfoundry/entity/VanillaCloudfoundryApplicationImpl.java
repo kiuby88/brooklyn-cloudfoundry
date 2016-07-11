@@ -18,35 +18,62 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-
+import java.io.File;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.core.entity.AbstractEntity;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.location.Locations;
+import org.apache.brooklyn.feed.function.FunctionFeed;
+import org.apache.brooklyn.feed.function.FunctionPollConfig;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.text.Identifiers;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.CountdownTimer;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
 public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implements VanillaCloudfoundryApplication {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaCloudfoundryApplicationImpl.class);
+    private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private CloudFoundryPaasLocation cfLocation;
-    protected boolean connectedSensors = false;
     private String applicationName;
-    private String domain;
+    private String applicationUrl;
+
+    protected boolean connectedSensors = false;
+    private FunctionFeed serviceProcessIsRunning;
+    private FunctionFeed serviceProcessUp;
 
     public VanillaCloudfoundryApplicationImpl() {
         super(MutableMap.of(), null);
@@ -66,12 +93,24 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     public void init() {
         super.init();
+        initApplicationName();
     }
 
-    /**
-     * If custom behaviour is required by sub-classes, consider overriding
-     * {@link #doStart(java.util.Collection)})}.
-     */
+    private void initApplicationName() {
+        applicationName = getConfig(APPLICATION_NAME);
+        if (Strings.isBlank(applicationName)) {
+            applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
+        }
+    }
+
+    @Override
+    protected void initEnrichers() {
+        super.initEnrichers();
+        ServiceStateLogic.ServiceNotUpLogic
+                .updateNotUpIndicator(this, SERVICE_PROCESS_IS_RUNNING,
+                        "No information yet on whether this service is running");
+    }
+
     @Override
     public final void start(final Collection<? extends Location> locations) {
         if (DynamicTasks.getTaskQueuingContext() != null) {
@@ -86,14 +125,10 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    /**
-     * It is the first approach.
-     * It does not start the entity children.
-     */
     protected final void doStart(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         try {
-            preStart(locations);
+            preStart(findLocation(locations));
             customStart();
             log.info("Entity {} was started", new Object[]{this});
             connectSensors();
@@ -107,8 +142,8 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    protected void preStart(Collection<? extends Location> locations) {
-        this.addLocations(locations);
+    protected void preStart(Location location) {
+        this.addLocations(MutableList.of(location));
         if (getLocationOrNull() != null) {
             cfLocation = getLocationOrNull();
         } else {
@@ -117,7 +152,28 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    //Probably it would be better an Optional object
+    /*
+     * TODO: avoiding boilerplate code
+     * This method is a copy of getLocations in MachineLifecycleEffectorTasks
+     */
+    protected Location findLocation(@Nullable Collection<? extends Location> locations) {
+        if (locations == null || locations.isEmpty()) {
+            locations = this.getLocations();
+        }
+
+        locations = Locations.getLocationsCheckingAncestors(locations, this);
+
+        Maybe<MachineLocation> ml = Locations.findUniqueMachineLocation(locations);
+        if (ml.isPresent()) return ml.get();
+
+        if (locations.isEmpty())
+            throw new IllegalArgumentException("No locations specified when starting " + this);
+        if (locations.size() != 1 || Iterables.getOnlyElement(locations) == null)
+            throw new IllegalArgumentException("Ambiguous locations detected when starting " + this + ": " + locations);
+        return Iterables.getOnlyElement(locations);
+    }
+
+    //TODO: Probably it would be better an Optional object
     private CloudFoundryPaasLocation getLocationOrNull() {
         return Iterables.get(Iterables
                 .filter(getLocations(), CloudFoundryPaasLocation.class), 0, null);
@@ -131,9 +187,12 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void deploy() {
-        //TODO deploy application
-        Map<?, ?> params = null;  //params has to contain applicationName, buildpack, path, etc.
-        domain = cfLocation.deploy(params);
+        Map<String, Object> params = MutableMap.copyOf(this.config().getBag().getAllConfig());
+        params.put(APPLICATION_NAME.getName(), applicationName);
+        if(params.containsKey(ARTIFACT_PATH.getName())) {
+            params.put(ARTIFACT_PATH.getName(), getLocalPath((String) params.get(ARTIFACT_PATH.getName())));
+        }
+        applicationUrl = cfLocation.deploy(params);
     }
 
     private void preLaunch() {
@@ -141,28 +200,73 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     private void configureEnv() {
-        Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
-        cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
+        //TODO
+        //Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
+        //cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
     }
 
     private void launch() {
-        //TODO, starting the application
         cfLocation.startApplication(applicationName);
     }
 
     private void postLaunch() {
-        //waitForEntityStart();
-        //sensors().set(Attributes.MAIN_URI, domain);
-        sensors().set(VanillaCloudfoundryApplication.ROOT_URL, domain);
+        waitForEntityStart();
+        sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
+        sensors().set(VanillaCloudfoundryApplication.ROOT_URL, applicationUrl);
     }
 
     protected void postStart() {
-        //waitEntityIsUp
+        Entities.waitForServiceUp(this, Duration.of(
+                getConfig(BrooklynConfigKeys.START_TIMEOUT).toMilliseconds(),
+                TimeUnit.MILLISECONDS));
     }
 
     protected void connectSensors() {
         connectedSensors = true;
-        //TODO connectServiceIsRunning() and connectServiceUp()
+        connectServiceIsRunning();
+        connectServiceUp();
+    }
+
+    protected void connectServiceIsRunning() {
+        serviceProcessIsRunning = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.FIVE_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_PROCESS_IS_RUNNING)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return isRunning();
+                            }
+                        }))
+                .build();
+    }
+
+    protected void connectServiceUp() {
+        serviceProcessUp = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.FIVE_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return isRunning();
+                            }
+                        }))
+                .build();
+    }
+
+    public boolean isRunning() {
+        return isApplicationDomainAvailable();
+    }
+
+    protected boolean isApplicationDomainAvailable() {
+        boolean result;
+        try {
+            result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
     }
 
     @Override
@@ -214,16 +318,31 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         disconnectSensors();
     }
 
-    /**
-     * For disconnecting from the running service. Will be called on stop.
-     */
-    protected void disconnectSensors() {
-        connectedSensors = false;
-        //TODO disconnect
-    }
-
     protected void customStop() {
         cfLocation.stop(applicationName);
+        cfLocation.delete(applicationName);
+    }
+
+    protected void disconnectSensors() {
+        connectedSensors = false;
+        disconnectServiceIsRunning();
+        disconnectServiceUp();
+    }
+
+    protected void disconnectServiceIsRunning() {
+        if (serviceProcessIsRunning != null) {
+            serviceProcessIsRunning.stop();
+        }
+        sensors().set(SERVICE_PROCESS_IS_RUNNING, null);
+        sensors().remove(SERVICE_PROCESS_IS_RUNNING);
+    }
+
+    protected void disconnectServiceUp() {
+        if (serviceProcessUp != null) {
+            serviceProcessUp.stop();
+        }
+        sensors().set(SERVICE_UP, null);
+        sensors().remove(SERVICE_UP);
     }
 
     @Override
@@ -235,10 +354,60 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     public void destroy() {
         super.destroy();
         disconnectSensors();
+        getCloudFoundryLocation().delete(applicationName);
     }
 
     protected CloudFoundryPaasLocation getCloudFoundryLocation() {
         return cfLocation;
     }
 
+
+    private void waitForEntityStart() {
+        if (log.isDebugEnabled()) {
+            log.debug("waiting to ensure {} doesn't abort prematurely", this);
+        }
+        Duration startTimeout = getConfig(START_TIMEOUT);
+        CountdownTimer timer = startTimeout.countdownTimer();
+        boolean isRunningResult = false;
+        long delay = 100;
+        while (!isRunningResult && !timer.isExpired()) {
+            Time.sleep(delay);
+            try {
+                isRunningResult = isRunning();
+            } catch (Exception e) {
+                ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+                // provide extra context info, as we're seeing this happen in strange circumstances
+                throw new IllegalStateException("Error detecting whether " + this +
+                        " is running: " + e, e);
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("checked {}, is running returned: {}", this, isRunningResult);
+            }
+            // slow exponential delay -- 1.1^N means after 40 tries and 50s elapsed, it reaches
+            // the max of 5s intervals
+            // TODO use Repeater
+            delay = Math.min(delay * 11 / 10, 5000);
+        }
+        if (!isRunningResult) {
+            String msg = "Software process entity " + this + " did not pass is-running " +
+                    "check within the required " + startTimeout + " limit (" +
+                    timer.getDurationElapsed().toStringRounded() + " elapsed)";
+            log.warn(msg + " (throwing)");
+            ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    private String getLocalPath(String uri) {
+        try {
+            File war;
+            war = LocalResourcesDownloader
+                    .downloadResourceInLocalDir(uri);
+            return war.getCanonicalPath();
+        } catch (IOException e) {
+            log.error("Error obtaining local path in {} for artifact {}", this, uri);
+            throw Exceptions.propagate(e);
+        }
+    }
+    
 }
