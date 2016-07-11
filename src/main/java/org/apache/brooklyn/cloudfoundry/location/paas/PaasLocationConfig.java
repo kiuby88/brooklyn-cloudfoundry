@@ -34,19 +34,4 @@ public interface PaasLocationConfig {
     @SetFromFlag("endpoint")
     public static ConfigKey<String> CLOUD_ENDPOINT = LocationConfigKeys.CLOUD_ENDPOINT;
 
-    @SetFromFlag("instances")
-    ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
-            "paas.profile.instances", "Number of instances of the application", 1);
-
-    @SetFromFlag("memory")
-    ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
-            "paas.profile.memory", "Memory allocated for the application (MB)", 512);
-
-    @SetFromFlag("disk_quota")
-    ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
-            "paas.profile.disk", "Disk size allocated for the application (MB)", 1024);
-
-
-
-
 }
