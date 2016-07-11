@@ -163,9 +163,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
         locations = Locations.getLocationsCheckingAncestors(locations, this);
 
-        Maybe<MachineLocation> ml = Locations.findUniqueMachineLocation(locations);
-        if (ml.isPresent()) return ml.get();
-
         if (locations.isEmpty())
             throw new IllegalArgumentException("No locations specified when starting " + this);
         if (locations.size() != 1 || Iterables.getOnlyElement(locations) == null)
