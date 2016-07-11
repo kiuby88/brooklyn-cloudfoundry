@@ -59,15 +59,15 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.domain", "Domain for the application");
 
-    @SetFromFlag("cloudfoundry.instances")
+    @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.instances", "Number of instances of the application", 1);
 
-    @SetFromFlag("cloudfoundry.instances")
+    @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.memory", "Memory allocated for the application (MB)", 512);
 
-    @SetFromFlag("cloudfoundry.instances")
+    @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
 
