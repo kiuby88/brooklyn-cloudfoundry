@@ -18,7 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-
+import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -35,6 +35,7 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
+@Catalog(name = "Vanilla CloudFoundry Application")
 @ImplementedBy(VanillaCloudfoundryApplicationImpl.class)
 public interface VanillaCloudfoundryApplication extends Entity, Startable {
 
@@ -46,7 +47,6 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
     ConfigKey<String> ARTIFACT_PATH = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.artifact", "URI of the application");
 
-
     @SetFromFlag("buildpack")
     ConfigKey<String> BUILDPACK = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.buildpack", "Buildpack to deploy an application");
@@ -54,6 +54,22 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
     @SetFromFlag("env")
     MapConfigKey<String> ENVS = new MapConfigKey<String>(String.class, "cloudfoundry.application.env",
             "Enviroment variables for the application", MutableMap.<String, String>of());
+
+    @SetFromFlag("domain")
+    ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
+            "cloudFoundry.application.domain", "Domain for the application");
+
+    @SetFromFlag("instances")
+    ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
+            "cloudfoundry.profile.instances", "Number of instances of the application", 1);
+
+    @SetFromFlag("instances")
+    ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
+            "cloudfoundry.profile.memory", "Memory allocated for the application (MB)", 512);
+
+    @SetFromFlag("instances")
+    ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
+            "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
 
     @SetFromFlag("startTimeout")
     ConfigKey<Duration> START_TIMEOUT = BrooklynConfigKeys.START_TIMEOUT;
@@ -70,6 +86,5 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
             "Whether the process for the service is confirmed as running");
 
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
-
 
 }

@@ -19,65 +19,173 @@
 package org.apache.brooklyn.cloudfoundry.location;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudDomain;
+import org.cloudfoundry.client.lib.domain.Staging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 public class CloudFoundryPaasClient {
+
+    private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
+
 
     private final CloudFoundryPaasLocation location;
     private CloudFoundryClient client;
 
     public CloudFoundryPaasClient(CloudFoundryPaasLocation location) {
         this.location = location;
-        setUpClient();
     }
 
-    private void setUpClient() {
+    protected CloudFoundryClient getClient() {
         if (client == null) {
             CloudCredentials credentials =
                     new CloudCredentials(
                             location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_IDENTITY),
                             location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_CREDENTIAL));
-            client = new CloudFoundryClient(credentials, null);
+            client = new CloudFoundryClient(credentials,
+                    getTargetURL(location.getConfig(CloudFoundryPaasLocationConfig.CLOUD_ENDPOINT)),
+                    location.getConfig(CloudFoundryPaasLocationConfig.CF_ORG),
+                    location.getConfig(CloudFoundryPaasLocationConfig.CF_SPACE), true);
+
             client.login();
         }
+        return client;
     }
 
     public String deploy(Map<?, ?> params) {
-        String domain;
-        //TODO using client to deploy application
-        //client.createApplication(applicationName, buildpack, memory, disk,...)
-        //pushArtifact(applicationName, artifact);
+        ConfigBag appSetUp = ConfigBag.newInstance(params);
+        String artifactLocalPath = appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH);
+        String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
 
-        //returns the domain of the deployed application
-        return null;
+        getClient().createApplication(applicationName, getStaging(appSetUp),
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_DISK),
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
+                getUris(appSetUp), null);
+
+        getClient().updateApplicationInstances(applicationName,
+                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+
+        pushArtifact(applicationName, artifactLocalPath);
+        return getDomainUri(applicationName);
+    }
+
+    protected Staging getStaging(ConfigBag config) {
+        String buildpack = config.get(VanillaCloudfoundryApplication.BUILDPACK);
+        return new Staging(null, buildpack);
+    }
+
+    protected List<String> getUris(ConfigBag config) {
+        return MutableList.of(inferApplicationRouteUri(config));
+    }
+
+    private String inferApplicationRouteUri(ConfigBag config) {
+        String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
+        if (Strings.isBlank(domain)) {
+            domain = getClient().getDefaultDomain().getName();
+        }
+        if (findSharedDomain(domain) == null) {
+            throw new RuntimeException("The target shared domain " + domain + " does not exist");
+        }
+        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME) + "." + domain;
+    }
+
+    private CloudDomain findSharedDomain(final String domainName) {
+        return Iterables.find(getClient().getSharedDomains(), new Predicate<CloudDomain>() {
+            @Override
+            public boolean apply(CloudDomain domain) {
+                return domainName.equals(domain.getName());
+            }
+        }, null);
+    }
+
+    private String getDomainUri(String applicationName) {
+        String domainUri = null;
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            domainUri = "https://" + optional.get().getUris().get(0);
+        }
+        return domainUri;
+    }
+
+    private Optional<CloudApplication> getApplication(String applicationName) {
+        Optional<CloudApplication> app;
+        try {
+            app = Optional.fromNullable(getClient().getApplication(applicationName));
+        } catch (CloudFoundryException e) {
+            app = Optional.absent();
+        }
+        return app;
     }
 
     public void pushArtifact(String applicationName, String artifact) {
-        //TODO
         try {
-
-            client.uploadApplication(applicationName, artifact);
-
+            getClient().uploadApplication(applicationName, artifact);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error updating the application artifact {} in {} ", artifact, this);
+            throw Exceptions.propagate(e);
         }
     }
 
-    public void startApplication(String applicationName) {
-        client.startApplication(applicationName);
+    public StartingInfo startApplication(String applicationName) {
+        return getClient().startApplication(applicationName);
     }
 
     public void setEnv(String applicationName, Map<Object, Object> envs) {
         //TODO
-        client.getApplication(applicationName).setEnv(envs);
+        getClient().getApplication(applicationName).setEnv(envs);
     }
 
-    public void stop(String applicationName) {
+    public void stopApplication(String applicationName) {
+        getClient().stopApplication(applicationName);
+    }
+
+    public void deleteApplication(String applicationName) {
+        getClient().deleteApplication(applicationName);
+    }
+
+    public void restart(String applicationName) {
         //TODO
-        client.stopApplication(applicationName);
     }
 
+    public CloudApplication.AppState getApplicationStatus(String applicationName) {
+        Optional<CloudApplication> optional = getApplication(applicationName);
+        if (optional.isPresent()) {
+            return optional.get().getState();
+        } else {
+            throw Exceptions.propagate(new CloudFoundryException(HttpStatus.NOT_FOUND));
+        }
+    }
+
+    public boolean isDeployed(String applicationName) {
+        return getApplication(applicationName).isPresent();
+    }
+
+    private static URL getTargetURL(String target) {
+        try {
+            return URI.create(target).toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
+        }
+    }
 }
