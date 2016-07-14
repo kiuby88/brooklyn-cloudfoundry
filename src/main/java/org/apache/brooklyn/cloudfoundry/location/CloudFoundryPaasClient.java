@@ -18,7 +18,6 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
-import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -77,8 +75,7 @@ public class CloudFoundryPaasClient {
 
     public String deploy(Map<?, ?> params) {
         ConfigBag appSetUp = ConfigBag.newInstance(params);
-        String artifactLocalPath =
-                getLocalPath(appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH));
+        String artifactLocalPath = appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH);
         String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
 
         getClient().createApplication(applicationName, getStaging(appSetUp),
@@ -120,18 +117,6 @@ public class CloudFoundryPaasClient {
                 return domainName.equals(domain.getName());
             }
         }, null);
-    }
-
-    private String getLocalPath(String uri) {
-        try {
-            File war;
-            war = LocalResourcesDownloader
-                    .downloadResourceInLocalDir(uri);
-            return war.getCanonicalPath();
-        } catch (IOException e) {
-            log.error("Error obtaining local path in {} for artifact {}", this, uri);
-            throw Exceptions.propagate(e);
-        }
     }
 
     private String getDomainUri(String applicationName) {

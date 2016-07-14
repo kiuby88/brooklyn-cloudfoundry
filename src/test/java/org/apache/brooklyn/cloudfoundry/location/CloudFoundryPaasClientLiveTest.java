@@ -22,6 +22,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
 import java.net.HttpURLConnection;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,6 +45,7 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
 
     private CloudFoundryPaasClient cloudFoundryPaasClient;
     private String applicationName;
+    private String artifactLocalPath;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -51,13 +54,15 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
 
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
+        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT_NAME);
+
     }
 
     @Test(groups = {"Live"})
     public void testWebApplicationManagement() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
@@ -68,7 +73,7 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     public void testWebApplicationManagementWithoutDomain() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
@@ -134,8 +139,13 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         return params;
     }
 
-    public String getClasspathUrlForResource(String resourceName) {
-        return "classpath://" + resourceName;
+    @SuppressWarnings("unchecked")
+    public String getLocalPath(String filename) {
+        try {
+            return Paths.get(getClass().getClassLoader().getResource(filename).toURI()).toString();
+        } catch (URISyntaxException e) {
+            return "";
+        }
     }
 
 }

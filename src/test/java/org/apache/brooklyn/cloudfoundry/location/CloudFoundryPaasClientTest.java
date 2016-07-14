@@ -165,10 +165,14 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
                         Matchers.anyListOf(String.class),
                         Matchers.anyListOf(String.class));
 
+        CloudDomain cloudDomain = mock(CloudDomain.class);
+        when(cloudDomain.getName()).thenReturn(DOMAIN);
+        when(cloudFoundryClient.getDefaultDomain()).thenReturn(cloudDomain);
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(cloudDomain));
+
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
         params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, Strings.makeRandomId(10));
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN);
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20));
 
         doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
@@ -263,6 +267,11 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         params.configure(VanillaCloudfoundryApplication.REQUIRED_MEMORY, MEMORY);
         params.configure(VanillaCloudfoundryApplication.REQUIRED_DISK, DISK);
         return params;
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getLocalPath(String filename) {
+        return getClass().getClassLoader().getResource(filename).toString();
     }
 
 }
