@@ -18,22 +18,24 @@
 #
 name: Vanilla CloudFoundry example
 location:
-    cloudfoundry:
-      user: user@mail.com
-      password: secret
-      org: secret_organization
-      endpoint: https://api.run.secret.io
-      space: development
-      address: run.secret.io
-      memory: 1024
-      disk_quota: 10
-      instances: 1
-
+  cloudfoundry:
+    user: user@mail.com
+    password: secret
+    org: secret_organization
+    endpoint: https://api.run.secret.io
+    space: development
+    address: run.secret.io
+    memory: 1024
+    disk_quota: 10
+    instances: 1
 services:
 - type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication
-  config:
-      name: vanilla-example
-      path: https://www.server.com/exmpale?dl=1
-      buildpack: https://github.com/cloudfoundry/java-buildpack.git
-  env:
-    env1: value1
+  id: vanilla-app
+  brooklyn.config:
+    name: vanilla-cf-app-example
+    path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
+    buildpack: https://github.com/cloudfoundry/java-buildpack.git
+    domain: cfapps.io
+    memory: 512
+    disk_quota: 2048
+    instances: 1
