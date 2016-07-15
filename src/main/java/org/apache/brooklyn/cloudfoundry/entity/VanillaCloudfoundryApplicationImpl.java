@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
@@ -49,13 +48,11 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.repeat.Repeater;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
-import org.apache.brooklyn.util.time.CountdownTimer;
 import org.apache.brooklyn.util.time.Duration;
-import org.apache.brooklyn.util.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +183,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     private void deploy() {
         Map<String, Object> params = MutableMap.copyOf(this.config().getBag().getAllConfig());
         params.put(APPLICATION_NAME.getName(), applicationName);
-        if(params.containsKey(ARTIFACT_PATH.getName())) {
+        if (params.containsKey(ARTIFACT_PATH.getName())) {
             params.put(ARTIFACT_PATH.getName(), getLocalPath((String) params.get(ARTIFACT_PATH.getName())));
         }
         applicationUrl = cfLocation.deploy(params);
@@ -257,11 +254,11 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     protected boolean isApplicationDomainAvailable() {
-        boolean result;
+        boolean result = false;
         try {
             result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
         } catch (Exception e) {
-            result = false;
+            log.warn("Application " + applicationName + "is not available yet for entity " + this);
         }
         return result;
     }
@@ -286,7 +283,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
      * {@link org.apache.brooklyn.util.core.task.DynamicTasks#queue(String, java.util.concurrent.Callable)}.
      */
     protected final void doStop() {
-
         log.info("Stopping {} in {}", new Object[]{this, getLocationOrNull()});
 
         if (getAttribute(SERVICE_STATE_ACTUAL)
@@ -364,31 +360,21 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
             log.debug("waiting to ensure {} doesn't abort prematurely", this);
         }
         Duration startTimeout = getConfig(START_TIMEOUT);
-        CountdownTimer timer = startTimeout.countdownTimer();
-        boolean isRunningResult = false;
-        long delay = 100;
-        while (!isRunningResult && !timer.isExpired()) {
-            Time.sleep(delay);
-            try {
-                isRunningResult = isRunning();
-            } catch (Exception e) {
-                ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
-                // provide extra context info, as we're seeing this happen in strange circumstances
-                throw new IllegalStateException("Error detecting whether " + this +
-                        " is running: " + e, e);
-            }
-            if (log.isDebugEnabled()) {
-                log.debug("checked {}, is running returned: {}", this, isRunningResult);
-            }
-            // slow exponential delay -- 1.1^N means after 40 tries and 50s elapsed, it reaches
-            // the max of 5s intervals
-            // TODO use Repeater
-            delay = Math.min(delay * 11 / 10, 5000);
-        }
+        boolean isRunningResult;
+
+        isRunningResult = Repeater.create("Wait until the application is running")
+                .until(new Callable<Boolean>() {
+                    public Boolean call() {
+                        return isRunning();
+                    }
+                })
+                .every(Duration.ONE_SECOND)
+                .limitTimeTo(startTimeout)
+                .run();
+
         if (!isRunningResult) {
             String msg = "Software process entity " + this + " did not pass is-running " +
-                    "check within the required " + startTimeout + " limit (" +
-                    timer.getDurationElapsed().toStringRounded() + " elapsed)";
+                    "check within the required " + startTimeout;
             log.warn(msg + " (throwing)");
             ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
             throw new IllegalStateException(msg);
@@ -406,5 +392,5 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
             throw Exceptions.propagate(e);
         }
     }
-    
+
 }

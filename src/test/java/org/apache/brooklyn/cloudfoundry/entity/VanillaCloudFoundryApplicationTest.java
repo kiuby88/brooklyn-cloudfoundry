@@ -30,11 +30,13 @@ import static org.testng.Assert.assertTrue;
 import java.io.IOException;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
@@ -85,6 +87,17 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20)));
 
         startEntityInLocationAndCheckSensors(entity, location);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeployApplicationWithoutLocation() throws IOException {
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20)));
+        entity.start(ImmutableList.<Location>of());
     }
 
     @Test

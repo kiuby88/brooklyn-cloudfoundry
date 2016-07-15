@@ -19,8 +19,6 @@
 package org.apache.brooklyn.cloudfoundry.utils;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,7 +30,7 @@ import org.apache.commons.io.FileUtils;
 import com.google.common.base.Throwables;
 
 public class LocalResourcesDownloader {
-    private static final String BROOKLYN_DIR = "brooklyn";
+    public static final String BROOKLYN_DIR = "brooklyn";
 
     public static File downloadResourceInLocalDir(String url) {
         File localResource = createLocalFilePathName(
@@ -41,12 +39,6 @@ public class LocalResourcesDownloader {
         return localResource;
     }
 
-    /**
-     * Generates a tmp directory based on:</br>
-     * TMP_OS_DIRECTORY/brooklyn/ENTITY_ID/RANDOM_STRING(8)
-     *
-     * @return
-     */
     public static String findATmpDir() {
         String osTmpDir = new Os.TmpDirFinder().get().get();
         return osTmpDir + File.separator +
@@ -54,11 +46,11 @@ public class LocalResourcesDownloader {
                 Strings.makeRandomId(8);
     }
 
-    public static File createLocalFilePathName(String fileName) {
+    private static File createLocalFilePathName(String fileName) {
         return new File(createLocalPathName(fileName));
     }
 
-    public static String createLocalPathName(String fileName) {
+    private static String createLocalPathName(String fileName) {
         String targetDirName = LocalResourcesDownloader.findATmpDir();
         String filePathName = targetDirName + File.separator + fileName;
 
@@ -68,7 +60,7 @@ public class LocalResourcesDownloader {
         return filePathName;
     }
 
-    public static String findArchiveNameFromUrl(String url) {
+    private static String findArchiveNameFromUrl(String url) {
         String name = url.substring(url.lastIndexOf('/') + 1);
         if (name.indexOf("?") > 0) {
             Pattern p = Pattern.compile("[A-Za-z0-9_\\-]+\\..(ar|AR)($|(?=[^A-Za-z0-9_\\-]))");
@@ -82,19 +74,10 @@ public class LocalResourcesDownloader {
 
     public static void downloadResource(String url, File target) {
         try {
-            downloadResource(new ResourceUtils(null).getResourceFromUrl(url), target);
+            FileUtils.copyInputStreamToFile(new ResourceUtils(null).getResourceFromUrl(url), target);
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
 
-    public static void downloadResource(InputStream source, File target) {
-        try {
-            FileUtils.copyInputStreamToFile(source, target);
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
 }
-
