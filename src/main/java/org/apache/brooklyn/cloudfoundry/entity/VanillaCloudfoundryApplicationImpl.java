@@ -270,8 +270,8 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     protected void customStop() {
-        cfLocation.stop(applicationName);
-        cfLocation.delete(applicationName);
+        driver.stop();
+        driver.delete();
     }
 
     protected void disconnectSensors() {

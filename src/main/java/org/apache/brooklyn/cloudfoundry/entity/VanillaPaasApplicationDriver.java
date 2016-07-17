@@ -32,4 +32,6 @@ public interface VanillaPaasApplicationDriver extends EntityDriver {
 
     void stop();
 
+    void delete();
+
 }

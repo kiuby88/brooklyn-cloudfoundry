@@ -120,7 +120,12 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void stop() {
+        location.stop(applicationName);
+    }
 
+    @Override
+    public void delete() {
+        location.delete(applicationName);
     }
 
     @Override
