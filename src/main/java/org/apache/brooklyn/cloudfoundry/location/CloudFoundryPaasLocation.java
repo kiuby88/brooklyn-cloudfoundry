@@ -54,10 +54,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return getClient().deploy(params);
     }
 
-    public void configureEnv(String applicationName, Map<Object, Object> envs) {
-        getClient().setEnv(applicationName, (Map<Object, Object>) envs);
-    }
-
     public void startApplication(String applicationName) {
         getClient().startApplication(applicationName);
     }
@@ -68,5 +64,9 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void delete(String applicationName) {
         getClient().deleteApplication(applicationName);
+    }
+
+    public void setEnv(String applicationName, Map<String, String> envs) {
+        getClient().setEnv(applicationName, envs);
     }
 }

@@ -151,9 +151,15 @@ public class CloudFoundryPaasClient {
         return getClient().startApplication(applicationName);
     }
 
-    public void setEnv(String applicationName, Map<Object, Object> envs) {
-        //TODO
-        getClient().getApplication(applicationName).setEnv(envs);
+    public void setEnv(String applicationName, Map<String, String> envs) {
+        CloudApplication app = getClient().getApplication(applicationName);
+        Map<String, String> oldEnv = app.getEnvAsMap();
+        oldEnv.putAll(envs);
+        getClient().updateApplicationEnv(applicationName, oldEnv);
+    }
+
+    public Map<String, String> getEnv(String applicationName) {
+        return getClient().getApplication(applicationName).getEnvAsMap();
     }
 
     public void stopApplication(String applicationName) {

@@ -18,7 +18,9 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -31,10 +33,12 @@ import static org.testng.AssertJUnit.assertFalse;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
 import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
@@ -47,6 +51,8 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.http.HttpStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -261,17 +267,58 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         client.getApplicationStatus(APPLICATION_NAME);
     }
 
+    @Test
+    public void testAddEnvsToEmptyApplication() {
+        Map<String, String> envs = MutableMap.of("key1", "val1", "key2", "val2");
+        testAdditionOfEnvsToAnApplication(MutableMap.<String, String>of(), envs);
+    }
+
+    @Test
+    public void testAddEnvsToNotEmptyApplication() {
+        Map<String, String> envs = MutableMap.of("key1", "val1", "key2", "val2");
+        testAdditionOfEnvsToAnApplication(MutableMap.of("keyDefault1", "valueDefault1"), envs);
+    }
+
+    private void testAdditionOfEnvsToAnApplication(Map<String, String> applicationEnvs,
+                                                   Map<String, String> envs) {
+
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+
+        final Map<String, String> mockApplicationEnv = applicationEnvs;
+        when(cloudApp.getEnvAsMap()).then(new Answer<Map<String, String>>() {
+            @Override
+            public Map<String, String> answer(InvocationOnMock invocation) throws Throwable {
+                return mockApplicationEnv;
+            }
+        });
+
+        doAnswer(new Answer() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+                Map<String, String> newEnvs = (Map<String, String>) args[1];
+                mockApplicationEnv.putAll(newEnvs);
+                return null;
+            }
+        }).when(cloudFoundryClient).updateApplicationEnv(anyString(),
+                anyMapOf(String.class, String.class));
+
+        assertEquals(client.getEnv(APPLICATION_NAME), applicationEnvs);
+        client.setEnv(APPLICATION_NAME, envs);
+
+        Map<String, String> returnedEnv = client.getEnv(APPLICATION_NAME);
+        envs.putAll(applicationEnvs);
+        assertEquals(returnedEnv, envs);
+    }
+
     private ConfigBag getDefaultResourcesProfile() {
         ConfigBag params = new ConfigBag();
         params.configure(VanillaCloudfoundryApplication.REQUIRED_INSTANCES, INSTANCES);
         params.configure(VanillaCloudfoundryApplication.REQUIRED_MEMORY, MEMORY);
         params.configure(VanillaCloudfoundryApplication.REQUIRED_DISK, DISK);
         return params;
-    }
-
-    @SuppressWarnings("unchecked")
-    public String getLocalPath(String filename) {
-        return getClass().getClassLoader().getResource(filename).toString();
     }
 
 }

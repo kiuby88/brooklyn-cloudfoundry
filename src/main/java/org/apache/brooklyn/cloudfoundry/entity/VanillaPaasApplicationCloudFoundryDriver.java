@@ -98,10 +98,9 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
         configureEnv();
     }
 
-    private void configureEnv() {
-        //TODO
-        //Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
-        //cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
+    protected void configureEnv() {
+        //TODO a sensor with the custom-environment variables?
+        location.setEnv(applicationName, entity.getConfig(VanillaCloudfoundryApplication.ENVS));
     }
 
     private void launch() {
