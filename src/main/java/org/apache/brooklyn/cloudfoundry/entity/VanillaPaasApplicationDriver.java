@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import java.util.Map;
+
 import org.apache.brooklyn.api.entity.drivers.EntityDriver;
 
 public interface VanillaPaasApplicationDriver extends EntityDriver {
@@ -34,4 +36,5 @@ public interface VanillaPaasApplicationDriver extends EntityDriver {
 
     void delete();
 
+    void setEnv(Map<String, String> env);
 }

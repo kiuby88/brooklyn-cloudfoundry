@@ -44,10 +44,11 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport {
     protected static final String DEFAULT_APPLICATION_ADDRESS
             = "https://" + DEFAULT_APPLICATION_DOMAIN;
 
+    protected static final Map<String, String> EMPTY_ENV = MutableMap.of();
+    protected static final Map<String, String> SIMPLE_ENV = MutableMap.of("k1", "v1");
     protected static final int MEMORY = 512;
     protected static final int INSTANCES = 1;
     protected static final int DISK = 1024;
-
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 

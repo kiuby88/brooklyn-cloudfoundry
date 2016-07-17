@@ -16,7 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: Vanilla CloudFoundry example with envs
+name: Vanilla CloudFoundry example with env
 location: pivotal-ws
 services:
 - type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication
@@ -26,7 +26,7 @@ services:
     path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
     domain: cfapps.io
-    envs:
-      - env1: value1
-      - env2: 2
-      - env3: $brooklyn:formatString("%s", "value3")
+    env:
+      env1: value1
+      env2: 2
+      env3: $brooklyn:formatString("%s", "value3")

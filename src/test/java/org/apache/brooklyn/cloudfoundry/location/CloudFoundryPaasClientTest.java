@@ -268,24 +268,29 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test
-    public void testAddEnvsToEmptyApplication() {
-        Map<String, String> envs = MutableMap.of("key1", "val1", "key2", "val2");
-        testAdditionOfEnvsToAnApplication(MutableMap.<String, String>of(), envs);
+    public void testAddEnvToEmptyApplication() {
+        Map<String, String> env = MutableMap.of("key1", "val1", "key2", "val2");
+        testAdditionOfEnvToAnApplication(MutableMap.<String, String>of(), env);
     }
 
     @Test
-    public void testAddEnvsToNotEmptyApplication() {
-        Map<String, String> envs = MutableMap.of("key1", "val1", "key2", "val2");
-        testAdditionOfEnvsToAnApplication(MutableMap.of("keyDefault1", "valueDefault1"), envs);
+    public void testAddNullEnvToEmptyApplication() {
+        testAdditionOfEnvToAnApplication(MutableMap.<String, String>of(), null);
     }
 
-    private void testAdditionOfEnvsToAnApplication(Map<String, String> applicationEnvs,
-                                                   Map<String, String> envs) {
+    @Test
+    public void testAddEnvToNotEmptyApplication() {
+        Map<String, String> env = MutableMap.of("key1", "val1", "key2", "val2");
+        testAdditionOfEnvToAnApplication(MutableMap.of("keyDefault1", "valueDefault1"), env);
+    }
+
+    private void testAdditionOfEnvToAnApplication(Map<String, String> applicationEnv,
+                                                  Map<String, String> envToAdd) {
 
         CloudApplication cloudApp = mock(CloudApplication.class);
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
 
-        final Map<String, String> mockApplicationEnv = applicationEnvs;
+        final Map<String, String> mockApplicationEnv = applicationEnv;
         when(cloudApp.getEnvAsMap()).then(new Answer<Map<String, String>>() {
             @Override
             public Map<String, String> answer(InvocationOnMock invocation) throws Throwable {
@@ -298,19 +303,21 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
             @SuppressWarnings("unchecked")
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 Object[] args = invocation.getArguments();
-                Map<String, String> newEnvs = (Map<String, String>) args[1];
-                mockApplicationEnv.putAll(newEnvs);
+                Map<String, String> newEnv = (Map<String, String>) args[1];
+                mockApplicationEnv.putAll(newEnv);
                 return null;
             }
         }).when(cloudFoundryClient).updateApplicationEnv(anyString(),
                 anyMapOf(String.class, String.class));
 
-        assertEquals(client.getEnv(APPLICATION_NAME), applicationEnvs);
-        client.setEnv(APPLICATION_NAME, envs);
+        assertEquals(client.getEnv(APPLICATION_NAME), applicationEnv);
+        client.setEnv(APPLICATION_NAME, envToAdd);
 
         Map<String, String> returnedEnv = client.getEnv(APPLICATION_NAME);
-        envs.putAll(applicationEnvs);
-        assertEquals(returnedEnv, envs);
+        if (envToAdd != null) {
+            applicationEnv.putAll(envToAdd);
+        }
+        assertEquals(returnedEnv, applicationEnv);
     }
 
     private ConfigBag getDefaultResourcesProfile() {

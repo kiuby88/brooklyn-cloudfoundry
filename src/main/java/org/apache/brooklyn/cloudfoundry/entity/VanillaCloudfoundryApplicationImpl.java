@@ -366,7 +366,6 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         return (VanillaPaasApplicationDriver) entityDriverManager.build(this, location);
     }
 
-
     public String getApplicationName() {
         return applicationName;
     }

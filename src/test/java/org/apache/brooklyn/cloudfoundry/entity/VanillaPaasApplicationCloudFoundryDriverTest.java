@@ -21,6 +21,7 @@ package org.apache.brooklyn.cloudfoundry.entity;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,10 +31,12 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -46,9 +49,6 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
 
 public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudFoundryUnitTest {
-
-    @Mock
-    VanillaCloudfoundryApplicationImpl entity;
 
     @Mock
     CloudFoundryPaasLocation location;
@@ -64,26 +64,106 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         mockWebServer = new MockWebServer();
         serverUrl = mockWebServer.url("/");
         applicationUrl = serverUrl.url().toString();
-
         mockWebServer.setDispatcher(getGenericDispatcher());
     }
 
     @Test
     public void testStartApplication() {
+        //TODO: Refactoring
+        Map<String, String> env = SIMPLE_ENV;
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
+        when(location.getEnv(anyString())).thenReturn(env);
 
         VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudfoundryApplication.ENV, env);
+        entity.setManagementContext(mgmt);
+
         assertNull(entity.getAttribute(Attributes.MAIN_URI));
         assertNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
-
 
         VanillaPaasApplicationDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
         driver.start();
         assertEquals(entity.getAttribute(Attributes.MAIN_URI), serverUrl.uri());
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL), applicationUrl);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
         assertTrue(driver.isRunning());
+
+        verify(location, times(1)).setEnv(entity.getApplicationName(), env);
+    }
+
+    @Test
+    public void testStartApplicationWithoutEnv() {
+        when(location.deploy(anyMap())).thenReturn(applicationUrl);
+        doNothing().when(location).startApplication(anyString());
+        when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
+
+        VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudfoundryApplication.ENV, EMPTY_ENV);
+        entity.setManagementContext(mgmt);
+
+        assertNull(entity.getAttribute(Attributes.MAIN_URI));
+        assertNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
+
+        VanillaPaasApplicationDriver driver =
+                new VanillaPaasApplicationCloudFoundryDriver(entity, location);
+        driver.start();
+        assertEquals(entity.getAttribute(Attributes.MAIN_URI), serverUrl.uri());
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL), applicationUrl);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), EMPTY_ENV);
+        assertTrue(driver.isRunning());
+
+        verify(location, never()).setEnv(entity.getApplicationName(), EMPTY_ENV);
+    }
+
+    @Test
+    public void testSetEnvToApplication() {
+        Map<String, String> env = SIMPLE_ENV;
+        when(location.deploy(anyMap())).thenReturn(applicationUrl);
+        doNothing().when(location).startApplication(anyString());
+        when(location.getEnv(anyString())).thenReturn(env);
+
+        VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudfoundryApplication.ENV, env);
+        entity.setManagementContext(mgmt);
+
+        VanillaPaasApplicationDriver driver =
+                new VanillaPaasApplicationCloudFoundryDriver(entity, location);
+        driver.start();
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
+        assertTrue(driver.isRunning());
+        verify(location, times(1)).setEnv(entity.getApplicationName(), env);
+
+        Map<String, String> newEnv = MutableMap.of("k2", "v2");
+        driver.setEnv(newEnv);
+        env.putAll(newEnv);
+        entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
+        verify(location, times(1)).setEnv(entity.getApplicationName(), newEnv);
+
+    }
+
+    @Test
+    @SuppressWarnings("all")
+    public void testSetNullEnvToApplication() {
+        Map<String, String> newEnv = null;
+        when(location.deploy(anyMap())).thenReturn(applicationUrl);
+        doNothing().when(location).startApplication(anyString());
+        when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
+
+        VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudfoundryApplication.ENV, SIMPLE_ENV);
+        entity.setManagementContext(mgmt);
+
+        VanillaPaasApplicationDriver driver =
+                new VanillaPaasApplicationCloudFoundryDriver(entity, location);
+        driver.start();
+        driver.setEnv(newEnv);
+        assertEquals(entity
+                .getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
+        assertTrue(driver.isRunning());
+        verify(location, never()).setEnv(entity.getApplicationName(), newEnv);
     }
 
     @Test
@@ -93,6 +173,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         doNothing().when(location).stop(anyString());
 
         VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setManagementContext(mgmt);
 
         VanillaPaasApplicationDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);

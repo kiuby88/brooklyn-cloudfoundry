@@ -19,7 +19,6 @@
 package org.apache.brooklyn.cloudfoundry.location.paas;
 
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 

@@ -18,8 +18,11 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
@@ -28,12 +31,13 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.launcher.camp.SimpleYamlLauncher;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.testng.annotations.Test;
 
 public class VanillaCloudFoundryYamlTest {
 
     @Test(groups = {"Live"})
-    public void deployWebappWithServicesFromYaml() {
+    public void deployWebappFromYaml() {
         SimpleYamlLauncher launcher = new SimpleYamlLauncher();
         launcher.setShutdownAppsOnExit(true);
         Application app = launcher.launchAppYaml("vanilla-cf-stadalone.yml").getApplication();
@@ -52,6 +56,32 @@ public class VanillaCloudFoundryYamlTest {
                 assertNotNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
             }
         });
+    }
+
+    @Test(groups = {"Live"})
+    @SuppressWarnings("unchecked")
+    public void deployWebappWithEnvFromYaml() {
+        SimpleYamlLauncher launcher = new SimpleYamlLauncher();
+        launcher.setShutdownAppsOnExit(true);
+        Application app = launcher.launchAppYaml("vanilla-cf-env.yml").getApplication();
+
+        final VanillaCloudfoundryApplication entity = (VanillaCloudfoundryApplication)
+                findChildEntitySpecByPlanId(app, "vanilla-app");
+
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
+                assertTrue(entity.getAttribute(VanillaCloudfoundryApplication
+                        .SERVICE_PROCESS_IS_RUNNING));
+
+                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
+                assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
+                assertNotNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
+            }
+        });
+        Map<String, String> env = (Map<String, String>)
+                entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
+        assertEquals(env, MutableMap.of("env1", "value1", "env2", "value2", "env3", "value3"));
     }
 
     private Entity findChildEntitySpecByPlanId(Application app, String planId) {

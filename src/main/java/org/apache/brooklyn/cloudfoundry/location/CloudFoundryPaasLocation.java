@@ -66,7 +66,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         getClient().deleteApplication(applicationName);
     }
 
-    public void setEnv(String applicationName, Map<String, String> envs) {
-        getClient().setEnv(applicationName, envs);
+    public void setEnv(String applicationName, Map<String, String> env) {
+        getClient().setEnv(applicationName, env);
+    }
+
+    public Map<String, String> getEnv(String applicationName) {
+        return getClient().getEnv(applicationName);
     }
 }

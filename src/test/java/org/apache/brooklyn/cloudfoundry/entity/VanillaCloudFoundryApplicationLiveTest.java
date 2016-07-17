@@ -19,11 +19,13 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
@@ -31,6 +33,7 @@ import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
 
@@ -48,6 +51,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
         startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
     }
 
     @Test(groups = {"Live"})
@@ -59,6 +63,22 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
         startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+    }
+
+    @Test(groups = {"Live"})
+    public void testDeployApplicationWitEnv() throws IOException {
+        Map<String, String> env = MutableMap.of("key1", "val1");
+
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.ENV, env)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+
+        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
     }
 
     @Test(groups = {"Live"})

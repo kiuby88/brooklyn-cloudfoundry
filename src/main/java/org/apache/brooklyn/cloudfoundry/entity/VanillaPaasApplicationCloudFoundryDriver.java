@@ -76,7 +76,9 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudfoundryApplication.APPLICATION_NAME.getName(), applicationName);
         if (params.containsKey(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName())) {
-            params.put(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName(), getLocalPath((String) params.get(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName())));
+            String path = (String) params
+                    .get(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName());
+            params.put(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName(), getLocalPath(path));
         }
         applicationUrl = location.deploy(params);
         return applicationUrl;
@@ -99,8 +101,16 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     }
 
     protected void configureEnv() {
-        //TODO a sensor with the custom-environment variables?
-        location.setEnv(applicationName, entity.getConfig(VanillaCloudfoundryApplication.ENVS));
+        setEnv(entity.getConfig(VanillaCloudfoundryApplication.ENV));
+    }
+
+    @Override
+    public void setEnv(Map<String, String> env) {
+        if ((env != null) && (!env.isEmpty())) {
+            location.setEnv(applicationName, env);
+        }
+        entity.sensors().set(VanillaCloudfoundryApplication.APPLICATION_ENV,
+                location.getEnv(applicationName));
     }
 
     private void launch() {
@@ -114,7 +124,7 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void restart() {
-
+        //TODO
     }
 
     @Override
@@ -129,7 +139,7 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void rebind() {
-
+        //TODO
     }
 
     public boolean isRunning() {

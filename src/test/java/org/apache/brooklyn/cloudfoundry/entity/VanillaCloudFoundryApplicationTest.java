@@ -19,10 +19,14 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -56,15 +60,18 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     private MockWebServer mockWebServer;
     private HttpUrl serverUrl;
+    private CloudFoundryPaasLocation location;
+
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);
-        mockWebServer = new MockWebServer();
-        serverUrl = mockWebServer.url(APP_PATH);
+        location = spy(cloudFoundryPaasLocation);
 
+        mockWebServer = new MockWebServer();
         mockWebServer.setDispatcher(getGenericDispatcher());
+        serverUrl = mockWebServer.url(APP_PATH);
     }
 
     @AfterMethod
@@ -75,9 +82,10 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testDeployApplication() throws IOException {
-        CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
         doNothing().when(location).startApplication(anyString());
         doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+        doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
@@ -85,8 +93,10 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                         .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20)));
-
         startEntityInLocationAndCheckSensors(entity, location);
+        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
+        verify(location, never()).setEnv(APPLICATION_NAME, EMPTY_ENV);
+
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
@@ -101,12 +111,34 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     @Test
+    public void testDeployApplicationWithEnv() throws IOException {
+        doNothing().when(location).startApplication(anyString());
+        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(SIMPLE_ENV).when(location).getEnv(anyString());
+        doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
+
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20))
+                        .configure(VanillaCloudfoundryApplication.ENV, SIMPLE_ENV));
+
+        startEntityInLocationAndCheckSensors(entity, location);
+        assertEquals(location.getEnv(APPLICATION_NAME), SIMPLE_ENV);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
+        verify(location, times(1)).setEnv(APPLICATION_NAME, SIMPLE_ENV);
+
+    }
+
+    @Test
     public void testStopApplication() {
-        CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
         doNothing().when(location).startApplication(anyString());
         doNothing().when(location).stop(anyString());
         doNothing().when(location).delete(anyString());
         doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)

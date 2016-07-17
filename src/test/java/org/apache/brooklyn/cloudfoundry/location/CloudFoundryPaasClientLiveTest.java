@@ -79,6 +79,26 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
 
+    @Test(groups = {"Live"})
+    public void testAddEnvToApplication() throws Exception {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testAddNullEnvToApplication() throws Exception {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
         String applicationUrl = cloudFoundryPaasClient.deploy(params);
         assertFalse(Strings.isBlank(applicationUrl));
