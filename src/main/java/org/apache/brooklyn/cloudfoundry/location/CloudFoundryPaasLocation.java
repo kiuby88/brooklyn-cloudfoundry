@@ -47,7 +47,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     @Override
     public String getPaasProviderName() {
-        return "cloudfoundry";
+        return "CloudFoundry";
     }
 
     public String deploy(Map<?, ?> params) {

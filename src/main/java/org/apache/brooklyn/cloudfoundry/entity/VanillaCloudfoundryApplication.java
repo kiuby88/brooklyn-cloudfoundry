@@ -21,6 +21,7 @@ package org.apache.brooklyn.cloudfoundry.entity;
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.config.ConfigKey;
@@ -37,7 +38,7 @@ import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name = "Vanilla CloudFoundry Application")
 @ImplementedBy(VanillaCloudfoundryApplicationImpl.class)
-public interface VanillaCloudfoundryApplication extends Entity, Startable {
+public interface VanillaCloudfoundryApplication extends Entity, Startable, DriverDependentEntity {
 
     @SetFromFlag("name")
     ConfigKey<String> APPLICATION_NAME = ConfigKeys.newStringConfigKey(
