@@ -32,6 +32,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
@@ -40,6 +41,7 @@ import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.mockito.MockitoAnnotations;
@@ -112,6 +114,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testDeployApplicationWithEnv() throws IOException {
+        MutableMap<String, String> env = MutableMap.copyOf(SIMPLE_ENV);
         doNothing().when(location).startApplication(anyString());
         doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
         doReturn(SIMPLE_ENV).when(location).getEnv(anyString());
@@ -123,13 +126,40 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                         .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20))
-                        .configure(VanillaCloudfoundryApplication.ENV, SIMPLE_ENV));
+                        .configure(VanillaCloudfoundryApplication.ENV, env));
 
         startEntityInLocationAndCheckSensors(entity, location);
         assertEquals(location.getEnv(APPLICATION_NAME), SIMPLE_ENV);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
         verify(location, times(1)).setEnv(APPLICATION_NAME, SIMPLE_ENV);
+    }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testSetEnvEffector() throws IOException {
+        Map<String, String> env = MutableMap.copyOf(EMPTY_ENV);
+        CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
+        doNothing().when(location).startApplication(anyString());
+        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(env).when(location).getEnv(anyString());
+        doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
+
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20)));
+
+        startEntityInLocationAndCheckSensors(entity, location);
+        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
+        entity.setEnv("k1", "v1");
+        env.put("k1", "v1");
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
+        entity.setEnv("k2", "v2");
+        env.put("k2", "v2");
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
+        env.size();
     }
 
     @Test

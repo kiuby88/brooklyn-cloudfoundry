@@ -27,6 +27,8 @@ import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.annotation.Effector;
+import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.MapConfigKey;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -92,5 +94,9 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable, Drive
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
 
     AttributeSensor<Map> APPLICATION_ENV = Sensors.builder(Map.class, "application.env").build();
+
+    @Effector(description = "Set an environment variable that can be " + "retrieved by the web application")
+    public void setEnv(@EffectorParam(name = "name", description = "Name of the variable") String name,
+                       @EffectorParam(name = "value", description = "Value of the environment variable") String value);
 
 }

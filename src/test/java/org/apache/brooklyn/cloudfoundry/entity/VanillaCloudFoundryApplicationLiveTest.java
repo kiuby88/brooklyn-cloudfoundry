@@ -82,6 +82,26 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
     }
 
     @Test(groups = {"Live"})
+    @SuppressWarnings("unchecked")
+    public void testSetEnvEffector() throws IOException {
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+
+        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
+        entity.setEnv("k1", "v1");
+        assertFalse(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
+        Map<String, String> envs =
+                entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
+        assertTrue(envs.containsKey("k1"));
+        assertEquals(envs.get("k1"), "v1");
+    }
+
+    @Test(groups = {"Live"})
     public void testStopApplication() {
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)

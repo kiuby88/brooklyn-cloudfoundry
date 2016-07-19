@@ -369,4 +369,10 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     public String getApplicationName() {
         return applicationName;
     }
+
+    @Override
+    public void setEnv(String name, String value) {
+        driver.setEnv(MutableMap.of(name, value));
+    }
+
 }
