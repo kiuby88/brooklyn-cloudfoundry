@@ -51,10 +51,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     public void setUp() throws Exception {
         super.setUp();
         cloudFoundryPaasClient = new CloudFoundryPaasClient(cloudFoundryPaasLocation);
-
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
-        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT_NAME);
+        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT);
     }
 
     @Test(groups = {"Live"})
@@ -114,16 +113,15 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK);
         assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES);
 
-        cloudFoundryPaasClient.setMemory(applicationName, MEMORY * 2);
-        cloudFoundryPaasClient.setDiskQuota(applicationName, DISK * 2);
-        cloudFoundryPaasClient.setInstancesNumber(applicationName, INSTANCES * 2);
+        cloudFoundryPaasClient.setMemory(applicationName, CUSTOM_MEMORY);
+        cloudFoundryPaasClient.setDiskQuota(applicationName, CUSTOM_DISK);
+        cloudFoundryPaasClient.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
 
-        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), MEMORY * 2);
-        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK * 2);
-        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES * 2);
+        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), CUSTOM_MEMORY);
+        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), CUSTOM_DISK);
+        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
         stopApplication(applicationName, applicationUrl);
         deleteApplicatin(applicationName);
-
     }
 
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
@@ -139,7 +137,6 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         cloudFoundryPaasClient.startApplication(applicationName);
 
         Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
-
         Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {
                 try {
@@ -186,7 +183,7 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         return params;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     public String getLocalPath(String filename) {
         try {
             return Paths.get(getClass().getClassLoader().getResource(filename).toURI()).toString();

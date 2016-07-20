@@ -49,10 +49,9 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
-        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
 
+        assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
     }
 
     @Test(groups = {"Live"})
@@ -68,7 +67,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
 
     @Test(groups = {"Live"})
     public void testDeployApplicationWitEnv() throws IOException {
-        Map<String, String> env = MutableMap.of("key1", "val1");
+        Map<String, String> env = MutableMap.copyOf(SIMPLE_ENV);
 
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
@@ -98,8 +97,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         assertFalse(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
         Map<String, String> envs =
                 entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
-        assertTrue(envs.containsKey("k1"));
-        assertEquals(envs.get("k1"), "v1");
+        assertEquals(envs, MutableMap.of("k1", "v1"));
     }
 
     @Test(groups = {"Live"})
@@ -116,9 +114,11 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(),
                 CUSTOM_MEMORY);
+
         entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(),
                 CUSTOM_DISK);
+
         entity.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES).intValue(),
                 CUSTOM_INSTANCES);
@@ -135,7 +135,6 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
 
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
         entity.stop();
-
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 assertNull(entity.getAttribute(Startable.SERVICE_UP));

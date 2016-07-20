@@ -71,4 +71,5 @@ public class LocalResourcesDownloaderTest {
         File file = new File("tmp-file");
         LocalResourcesDownloader.downloadResource(Strings.makeRandomId(8), file);
     }
+
 }

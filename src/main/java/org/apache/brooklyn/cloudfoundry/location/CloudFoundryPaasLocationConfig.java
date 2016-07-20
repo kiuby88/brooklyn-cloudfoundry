@@ -29,5 +29,4 @@ public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
 
     public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
             "Space from the CloudFoundry services will be managed.");
-
 }

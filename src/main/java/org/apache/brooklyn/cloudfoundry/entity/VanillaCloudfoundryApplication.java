@@ -115,5 +115,4 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable, Drive
 
     @Effector(description = "Set the desired memory that will be allocated")
     public void setMemory(@EffectorParam(name = "memory", description = "Memory allocated") int memory);
-
 }

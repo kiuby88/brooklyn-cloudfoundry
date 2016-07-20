@@ -29,25 +29,13 @@ import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport {
+public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
+        implements CloudFoundryTestFixtures {
 
     protected static final String APPLICATION_NAME_PREFIX = "test-brooklyn-app";
-    protected static final String APPLICATION_ARTIFACT_NAME =
-            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
-    protected final String APPLICATION_ARTIFACT_URL =
-            "classpath://" + APPLICATION_ARTIFACT_NAME;
-
     protected static final String DEFAULT_DOMAIN = "cfapps.io";
-
     protected final String LOCATION_SPEC_NAME = "pivotal-ws";
     protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
-
-    protected static final int MEMORY = 512;
-    protected static final int INSTANCES = 1;
-    protected static final int DISK = 1024;
-    protected static final int CUSTOM_MEMORY = MEMORY * 2;
-    protected static final int CUSTOM_DISK = DISK * 2;
-    protected static final int CUSTOM_INSTANCES = INSTANCES * 2;
 
     protected String applicationName;
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
