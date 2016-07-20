@@ -73,4 +73,29 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public Map<String, String> getEnv(String applicationName) {
         return getClient().getEnv(applicationName);
     }
+
+    public void setInstancesNumber(String applicationName, int instancesNumber) {
+        getClient().setInstancesNumber(applicationName, instancesNumber);
+    }
+
+    public void setDiskQuota(String applicationName, int diskQuota) {
+        getClient().setDiskQuota(applicationName, diskQuota);
+    }
+
+    public void setMemory(String applicationName, int memory) {
+        getClient().setMemory(applicationName, memory);
+    }
+
+    public int getInstancesNumber(String applicationName) {
+        return getClient().getInstancesNumber(applicationName);
+    }
+
+    public int getDiskQuota(String applicationName) {
+        return getClient().getDiskQuota(applicationName);
+    }
+
+    public int getMemory(String applicationName) {
+        return getClient().getMemory(applicationName);
+    }
+
 }

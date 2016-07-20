@@ -50,8 +50,9 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
-        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
         assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
+
     }
 
     @Test(groups = {"Live"})
@@ -62,7 +63,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
-        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
     }
 
     @Test(groups = {"Live"})
@@ -77,7 +78,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.ENV, env)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
-        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
     }
 
@@ -91,7 +92,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
-        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
         assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
         entity.setEnv("k1", "v1");
         assertFalse(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
@@ -99,6 +100,28 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                 entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
         assertTrue(envs.containsKey("k1"));
         assertEquals(envs.get("k1"), "v1");
+    }
+
+    @Test(groups = {"Live"})
+    public void testModifyApplicationResources() throws IOException {
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+
+        entity.setMemory(DOUBLE_MEMORY);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(),
+                DOUBLE_MEMORY);
+        entity.setDiskQuota(DOUBLE_DISK);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(),
+                DOUBLE_DISK);
+        entity.setInstancesNumber(DOUBLE_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES).intValue(),
+                DOUBLE_INSTANCES);
     }
 
     @Test(groups = {"Live"})
@@ -110,7 +133,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
-        startInLocationAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+        startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
         entity.stop();
 
         Asserts.succeedsEventually(new Runnable() {
@@ -122,8 +145,9 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         });
     }
 
-    private void startInLocationAndCheckEntitySensors(final VanillaCloudfoundryApplication entity,
-                                                      CloudFoundryPaasLocation location) {
+
+    private void startAndCheckEntitySensors(final VanillaCloudfoundryApplication entity,
+                                            CloudFoundryPaasLocation location) {
         app.start(ImmutableList.of(location));
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
@@ -134,6 +158,17 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         });
         assertFalse(Strings.isBlank(entity.getAttribute(Attributes.MAIN_URI).toString()));
         assertFalse(Strings.isBlank(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL)));
+    }
+
+    private void startAndCheckEntitySensorsAndDefaultProfile(VanillaCloudfoundryApplication entity,
+                                                             CloudFoundryPaasLocation location) {
+        startAndCheckEntitySensors(entity, location);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 
 }

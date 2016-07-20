@@ -371,4 +371,19 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         driver.setEnv(MutableMap.of(name, value));
     }
 
+    @Override
+    public void setInstancesNumber(int instancesNumber) {
+        driver.setInstancesNumber(instancesNumber);
+    }
+
+    @Override
+    public void setDiskQuota(int diskQuota) {
+        driver.setDiskQuota(diskQuota);
+    }
+
+    @Override
+    public void setMemory(int memory) {
+        driver.setMemory(memory);
+    }
+
 }

@@ -120,6 +120,21 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private void postLaunch() {
         entity.sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
         entity.sensors().set(VanillaCloudfoundryApplication.ROOT_URL, applicationUrl);
+        updateMemorySensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
+        updateDiskSensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
+        updateInstancesSensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+    }
+
+    private void updateMemorySensor(int memory) {
+        entity.sensors().set(VanillaCloudfoundryApplication.ALLOCATED_MEMORY, memory);
+    }
+
+    private void updateDiskSensor(int disk) {
+        entity.sensors().set(VanillaCloudfoundryApplication.ALLOCATED_DISK, disk);
+    }
+
+    private void updateInstancesSensor(int instances) {
+        entity.sensors().set(VanillaCloudfoundryApplication.USED_INSTANCES, instances);
     }
 
     @Override
@@ -140,6 +155,25 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     @Override
     public void rebind() {
         //TODO
+    }
+
+
+    @Override
+    public void setMemory(int memory) {
+        location.setMemory(applicationName, memory);
+        updateMemorySensor(location.getMemory(applicationName));
+    }
+
+    @Override
+    public void setDiskQuota(int diskQuota) {
+        location.setDiskQuota(applicationName, diskQuota);
+        updateDiskSensor(location.getDiskQuota(applicationName));
+    }
+
+    @Override
+    public void setInstancesNumber(int instancesNumber) {
+        location.setInstancesNumber(applicationName, instancesNumber);
+        updateInstancesSensor(location.getInstancesNumber(applicationName));
     }
 
     public boolean isRunning() {

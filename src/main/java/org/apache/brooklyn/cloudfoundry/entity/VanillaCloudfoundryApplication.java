@@ -90,8 +90,30 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable, Drive
 
     AttributeSensor<Map> APPLICATION_ENV = Sensors.builder(Map.class, "application.env").build();
 
+    AttributeSensor<Integer> USED_INSTANCES =
+            Sensors.newIntegerSensor("cloudfoundry.application.instances",
+                    "Instances which are used to run the application");
+
+    AttributeSensor<Integer> ALLOCATED_MEMORY =
+            Sensors.newIntegerSensor("cloudfoundry.application.memory",
+                    "Application allocated memory");
+
+    AttributeSensor<Integer> ALLOCATED_DISK =
+            Sensors.newIntegerSensor("cloudfoundry.application.disk", "Application allocated disk (MB)");
+
     @Effector(description = "Set an environment variable that can be " + "retrieved by the web application")
     public void setEnv(@EffectorParam(name = "name", description = "Name of the variable") String name,
                        @EffectorParam(name = "value", description = "Value of the environment variable") String value);
+
+    @Effector(description = "Set the instances number that will be user by the web application")
+    public void setInstancesNumber(@EffectorParam(name = "instancesNumber", description = "Number of " +
+            "instance that are being used by the application") int instancesNumber);
+
+    @Effector(description = "Set the disk quota that will be allocated")
+    public void setDiskQuota(@EffectorParam(name = "diskQuota", description = "Disk allocated" +
+            " that will be used by the web application") int diskQuota);
+
+    @Effector(description = "Set the memory that will be allocated")
+    public void setMemory(@EffectorParam(name = "memory", description = "Memory allocated") int memory);
 
 }

@@ -37,4 +37,10 @@ public interface VanillaPaasApplicationDriver extends EntityDriver {
     void delete();
 
     void setEnv(Map<String, String> env);
+
+    void setInstancesNumber(int instancesNumber);
+
+    void setDiskQuota(int diskQuota);
+
+    void setMemory(int memory);
 }

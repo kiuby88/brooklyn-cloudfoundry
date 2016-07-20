@@ -18,6 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
@@ -98,7 +99,16 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, location);
         assertTrue(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV).isEmpty());
         verify(location, never()).setEnv(APPLICATION_NAME, EMPTY_ENV);
+        checkDefaultResourceProfile(entity);
+    }
 
+    private void checkDefaultResourceProfile(VanillaCloudfoundryApplication entity) {
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
@@ -160,6 +170,40 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         env.put("k2", "v2");
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV), env);
         env.size();
+    }
+
+    @Test
+    public void testModifyResourcesProfile(){
+        doNothing().when(location).startApplication(anyString());
+        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+        doNothing().when(location).setMemory(anyString(), anyInt());
+        doReturn(DOUBLE_MEMORY).when(location).getMemory(anyString());
+        doNothing().when(location).setDiskQuota(anyString(), anyInt());
+        doReturn(DOUBLE_DISK).when(location).getDiskQuota(anyString());
+        doNothing().when(location).setInstancesNumber(anyString(), anyInt());
+        doReturn(DOUBLE_INSTANCES).when(location).getInstancesNumber(anyString());
+
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, Strings.makeRandomId(20)));
+        startEntityInLocationAndCheckSensors(entity, location);
+        checkDefaultResourceProfile(entity);
+
+        entity.setMemory(DOUBLE_MEMORY);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(), DOUBLE_MEMORY);
+        verify(location, times(1)).setMemory(APPLICATION_NAME, DOUBLE_MEMORY);
+
+        entity.setDiskQuota(DOUBLE_DISK);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(), DOUBLE_DISK);
+        verify(location, times(1)).setDiskQuota(APPLICATION_NAME, DOUBLE_DISK);
+
+        entity.setInstancesNumber(DOUBLE_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES).intValue(), DOUBLE_INSTANCES);
+        verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, DOUBLE_INSTANCES);
     }
 
     @Test
