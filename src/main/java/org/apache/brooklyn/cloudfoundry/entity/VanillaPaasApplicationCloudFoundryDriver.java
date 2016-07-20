@@ -46,7 +46,6 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private String applicationName;
     private String applicationUrl;
 
-
     public VanillaPaasApplicationCloudFoundryDriver(VanillaCloudfoundryApplicationImpl entity,
                                                     CloudFoundryPaasLocation location) {
         this.entity = checkNotNull(entity, "entity");
@@ -134,7 +133,7 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     }
 
     private void updateInstancesSensor(int instances) {
-        entity.sensors().set(VanillaCloudfoundryApplication.USED_INSTANCES, instances);
+        entity.sensors().set(VanillaCloudfoundryApplication.INSTANCES, instances);
     }
 
     @Override
@@ -156,7 +155,6 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     public void rebind() {
         //TODO
     }
-
 
     @Override
     public void setMemory(int memory) {

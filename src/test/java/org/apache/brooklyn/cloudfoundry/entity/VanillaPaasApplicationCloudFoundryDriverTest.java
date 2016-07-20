@@ -91,7 +91,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 
@@ -196,9 +196,9 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
-        when(location.getMemory(anyString())).thenReturn(DOUBLE_MEMORY);
-        when(location.getDiskQuota(anyString())).thenReturn(DOUBLE_DISK);
-        when(location.getInstancesNumber(anyString())).thenReturn(DOUBLE_INSTANCES);
+        when(location.getMemory(anyString())).thenReturn(CUSTOM_MEMORY);
+        when(location.getDiskQuota(anyString())).thenReturn(CUSTOM_DISK);
+        when(location.getInstancesNumber(anyString())).thenReturn(CUSTOM_INSTANCES);
 
         VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
         entity.setManagementContext(mgmt);
@@ -210,20 +210,20 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
 
         checkDefaultResourceProfile(entity);
 
-        driver.setMemory(DOUBLE_MEMORY);
+        driver.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(),
-                DOUBLE_MEMORY);
-        verify(location, times(1)).setMemory(entity.getApplicationName(), DOUBLE_MEMORY);
+                CUSTOM_MEMORY);
+        verify(location, times(1)).setMemory(entity.getApplicationName(), CUSTOM_MEMORY);
 
-        driver.setDiskQuota(DOUBLE_DISK);
+        driver.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(),
-                DOUBLE_DISK);
-        verify(location, times(1)).setDiskQuota(entity.getApplicationName(), DOUBLE_DISK);
+                CUSTOM_DISK);
+        verify(location, times(1)).setDiskQuota(entity.getApplicationName(), CUSTOM_DISK);
 
-        driver.setInstancesNumber(DOUBLE_INSTANCES);
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES).intValue(),
-                DOUBLE_INSTANCES);
-        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), DOUBLE_INSTANCES);
+        driver.setInstancesNumber(CUSTOM_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES).intValue(),
+                CUSTOM_INSTANCES);
+        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES);
     }
 
     private void checkDefaultResourceProfile(VanillaCloudfoundryApplication entity) {
@@ -231,7 +231,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 

@@ -107,7 +107,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 
@@ -178,11 +178,11 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setMemory(anyString(), anyInt());
-        doReturn(DOUBLE_MEMORY).when(location).getMemory(anyString());
+        doReturn(CUSTOM_MEMORY).when(location).getMemory(anyString());
         doNothing().when(location).setDiskQuota(anyString(), anyInt());
-        doReturn(DOUBLE_DISK).when(location).getDiskQuota(anyString());
+        doReturn(CUSTOM_DISK).when(location).getDiskQuota(anyString());
         doNothing().when(location).setInstancesNumber(anyString(), anyInt());
-        doReturn(DOUBLE_INSTANCES).when(location).getInstancesNumber(anyString());
+        doReturn(CUSTOM_INSTANCES).when(location).getInstancesNumber(anyString());
 
         final VanillaCloudfoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
@@ -193,17 +193,17 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, location);
         checkDefaultResourceProfile(entity);
 
-        entity.setMemory(DOUBLE_MEMORY);
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(), DOUBLE_MEMORY);
-        verify(location, times(1)).setMemory(APPLICATION_NAME, DOUBLE_MEMORY);
+        entity.setMemory(CUSTOM_MEMORY);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(), CUSTOM_MEMORY);
+        verify(location, times(1)).setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
 
-        entity.setDiskQuota(DOUBLE_DISK);
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(), DOUBLE_DISK);
-        verify(location, times(1)).setDiskQuota(APPLICATION_NAME, DOUBLE_DISK);
+        entity.setDiskQuota(CUSTOM_DISK);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(), CUSTOM_DISK);
+        verify(location, times(1)).setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
 
-        entity.setInstancesNumber(DOUBLE_INSTANCES);
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES).intValue(), DOUBLE_INSTANCES);
-        verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, DOUBLE_INSTANCES);
+        entity.setInstancesNumber(CUSTOM_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES).intValue(), CUSTOM_INSTANCES);
+        verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
     }
 
     @Test

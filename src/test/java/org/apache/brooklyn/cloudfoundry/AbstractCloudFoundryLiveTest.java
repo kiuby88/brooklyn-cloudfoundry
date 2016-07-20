@@ -45,9 +45,9 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport {
     protected static final int MEMORY = 512;
     protected static final int INSTANCES = 1;
     protected static final int DISK = 1024;
-    protected static final int DOUBLE_MEMORY = MEMORY * 2;
-    protected static final int DOUBLE_DISK = DISK * 2;
-    protected static final int DOUBLE_INSTANCES = INSTANCES * 2;
+    protected static final int CUSTOM_MEMORY = MEMORY * 2;
+    protected static final int CUSTOM_DISK = DISK * 2;
+    protected static final int CUSTOM_INSTANCES = INSTANCES * 2;
 
     protected String applicationName;
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;

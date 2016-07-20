@@ -113,15 +113,15 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
 
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
-        entity.setMemory(DOUBLE_MEMORY);
+        entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY).intValue(),
-                DOUBLE_MEMORY);
-        entity.setDiskQuota(DOUBLE_DISK);
+                CUSTOM_MEMORY);
+        entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK).intValue(),
-                DOUBLE_DISK);
-        entity.setInstancesNumber(DOUBLE_INSTANCES);
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES).intValue(),
-                DOUBLE_INSTANCES);
+                CUSTOM_DISK);
+        entity.setInstancesNumber(CUSTOM_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES).intValue(),
+                CUSTOM_INSTANCES);
     }
 
     @Test(groups = {"Live"})
@@ -167,7 +167,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
         assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.USED_INSTANCES),
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
     }
 
