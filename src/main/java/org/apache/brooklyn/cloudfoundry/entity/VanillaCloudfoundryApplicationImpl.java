@@ -305,11 +305,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     public void destroy() {
         super.destroy();
         disconnectSensors();
-        getCloudFoundryLocation().delete(applicationName);
-    }
-
-    protected CloudFoundryPaasLocation getCloudFoundryLocation() {
-        return cfLocation;
+        driver.delete();
     }
 
     public void waitForEntityStart() {

@@ -25,7 +25,6 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
@@ -82,10 +81,6 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable, Drive
 
     AttributeSensor<String> ROOT_URL =
             Sensors.newStringSensor("webapp.url", "URL of the application");
-
-    AttributeSensor<CloudFoundryPaasLocation> CLOUDFOUNDRY_LOCATION = Sensors.newSensor(
-            CloudFoundryPaasLocation.class, "cloudFoundryWebApp.paasLocation",
-            "CloudFoundry location used to deploy the application");
 
     AttributeSensor<Boolean> SERVICE_PROCESS_IS_RUNNING = Sensors.newBooleanSensor(
             "service.process.isRunning",
