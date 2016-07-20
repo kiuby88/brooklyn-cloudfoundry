@@ -83,7 +83,7 @@ public class CloudFoundryPaasClient {
                 appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
                 getUris(appSetUp), null);
 
-        getClient().updateApplicationInstances(applicationName,
+        setInstancesNumber(applicationName,
                 appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
 
         pushArtifact(applicationName, artifactLocalPath);
@@ -195,5 +195,29 @@ public class CloudFoundryPaasClient {
         } catch (MalformedURLException e) {
             throw new RuntimeException("The target URL is not valid: " + e.getMessage());
         }
+    }
+
+    public void setInstancesNumber(String applicationName, int instancesNumber) {
+        getClient().updateApplicationInstances(applicationName, instancesNumber);
+    }
+
+    public void setDiskQuota(String applicationName, int diskQuota) {
+        getClient().updateApplicationDiskQuota(applicationName, diskQuota);
+    }
+
+    public void setMemory(String applicationName, int memory) {
+        getClient().updateApplicationMemory(applicationName, memory);
+    }
+
+    public int getInstancesNumber(String applicationName) {
+        return getClient().getApplication(applicationName).getInstances();
+    }
+
+    public int getDiskQuota(String applicationName) {
+        return getClient().getApplication(applicationName).getDiskQuota();
+    }
+
+    public int getMemory(String applicationName) {
+        return getClient().getApplication(applicationName).getMemory();
     }
 }

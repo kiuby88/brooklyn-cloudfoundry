@@ -55,7 +55,6 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
         artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT_NAME);
-
     }
 
     @Test(groups = {"Live"})
@@ -97,6 +96,34 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testModifyResourcesForApplication() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        assertFalse(Strings.isBlank(applicationUrl));
+
+        startApplication(applicationName, applicationUrl);
+        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), MEMORY);
+        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK);
+        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES);
+
+        cloudFoundryPaasClient.setMemory(applicationName, MEMORY * 2);
+        cloudFoundryPaasClient.setDiskQuota(applicationName, DISK * 2);
+        cloudFoundryPaasClient.setInstancesNumber(applicationName, INSTANCES * 2);
+
+        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), MEMORY * 2);
+        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK * 2);
+        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES * 2);
+        stopApplication(applicationName, applicationUrl);
+        deleteApplicatin(applicationName);
+
     }
 
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {

@@ -26,6 +26,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -328,4 +331,48 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         return params;
     }
 
+    @Test
+    public void testSetMemory() {
+        client.setMemory(APPLICATION_NAME, MEMORY);
+        verify(cloudFoundryClient, times(1)).updateApplicationMemory(APPLICATION_NAME, MEMORY);
+        verifyNoMoreInteractions(cloudFoundryClient);
+    }
+
+    @Test
+    public void testGetMemory() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getMemory()).thenReturn(MEMORY);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+        assertEquals(client.getMemory(APPLICATION_NAME), MEMORY);
+    }
+
+    @Test
+    public void testSetDiskQuota() {
+        client.setDiskQuota(APPLICATION_NAME, DISK);
+        verify(cloudFoundryClient, times(1)).updateApplicationDiskQuota(APPLICATION_NAME, DISK);
+        verifyNoMoreInteractions(cloudFoundryClient);
+    }
+
+    @Test
+    public void testGetDiskQuota() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getDiskQuota()).thenReturn(MEMORY);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+        assertEquals(client.getDiskQuota(APPLICATION_NAME), MEMORY);
+    }
+
+    @Test
+    public void testSetIntances() {
+        client.setInstancesNumber(APPLICATION_NAME, INSTANCES);
+        verify(cloudFoundryClient, times(1)).updateApplicationInstances(APPLICATION_NAME, INSTANCES);
+        verifyNoMoreInteractions(cloudFoundryClient);
+    }
+
+    @Test
+    public void testGetInstances() {
+        CloudApplication cloudApp = mock(CloudApplication.class);
+        when(cloudApp.getInstances()).thenReturn(INSTANCES);
+        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+        assertEquals(client.getInstancesNumber(APPLICATION_NAME), INSTANCES);
+    }
 }
