@@ -81,7 +81,7 @@ public class VanillaCloudFoundryYamlTest {
         });
         Map<String, String> env = (Map<String, String>)
                 entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
-        assertEquals(env, MutableMap.of("env1", "value1", "env2", "value2", "env3", "value3"));
+        assertEquals(env, MutableMap.of("env1", "value1", "env2", "2", "env3", "value3"));
     }
 
     private Entity findChildEntitySpecByPlanId(Application app, String planId) {
