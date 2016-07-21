@@ -206,6 +206,50 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test
+    public void testInferApplicationRouteUriNoHost() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+
+        CloudDomain domain = mock(CloudDomain.class);
+        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
+
+        assertEquals(client.inferApplicationRouteUri(params),
+                APPLICATION_NAME + "." + BROOKLYN_DOMAIN);
+    }
+
+    @Test
+    public void testInferApplicationRouteUriWithHost() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_HOST, MOCK_HOST);
+
+        CloudDomain domain = mock(CloudDomain.class);
+        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
+
+        assertEquals(client.inferApplicationRouteUri(params),
+                MOCK_HOST + "." + BROOKLYN_DOMAIN);
+    }
+
+    @Test
+    public void testInferApplicationRouteUriNoDomain() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+
+        CloudDomain domain = mock(CloudDomain.class);
+        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
+
+        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
+        when(cloudFoundryClient.getDefaultDomain()).thenReturn(domain);
+
+        assertEquals(client.inferApplicationRouteUri(params),
+                APPLICATION_NAME + "." + BROOKLYN_DOMAIN);
+    }
+
+    @Test
     public void testStopApplication() {
         doNothing().when(client).stopApplication(anyString());
 

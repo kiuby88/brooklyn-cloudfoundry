@@ -64,6 +64,10 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable, Drive
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.domain", "Domain for the application");
 
+    @SetFromFlag("host")
+    ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(
+            "cloudFoundry.application.host", "Host or sub-domain for the application");
+
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.instances", "Number of instances of the application", 1);

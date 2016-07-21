@@ -99,7 +99,7 @@ public class CloudFoundryPaasClient {
         return MutableList.of(inferApplicationRouteUri(config));
     }
 
-    private String inferApplicationRouteUri(ConfigBag config) {
+    protected String inferApplicationRouteUri(ConfigBag config) {
         String domainId = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
         if (Strings.isBlank(domainId)) {
             domainId = getClient().getDefaultDomain().getName();
@@ -107,7 +107,13 @@ public class CloudFoundryPaasClient {
         if (findSharedDomain(domainId) == null) {
             throw new RuntimeException("The target shared domain " + domainId + " does not exist");
         }
-        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME) + "." + domainId;
+
+        String host = config.get(VanillaCloudfoundryApplication.APPLICATION_HOST);
+        if (Strings.isBlank(host)) {
+            host = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
+        }
+
+        return host + "." + domainId;
     }
 
     private CloudDomain findSharedDomain(final String domainName) {

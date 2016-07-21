@@ -40,6 +40,7 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected static final String DEFAULT_APPLICATION_ADDRESS
             = "https://" + DEFAULT_APPLICATION_BROOKLYN_DOMAIN;
     protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
+    protected static final String MOCK_HOST = "mockedhost";
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
