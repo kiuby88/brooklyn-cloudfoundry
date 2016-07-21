@@ -155,7 +155,7 @@ public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implement
 
     /*
      * TODO: avoiding boilerplate code
-     * This method is a copy of getLocations in MachineLifecycleEffectorTasks
+     * This method was gotten  getLocations in MachineLifecycleEffectorTasks
      */
     protected Location findLocation(@Nullable Collection<? extends Location> locations) {
         if (locations == null || locations.isEmpty()) {

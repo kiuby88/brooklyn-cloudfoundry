@@ -40,7 +40,7 @@ import org.apache.brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableMap;
 
-@Catalog(name = "Vanilla CloudFoundry Application")
+@Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
 public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
 

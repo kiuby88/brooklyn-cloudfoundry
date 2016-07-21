@@ -99,13 +99,14 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testDeployApplicationWithEnv() throws IOException {
-        MutableMap<String, String> env = MutableMap.copyOf(SIMPLE_ENV);
         doNothing().when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(SIMPLE_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp(env);
+        VanillaCloudFoundryApplication entity =
+                addDefaultVanillaEntityChildToApp(MutableMap.copyOf(SIMPLE_ENV));
+
         startEntityInLocationAndCheckSensors(entity, location);
         assertEquals(location.getEnv(APPLICATION_NAME), SIMPLE_ENV);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
@@ -140,16 +141,13 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     @Test
-    public void testModifyResourcesProfile() {
+    public void testSetMemory() {
         doNothing().when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+
         doNothing().when(location).setMemory(anyString(), anyInt());
         doReturn(CUSTOM_MEMORY).when(location).getMemory(anyString());
-        doNothing().when(location).setDiskQuota(anyString(), anyInt());
-        doReturn(CUSTOM_DISK).when(location).getDiskQuota(anyString());
-        doNothing().when(location).setInstancesNumber(anyString(), anyInt());
-        doReturn(CUSTOM_INSTANCES).when(location).getInstancesNumber(anyString());
 
         VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
         startEntityInLocationAndCheckSensors(entity, location);
@@ -158,10 +156,38 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(), CUSTOM_MEMORY);
         verify(location, times(1)).setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
+    }
+
+    @Test
+    public void testSetDisk() {
+        doNothing().when(location).startApplication(anyString());
+        doReturn(serverAddress).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+
+        doNothing().when(location).setDiskQuota(anyString(), anyInt());
+        doReturn(CUSTOM_DISK).when(location).getDiskQuota(anyString());
+
+        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        startEntityInLocationAndCheckSensors(entity, location);
+        checkDefaultResourceProfile(entity);
 
         entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(), CUSTOM_DISK);
         verify(location, times(1)).setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
+    }
+
+    @Test
+    public void testSetInstances() {
+        doNothing().when(location).startApplication(anyString());
+        doReturn(serverAddress).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+
+        doNothing().when(location).setInstancesNumber(anyString(), anyInt());
+        doReturn(CUSTOM_INSTANCES).when(location).getInstancesNumber(anyString());
+
+        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        startEntityInLocationAndCheckSensors(entity, location);
+        checkDefaultResourceProfile(entity);
 
         entity.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(), CUSTOM_INSTANCES);
