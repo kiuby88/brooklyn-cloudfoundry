@@ -27,16 +27,23 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
 
+import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.cloudfoundry.utils.FileNameResolver;
 import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.drivers.downloads.BasicDownloadResolver;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasApplicationDriver {
+import com.google.common.collect.ImmutableList;
+
+public class
+        VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasApplicationDriver {
 
     public static final Logger log = LoggerFactory
             .getLogger(VanillaPaasApplicationCloudFoundryDriver.class);
@@ -74,25 +81,35 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private String deploy() {
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudfoundryApplication.APPLICATION_NAME.getName(), applicationName);
-        if (params.containsKey(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName())) {
-            String path = (String) params
-                    .get(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName());
-            params.put(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName(), getLocalPath(path));
+
+
+        if (!Strings.isBlank(entity.getConfig(VanillaCloudfoundryApplication.ARTIFACT_PATH))) {
+            params.put(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
         }
         applicationUrl = location.deploy(params);
         return applicationUrl;
     }
 
-    private String getLocalPath(String uri) {
+    private String getLocalPath() {
+
+        DownloadResolver downlodResolver = getDownloadResolver();
         try {
             File war;
             war = LocalResourcesDownloader
-                    .downloadResourceInLocalDir(uri);
+                    .downloadResourceInLocalDir(downlodResolver.getFilename(),
+                            downlodResolver.getTargets());
             return war.getCanonicalPath();
         } catch (IOException e) {
-            log.error("Error obtaining local path in {} for artifact {}", this, uri);
+            log.error("Error obtaining local path in {} for artifact {}",
+                    this, downlodResolver.getTargets());
             throw Exceptions.propagate(e);
         }
+    }
+
+    private DownloadResolver getDownloadResolver() {
+        String artifactUrl = entity.getConfig(VanillaCloudfoundryApplication.ARTIFACT_PATH);
+        return new BasicDownloadResolver(ImmutableList.of(artifactUrl),
+                FileNameResolver.findArchiveNameFromUrl(artifactUrl));
     }
 
     protected void preLaunch() {

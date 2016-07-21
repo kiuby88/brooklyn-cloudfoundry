@@ -19,22 +19,42 @@
 package org.apache.brooklyn.cloudfoundry.utils;
 
 import java.io.File;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.FileNotFoundException;
+import java.util.Collection;
 
 import org.apache.brooklyn.util.core.ResourceUtils;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
 
 public class LocalResourcesDownloader {
-    public static final String BROOKLYN_DIR = "brooklyn";
 
-    public static File downloadResourceInLocalDir(String url) {
-        File localResource = createLocalFilePathName(
-                findArchiveNameFromUrl(url));
+    public static final String BROOKLYN_DIR = "brooklyn";
+    public static final Logger log = LoggerFactory
+            .getLogger(LocalResourcesDownloader.class);
+
+    public static File downloadResourceInLocalDir(String saveAs, Collection<String> urls) {
+        for (String url : urls) {
+            try {
+                File file = downloadResourceInLocalDir(saveAs, url);
+                if (file.exists()) {
+                    return file;
+                }
+            } catch (Exception e) {
+                log.warn("Error downloading url {} by LocalResourceDownloader", url);
+            }
+        }
+        throw new PropagatedRuntimeException(new FileNotFoundException("Any file was found by " +
+                "LocalResourceDownloader"));
+    }
+
+    public static File downloadResourceInLocalDir(String saveAs, String url) {
+        File localResource = createLocalFilePathName(saveAs);
         LocalResourcesDownloader.downloadResource(url, localResource);
         return localResource;
     }
@@ -50,6 +70,7 @@ public class LocalResourcesDownloader {
         return new File(createLocalPathName(fileName));
     }
 
+    @SuppressWarnings("all")
     private static String createLocalPathName(String fileName) {
         String targetDirName = LocalResourcesDownloader.findATmpDir();
         String filePathName = targetDirName + File.separator + fileName;
@@ -58,18 +79,6 @@ public class LocalResourcesDownloader {
         targetDir.mkdirs();
 
         return filePathName;
-    }
-
-    private static String findArchiveNameFromUrl(String url) {
-        String name = url.substring(url.lastIndexOf('/') + 1);
-        if (name.indexOf("?") > 0) {
-            Pattern p = Pattern.compile("[A-Za-z0-9_\\-]+\\..(ar|AR)($|(?=[^A-Za-z0-9_\\-]))");
-            Matcher wars = p.matcher(name);
-            if (wars.find()) {
-                name = wars.group();
-            }
-        }
-        return name;
     }
 
     public static void downloadResource(String url, File target) {
