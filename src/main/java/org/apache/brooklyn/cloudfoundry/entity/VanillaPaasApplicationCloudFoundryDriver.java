@@ -91,7 +91,6 @@ public class
     }
 
     private String getLocalPath() {
-
         DownloadResolver downlodResolver = getDownloadResolver();
         try {
             File war;
@@ -155,7 +154,7 @@ public class
 
     @Override
     public void restart() {
-        //TODO
+        location.restart(applicationName);
     }
 
     @Override

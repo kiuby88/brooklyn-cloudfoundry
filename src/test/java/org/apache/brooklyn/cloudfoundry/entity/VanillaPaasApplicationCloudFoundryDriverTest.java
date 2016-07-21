@@ -91,7 +91,6 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
 
     @Test
     public void testStartApplicationWithEnv() {
-        //TODO: Refactoring
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
@@ -268,6 +267,24 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         mockWebServer.shutdown();
         assertFalse(driver.isRunning());
         verify(location, times(1)).stop(anyString());
+    }
+
+    @Test
+    public void testRestartApplication() {
+        when(location.deploy(anyMap())).thenReturn(applicationUrl);
+        doNothing().when(location).startApplication(anyString());
+        doNothing().when(location).restart(anyString());
+
+        VanillaCloudfoundryApplicationImpl entity = new VanillaCloudfoundryApplicationImpl();
+        entity.setManagementContext(mgmt);
+
+        VanillaPaasApplicationDriver driver =
+                new VanillaPaasApplicationCloudFoundryDriver(entity, location);
+        driver.start();
+        assertTrue(driver.isRunning());
+
+        driver.restart();
+        verify(location, times(1)).restart(entity.getApplicationName());
     }
 
     @Test

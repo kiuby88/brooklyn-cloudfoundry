@@ -62,6 +62,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         getClient().stopApplication(applicationName);
     }
 
+    public void restart(String applicationName) {
+        getClient().restartApplication(applicationName);
+    }
+
     public void delete(String applicationName) {
         getClient().deleteApplication(applicationName);
     }

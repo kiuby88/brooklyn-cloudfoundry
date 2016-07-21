@@ -187,6 +187,20 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         });
     }
 
+    @Test
+    public void testRestartApplication() {
+        doNothing().when(location).startApplication(anyString());
+        doNothing().when(location).restart(anyString());
+        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(location).getEnv(anyString());
+
+        final VanillaCloudfoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        startEntityInLocationAndCheckSensors(entity, location);
+
+        entity.restart();
+        verify(location, times(1)).restart(APPLICATION_NAME);
+    }
+
     private VanillaCloudfoundryApplication addDefaultVanillaEntityChildToApp() {
         return addDefaultVanillaEntityChildToApp(null);
     }

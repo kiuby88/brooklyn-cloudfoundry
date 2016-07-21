@@ -144,10 +144,26 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         });
     }
 
+    @Test(groups = {"Live"})
+    public void testRestartApplication() throws IOException {
+        final VanillaCloudfoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudfoundryApplication.class)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        entity.restart();
+        checkEntityIsRunningAndAvailable(entity);
+    }
 
-    private void startAndCheckEntitySensors(final VanillaCloudfoundryApplication entity,
+    private void startAndCheckEntitySensors(VanillaCloudfoundryApplication entity,
                                             CloudFoundryPaasLocation location) {
         app.start(ImmutableList.of(location));
+        checkEntityIsRunningAndAvailable(entity);
+    }
+
+    private void checkEntityIsRunningAndAvailable(final VanillaCloudfoundryApplication entity) {
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 assertTrue(entity.getAttribute(Startable.SERVICE_UP));
@@ -157,6 +173,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         });
         assertFalse(Strings.isBlank(entity.getAttribute(Attributes.MAIN_URI).toString()));
         assertFalse(Strings.isBlank(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL)));
+
     }
 
     private void startAndCheckEntitySensorsAndDefaultProfile(VanillaCloudfoundryApplication entity,

@@ -122,7 +122,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
                         Matchers.anyInt(),
                         Matchers.anyListOf(String.class),
                         Matchers.anyListOf(String.class));
-        doNothing().when(cloudFoundryClient).uploadApplication(Matchers.anyString(), anyString());
+        doNothing().when(cloudFoundryClient).uploadApplication(anyString(), anyString());
 
         CloudApplication cloudApp = mock(CloudApplication.class);
         when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_BROOKLYN_DOMAIN));
@@ -147,7 +147,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
                         Matchers.anyListOf(String.class),
                         Matchers.anyListOf(String.class));
         doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
-                .when(cloudFoundryClient).uploadApplication(Matchers.anyString(), anyString());
+                .when(cloudFoundryClient).uploadApplication(anyString(), anyString());
 
         CloudDomain cloudDomain = mock(CloudDomain.class);
         when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
@@ -169,7 +169,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testUpdateAnNotExistentArtifact() throws IOException {
         doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
-                .when(cloudFoundryClient).uploadApplication(Matchers.anyString(), anyString());
+                .when(cloudFoundryClient).uploadApplication(anyString(), anyString());
         client.pushArtifact(APPLICATION_NAME, Strings.makeRandomId(10));
     }
 
@@ -185,7 +185,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test(expectedExceptions = CloudFoundryException.class)
     public void testStartNonExistentApplication() {
         doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).startApplication(Matchers.anyString());
+                .when(cloudFoundryClient).startApplication(anyString());
 
         client.startApplication(APPLICATION_NAME);
     }
@@ -207,7 +207,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
 
     @Test
     public void testStopApplication() {
-        doNothing().when(client).stopApplication(Matchers.anyString());
+        doNothing().when(client).stopApplication(anyString());
 
         CloudApplication cloudApp = mock(CloudApplication.class);
         when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STOPPED);
@@ -223,14 +223,22 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     public void testStopNonExistentApplication() {
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
         doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).stopApplication(Matchers.anyString());
+                .when(cloudFoundryClient).stopApplication(anyString());
 
         client.stopApplication(APPLICATION_NAME);
     }
 
     @Test
+    public void restartApplication() {
+        StartingInfo info = mock(StartingInfo.class);
+        doReturn(info).when(cloudFoundryClient).restartApplication(anyString());
+        client.restartApplication(APPLICATION_NAME);
+        verify(cloudFoundryClient, times(1)).restartApplication(APPLICATION_NAME);
+    }
+
+    @Test
     public void testDeleteApplication() {
-        doNothing().when(cloudFoundryClient).deleteApplication(Matchers.anyString());
+        doNothing().when(cloudFoundryClient).deleteApplication(anyString());
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
 
         client.deleteApplication(APPLICATION_NAME);
@@ -240,7 +248,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test(expectedExceptions = CloudFoundryException.class)
     public void testDeleteNonExistentApplication() {
         doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).stopApplication(Matchers.anyString());
+                .when(cloudFoundryClient).stopApplication(anyString());
 
         client.getApplicationStatus(APPLICATION_NAME);
     }

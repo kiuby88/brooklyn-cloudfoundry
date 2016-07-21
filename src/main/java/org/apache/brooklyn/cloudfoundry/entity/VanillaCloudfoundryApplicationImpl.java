@@ -298,7 +298,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     @Override
     public void restart() {
-        //TODO
+        driver.restart();
     }
 
     @Override

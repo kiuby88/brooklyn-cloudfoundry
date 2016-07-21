@@ -120,6 +120,25 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         assertEquals(cloudFoundryPaasClient.getMemory(applicationName), CUSTOM_MEMORY);
         assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), CUSTOM_DISK);
         assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
+
+        stopApplication(applicationName, applicationUrl);
+        deleteApplicatin(applicationName);
+    }
+
+    @Test(groups = {"Live"})
+    public void testRestartApplication() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        assertFalse(Strings.isBlank(applicationUrl));
+        startApplication(applicationName, applicationUrl);
+
+        cloudFoundryPaasClient.restart(applicationName);
+        checkDeployedApplicationAvailability(applicationName, applicationUrl);
+
         stopApplication(applicationName, applicationUrl);
         deleteApplicatin(applicationName);
     }
@@ -133,9 +152,13 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         deleteApplicatin(applicationName);
     }
 
-    private void startApplication(final String applicationName, final String applicationDomain) {
+    private void startApplication(String applicationName, String applicationDomain) {
         cloudFoundryPaasClient.startApplication(applicationName);
+        checkDeployedApplicationAvailability(applicationName, applicationDomain);
+    }
 
+    private void checkDeployedApplicationAvailability(final String applicationName,
+                                                      final String applicationDomain) {
         Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
         Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {

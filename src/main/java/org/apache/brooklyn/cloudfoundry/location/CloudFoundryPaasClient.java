@@ -164,6 +164,10 @@ public class CloudFoundryPaasClient {
         return getClient().getApplication(applicationName).getEnvAsMap();
     }
 
+    public void restartApplication(String applicationName) {
+        getClient().restartApplication(applicationName);
+    }
+
     public void stopApplication(String applicationName) {
         getClient().stopApplication(applicationName);
     }
