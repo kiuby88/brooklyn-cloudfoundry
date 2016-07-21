@@ -63,6 +63,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     private MockWebServer mockWebServer;
     private HttpUrl serverUrl;
     private CloudFoundryPaasLocation location;
+    private String serverAddress;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -73,6 +74,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         mockWebServer = new MockWebServer();
         mockWebServer.setDispatcher(getGenericDispatcher());
         serverUrl = mockWebServer.url(MOCKED_APP_PATH);
+        serverAddress = serverUrl.url().toString();
     }
 
     @AfterMethod
@@ -84,7 +86,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     @Test
     public void testDeployApplication() throws IOException {
         doNothing().when(location).startApplication(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
@@ -99,7 +101,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     public void testDeployApplicationWithEnv() throws IOException {
         MutableMap<String, String> env = MutableMap.copyOf(SIMPLE_ENV);
         doNothing().when(location).startApplication(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(SIMPLE_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
@@ -122,7 +124,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         Map<String, String> env = MutableMap.copyOf(EMPTY_ENV);
         CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
         doNothing().when(location).startApplication(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(env).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
@@ -140,7 +142,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     @Test
     public void testModifyResourcesProfile() {
         doNothing().when(location).startApplication(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setMemory(anyString(), anyInt());
         doReturn(CUSTOM_MEMORY).when(location).getMemory(anyString());
@@ -171,7 +173,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doNothing().when(location).startApplication(anyString());
         doNothing().when(location).stop(anyString());
         doNothing().when(location).delete(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
         final VanillaCloudfoundryApplication entity = addDefaultVanillaEntityChildToApp();
@@ -191,7 +193,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     public void testRestartApplication() {
         doNothing().when(location).startApplication(anyString());
         doNothing().when(location).restart(anyString());
-        doReturn(serverUrl.url().toString()).when(location).deploy(anyMap());
+        doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
         final VanillaCloudfoundryApplication entity = addDefaultVanillaEntityChildToApp();
@@ -227,8 +229,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                         .SERVICE_PROCESS_IS_RUNNING));
             }
         });
-        assertEquals(entity.getAttribute(Attributes.MAIN_URI).toString(), serverUrl.url().toString());
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL), serverUrl.url().toString());
+        assertEquals(entity.getAttribute(Attributes.MAIN_URI).toString(), serverAddress);
+        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL), serverAddress);
     }
 
     private Dispatcher getGenericDispatcher() {
