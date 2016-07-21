@@ -25,7 +25,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -75,23 +75,23 @@ public class CloudFoundryPaasClient {
 
     public String deploy(Map<?, ?> params) {
         ConfigBag appSetUp = ConfigBag.newInstance(params);
-        String artifactLocalPath = appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH);
-        String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
+        String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
+        String applicationName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
 
         getClient().createApplication(applicationName, getStaging(appSetUp),
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_DISK),
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
                 getUris(appSetUp), null);
 
         setInstancesNumber(applicationName,
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
 
         pushArtifact(applicationName, artifactLocalPath);
         return getDomainUri(applicationName);
     }
 
     protected Staging getStaging(ConfigBag config) {
-        String buildpack = config.get(VanillaCloudfoundryApplication.BUILDPACK);
+        String buildpack = config.get(VanillaCloudFoundryApplication.BUILDPACK);
         return new Staging(null, buildpack);
     }
 
@@ -100,7 +100,7 @@ public class CloudFoundryPaasClient {
     }
 
     protected String inferApplicationRouteUri(ConfigBag config) {
-        String domainId = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
+        String domainId = config.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
         if (Strings.isBlank(domainId)) {
             domainId = getClient().getDefaultDomain().getName();
         }
@@ -108,9 +108,9 @@ public class CloudFoundryPaasClient {
             throw new RuntimeException("The target shared domain " + domainId + " does not exist");
         }
 
-        String host = config.get(VanillaCloudfoundryApplication.APPLICATION_HOST);
+        String host = config.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
         if (Strings.isBlank(host)) {
-            host = config.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
+            host = config.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
         }
 
         return host + "." + domainId;

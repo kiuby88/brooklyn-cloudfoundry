@@ -42,18 +42,18 @@ public class VanillaCloudFoundryYamlTest {
         launcher.setShutdownAppsOnExit(true);
         Application app = launcher.launchAppYaml("vanilla-cf-stadalone.yml").getApplication();
 
-        final VanillaCloudfoundryApplication entity = (VanillaCloudfoundryApplication)
+        final VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, "vanilla-app");
 
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudfoundryApplication
+                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
                         .SERVICE_PROCESS_IS_RUNNING));
 
                 assertTrue(entity.getAttribute(Startable.SERVICE_UP));
                 assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
-                assertNotNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
+                assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
             }
         });
     }
@@ -65,22 +65,22 @@ public class VanillaCloudFoundryYamlTest {
         launcher.setShutdownAppsOnExit(true);
         Application app = launcher.launchAppYaml("vanilla-cf-env.yml").getApplication();
 
-        final VanillaCloudfoundryApplication entity = (VanillaCloudfoundryApplication)
+        final VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, "vanilla-app");
 
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudfoundryApplication
+                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
                         .SERVICE_PROCESS_IS_RUNNING));
 
                 assertTrue(entity.getAttribute(Startable.SERVICE_UP));
                 assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
-                assertNotNull(entity.getAttribute(VanillaCloudfoundryApplication.ROOT_URL));
+                assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
             }
         });
         Map<String, String> env = (Map<String, String>)
-                entity.getAttribute(VanillaCloudfoundryApplication.APPLICATION_ENV);
+                entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV);
         assertEquals(env, MutableMap.of("env1", "value1", "env2", "2", "env3", "value3"));
     }
 

@@ -53,9 +53,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
-public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implements VanillaCloudfoundryApplication {
+public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implements VanillaCloudFoundryApplication {
 
-    private static final Logger log = LoggerFactory.getLogger(VanillaCloudfoundryApplicationImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(VanillaCloudFoundryApplicationImpl.class);
     private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private CloudFoundryPaasLocation cfLocation;
@@ -66,19 +66,19 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     private FunctionFeed serviceProcessUp;
     private VanillaPaasApplicationDriver driver;
 
-    public VanillaCloudfoundryApplicationImpl() {
+    public VanillaCloudFoundryApplicationImpl() {
         super(MutableMap.of(), null);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Entity parent) {
+    public VanillaCloudFoundryApplicationImpl(Entity parent) {
         this(MutableMap.of(), parent);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Map properties) {
+    public VanillaCloudFoundryApplicationImpl(Map properties) {
         this(properties, null);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Map properties, Entity parent) {
+    public VanillaCloudFoundryApplicationImpl(Map properties, Entity parent) {
         super(properties, parent);
     }
 

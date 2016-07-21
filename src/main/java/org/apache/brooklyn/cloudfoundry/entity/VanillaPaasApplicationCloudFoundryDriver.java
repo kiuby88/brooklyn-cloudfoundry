@@ -49,11 +49,11 @@ public class
             .getLogger(VanillaPaasApplicationCloudFoundryDriver.class);
 
     private final CloudFoundryPaasLocation location;
-    private VanillaCloudfoundryApplicationImpl entity;
+    private VanillaCloudFoundryApplicationImpl entity;
     private String applicationName;
     private String applicationUrl;
 
-    public VanillaPaasApplicationCloudFoundryDriver(VanillaCloudfoundryApplicationImpl entity,
+    public VanillaPaasApplicationCloudFoundryDriver(VanillaCloudFoundryApplicationImpl entity,
                                                     CloudFoundryPaasLocation location) {
         this.entity = checkNotNull(entity, "entity");
         this.location = checkNotNull(location, "location");
@@ -61,7 +61,7 @@ public class
     }
 
     @Override
-    public VanillaCloudfoundryApplicationImpl getEntity() {
+    public VanillaCloudFoundryApplicationImpl getEntity() {
         return entity;
     }
 
@@ -80,11 +80,11 @@ public class
 
     private String deploy() {
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
-        params.put(VanillaCloudfoundryApplication.APPLICATION_NAME.getName(), applicationName);
+        params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
 
 
-        if (!Strings.isBlank(entity.getConfig(VanillaCloudfoundryApplication.ARTIFACT_PATH))) {
-            params.put(VanillaCloudfoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
+        if (!Strings.isBlank(entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH))) {
+            params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
         }
         applicationUrl = location.deploy(params);
         return applicationUrl;
@@ -106,7 +106,7 @@ public class
     }
 
     private DownloadResolver getDownloadResolver() {
-        String artifactUrl = entity.getConfig(VanillaCloudfoundryApplication.ARTIFACT_PATH);
+        String artifactUrl = entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH);
         return new BasicDownloadResolver(ImmutableList.of(artifactUrl),
                 FileNameResolver.findArchiveNameFromUrl(artifactUrl));
     }
@@ -116,7 +116,7 @@ public class
     }
 
     protected void configureEnv() {
-        setEnv(entity.getConfig(VanillaCloudfoundryApplication.ENV));
+        setEnv(entity.getConfig(VanillaCloudFoundryApplication.ENV));
     }
 
     @Override
@@ -124,7 +124,7 @@ public class
         if ((env != null) && (!env.isEmpty())) {
             location.setEnv(applicationName, env);
         }
-        entity.sensors().set(VanillaCloudfoundryApplication.APPLICATION_ENV,
+        entity.sensors().set(VanillaCloudFoundryApplication.APPLICATION_ENV,
                 location.getEnv(applicationName));
     }
 
@@ -134,22 +134,22 @@ public class
 
     private void postLaunch() {
         entity.sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
-        entity.sensors().set(VanillaCloudfoundryApplication.ROOT_URL, applicationUrl);
-        updateMemorySensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
-        updateDiskSensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        updateInstancesSensor(entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+        entity.sensors().set(VanillaCloudFoundryApplication.ROOT_URL, applicationUrl);
+        updateMemorySensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
+        updateDiskSensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
+        updateInstancesSensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
     }
 
     private void updateMemorySensor(int memory) {
-        entity.sensors().set(VanillaCloudfoundryApplication.ALLOCATED_MEMORY, memory);
+        entity.sensors().set(VanillaCloudFoundryApplication.ALLOCATED_MEMORY, memory);
     }
 
     private void updateDiskSensor(int disk) {
-        entity.sensors().set(VanillaCloudfoundryApplication.ALLOCATED_DISK, disk);
+        entity.sensors().set(VanillaCloudFoundryApplication.ALLOCATED_DISK, disk);
     }
 
     private void updateInstancesSensor(int instances) {
-        entity.sensors().set(VanillaCloudfoundryApplication.INSTANCES, instances);
+        entity.sensors().set(VanillaCloudFoundryApplication.INSTANCES, instances);
     }
 
     @Override

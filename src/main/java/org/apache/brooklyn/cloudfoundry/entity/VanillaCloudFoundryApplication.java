@@ -41,8 +41,8 @@ import org.apache.brooklyn.util.time.Duration;
 import com.google.common.collect.ImmutableMap;
 
 @Catalog(name = "Vanilla CloudFoundry Application")
-@ImplementedBy(VanillaCloudfoundryApplicationImpl.class)
-public interface VanillaCloudfoundryApplication extends Entity, Startable, DriverDependentEntity {
+@ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
+public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
 
     @SetFromFlag("name")
     ConfigKey<String> APPLICATION_NAME = ConfigKeys.newStringConfigKey(

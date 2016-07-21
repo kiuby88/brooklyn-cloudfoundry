@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
@@ -79,10 +79,10 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
 
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, MOCK_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
 
         mockApplicationDeployment(params, cloudDomain);
         verify(cloudFoundryClient, never()).getDefaultDomain();
@@ -94,9 +94,9 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
 
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, MOCK_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
 
         mockApplicationDeployment(params, cloudDomain);
         verify(cloudFoundryClient, times(1)).getDefaultDomain();
@@ -108,7 +108,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudDomain.getName()).thenReturn(Strings.makeRandomId(10));
 
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
 
         mockApplicationDeployment(params, cloudDomain);
     }
@@ -159,9 +159,9 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
 
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, Strings.makeRandomId(10));
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, MOCK_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, Strings.makeRandomId(10));
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
 
         client.deploy(params.getAllConfig());
     }
@@ -208,8 +208,8 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test
     public void testInferApplicationRouteUriNoHost() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
 
         CloudDomain domain = mock(CloudDomain.class);
         when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
@@ -222,9 +222,9 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test
     public void testInferApplicationRouteUriWithHost() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_HOST, MOCK_HOST);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, MOCK_HOST);
 
         CloudDomain domain = mock(CloudDomain.class);
         when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
@@ -237,7 +237,7 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
     @Test
     public void testInferApplicationRouteUriNoDomain() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
 
         CloudDomain domain = mock(CloudDomain.class);
         when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
@@ -343,9 +343,9 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
 
     private ConfigBag getDefaultResourcesProfile() {
         ConfigBag params = new ConfigBag();
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_INSTANCES, INSTANCES);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_MEMORY, MEMORY);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_DISK, DISK);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_INSTANCES, INSTANCES);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_MEMORY, MEMORY);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
         return params;
     }
 

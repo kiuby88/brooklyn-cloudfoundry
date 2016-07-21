@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -59,10 +59,10 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testWebApplicationManagement() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
@@ -70,9 +70,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testWebApplicationManagementWithoutDomain() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
@@ -80,9 +80,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testAddEnvToApplication() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
@@ -90,9 +90,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testAddNullEnvToApplication() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
@@ -100,10 +100,10 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testModifyResourcesForApplication() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
         assertFalse(Strings.isBlank(applicationUrl));
@@ -128,9 +128,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testRestartApplication() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
         assertFalse(Strings.isBlank(applicationUrl));
@@ -200,9 +200,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
 
     private ConfigBag getDefaultResourcesProfile() {
         ConfigBag params = new ConfigBag();
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_INSTANCES, INSTANCES);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_MEMORY, MEMORY);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_DISK, DISK);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_INSTANCES, INSTANCES);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_MEMORY, MEMORY);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
         return params;
     }
 

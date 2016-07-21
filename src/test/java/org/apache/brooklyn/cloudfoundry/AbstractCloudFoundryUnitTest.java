@@ -23,7 +23,7 @@ import static org.testng.Assert.assertEquals;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -62,13 +62,13 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
                 mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
     }
 
-    public void checkDefaultResourceProfile(VanillaCloudfoundryApplication entity) {
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_MEMORY),
-                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_MEMORY));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.ALLOCATED_DISK),
-                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_DISK));
-        assertEquals(entity.getAttribute(VanillaCloudfoundryApplication.INSTANCES),
-                entity.getConfig(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+    public void checkDefaultResourceProfile(VanillaCloudFoundryApplication entity) {
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
     }
 
 }
