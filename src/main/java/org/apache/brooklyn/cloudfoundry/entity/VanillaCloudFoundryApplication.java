@@ -29,16 +29,15 @@ import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.config.MapConfigKey;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableMap;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
@@ -57,8 +56,10 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
             "cloudFoundry.application.buildpack", "Buildpack to deploy an application");
 
     @SetFromFlag("env")
-    MapConfigKey<String> ENV = new MapConfigKey<>(String.class, "cloudfoundry.application.env",
-            "Enviroment variables for the application", ImmutableMap.<String, String>of());
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    BasicAttributeSensorAndConfigKey<Map<String, String>> ENV =
+            new BasicAttributeSensorAndConfigKey(Map.class, "cloudFoundry.application.env",
+                    "Environment variables for the application", MutableMap.<String, String>of());
 
     @SetFromFlag("domain")
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
@@ -91,8 +92,6 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
             "Whether the process for the service is confirmed as running");
 
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
-
-    AttributeSensor<Map> APPLICATION_ENV = Sensors.builder(Map.class, "application.env").build();
 
     AttributeSensor<Integer> INSTANCES =
             Sensors.newIntegerSensor("cloudfoundry.application.instances",

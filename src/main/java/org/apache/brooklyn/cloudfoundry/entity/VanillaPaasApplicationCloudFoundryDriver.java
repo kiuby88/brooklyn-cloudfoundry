@@ -123,7 +123,7 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
         if ((env != null) && (!env.isEmpty())) {
             location.setEnv(applicationName, env);
         }
-        entity.sensors().set(VanillaCloudFoundryApplication.APPLICATION_ENV,
+        entity.sensors().set(VanillaCloudFoundryApplication.ENV,
                 location.getEnv(applicationName));
     }
 

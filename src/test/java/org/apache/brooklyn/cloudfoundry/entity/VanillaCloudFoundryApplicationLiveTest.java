@@ -51,7 +51,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
-        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
+        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
     }
 
     @Test(groups = {"Live"})
@@ -78,7 +78,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), env);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ENV), env);
     }
 
     @Test(groups = {"Live"})
@@ -92,11 +92,11 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
-        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
+        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
         entity.setEnv("k1", "v1");
-        assertFalse(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
+        assertFalse(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
         Map<String, String> envs =
-                entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV);
+                entity.getAttribute(VanillaCloudFoundryApplication.ENV);
         assertEquals(envs, MutableMap.of("k1", "v1"));
     }
 

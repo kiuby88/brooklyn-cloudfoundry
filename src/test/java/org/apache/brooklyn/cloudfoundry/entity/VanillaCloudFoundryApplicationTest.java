@@ -94,7 +94,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         VanillaCloudFoundryApplication entity =
                 addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
-        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
+        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
         verify(location, never()).setEnv(APPLICATION_NAME, EMPTY_ENV);
         checkDefaultResourceProfile(entity);
     }
@@ -110,7 +110,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                 addDefaultVanillaToAppAndMockProfileMethods(location, MutableMap.copyOf(SIMPLE_ENV));
         startEntityInLocationAndCheckSensors(entity, location);
         assertEquals(location.getEnv(APPLICATION_NAME), SIMPLE_ENV);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ENV), SIMPLE_ENV);
         verify(location, times(1)).setEnv(APPLICATION_NAME, SIMPLE_ENV);
     }
 
@@ -132,13 +132,13 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
-        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
+        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
         entity.setEnv("k1", "v1");
         env.put("k1", "v1");
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), env);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ENV), env);
         entity.setEnv("k2", "v2");
         env.put("k2", "v2");
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), env);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ENV), env);
     }
 
     @Test

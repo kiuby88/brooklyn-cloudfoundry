@@ -80,7 +80,7 @@ public class VanillaCloudFoundryYamlTest {
             }
         });
         Map<String, String> env = (Map<String, String>)
-                entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV);
+                entity.getAttribute(VanillaCloudFoundryApplication.ENV);
         assertEquals(env, MutableMap.of("env1", "value1", "env2", "2", "env3", "value3"));
     }
 
