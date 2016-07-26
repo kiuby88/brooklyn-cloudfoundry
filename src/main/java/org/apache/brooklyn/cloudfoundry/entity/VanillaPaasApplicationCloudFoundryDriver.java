@@ -42,8 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
-public class
-        VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasApplicationDriver {
+public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasApplicationDriver {
 
     public static final Logger log = LoggerFactory
             .getLogger(VanillaPaasApplicationCloudFoundryDriver.class);
@@ -135,9 +134,9 @@ public class
     private void postLaunch() {
         entity.sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
         entity.sensors().set(VanillaCloudFoundryApplication.ROOT_URL, applicationUrl);
-        updateMemorySensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
-        updateDiskSensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
-        updateInstancesSensor(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+        updateMemorySensor(location.getMemory(applicationName));
+        updateDiskSensor(location.getDiskQuota(applicationName));
+        updateInstancesSensor(location.getInstancesNumber(applicationName));
     }
 
     private void updateMemorySensor(int memory) {

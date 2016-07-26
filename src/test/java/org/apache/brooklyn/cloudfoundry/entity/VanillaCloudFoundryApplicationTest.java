@@ -45,6 +45,7 @@ import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -90,7 +91,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        VanillaCloudFoundryApplication entity =
+                addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
         assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
         verify(location, never()).setEnv(APPLICATION_NAME, EMPTY_ENV);
@@ -105,8 +107,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
         VanillaCloudFoundryApplication entity =
-                addDefaultVanillaEntityChildToApp(MutableMap.copyOf(SIMPLE_ENV));
-
+                addDefaultVanillaToAppAndMockProfileMethods(location, MutableMap.copyOf(SIMPLE_ENV));
         startEntityInLocationAndCheckSensors(entity, location);
         assertEquals(location.getEnv(APPLICATION_NAME), SIMPLE_ENV);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV), SIMPLE_ENV);
@@ -129,7 +130,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(env).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
 
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
         assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_ENV).isEmpty());
         entity.setEnv("k1", "v1");
@@ -146,12 +147,11 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
-        doNothing().when(location).setMemory(anyString(), anyInt());
-        doReturn(CUSTOM_MEMORY).when(location).getMemory(anyString());
-
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        VanillaCloudFoundryApplication entity =
+                addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
         checkDefaultResourceProfile(entity);
+        doReturn(CUSTOM_MEMORY).when(location).getMemory(anyString());
 
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(), CUSTOM_MEMORY);
@@ -164,15 +164,15 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
-        doNothing().when(location).setDiskQuota(anyString(), anyInt());
-        doReturn(CUSTOM_DISK).when(location).getDiskQuota(anyString());
-
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        VanillaCloudFoundryApplication entity =
+                addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
         checkDefaultResourceProfile(entity);
+        doReturn(CUSTOM_DISK).when(location).getDiskQuota(anyString());
 
         entity.setDiskQuota(CUSTOM_DISK);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(), CUSTOM_DISK);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(),
+                CUSTOM_DISK);
         verify(location, times(1)).setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
     }
 
@@ -183,14 +183,15 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
         doNothing().when(location).setInstancesNumber(anyString(), anyInt());
-        doReturn(CUSTOM_INSTANCES).when(location).getInstancesNumber(anyString());
 
-        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
         checkDefaultResourceProfile(entity);
+        doReturn(CUSTOM_INSTANCES).when(location).getInstancesNumber(anyString());
 
         entity.setInstancesNumber(CUSTOM_INSTANCES);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(), CUSTOM_INSTANCES);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
+                CUSTOM_INSTANCES);
         verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
     }
 
@@ -202,7 +203,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
-        final VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        final VanillaCloudFoundryApplication entity =
+                addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
 
         entity.stop();
@@ -222,11 +224,24 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
-        final VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp();
+        final VanillaCloudFoundryApplication entity =
+                addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
 
         entity.restart();
         verify(location, times(1)).restart(APPLICATION_NAME);
+    }
+
+    private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
+            CloudFoundryPaasLocation location) {
+        return addDefaultVanillaToAppAndMockProfileMethods(location, null);
+    }
+
+    private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
+            CloudFoundryPaasLocation location, Map<String, String> env) {
+        VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp(env);
+        mockLocationProfileUsingEntityConfig(location, entity);
+        return entity;
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaEntityChildToApp() {
@@ -234,7 +249,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaEntityChildToApp(Map<String, String> env) {
-        EntitySpec<VanillaCloudFoundryApplication> vanilla = EntitySpec.create(VanillaCloudFoundryApplication.class)
+        EntitySpec<VanillaCloudFoundryApplication> vanilla = EntitySpec
+                .create(VanillaCloudFoundryApplication.class)
                 .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
                 .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
                 .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN)
@@ -243,6 +259,22 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
             vanilla.configure(VanillaCloudFoundryApplication.ENV, env);
         }
         return app.createAndManageChild(vanilla);
+    }
+
+    private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,
+                                                      VanillaCloudFoundryApplication entity) {
+        if (new MockUtil().isMock(location)) {
+            doNothing().when(location).setMemory(anyString(), anyInt());
+            doNothing().when(location).setDiskQuota(anyString(), anyInt());
+            doNothing().when(location).setInstancesNumber(anyString(), anyInt());
+
+            doReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY))
+                    .when(location).getMemory(anyString());
+            doReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK))
+                    .when(location).getDiskQuota(anyString());
+            doReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES))
+                    .when(location).getInstancesNumber(anyString());
+        }
     }
 
     private void startEntityInLocationAndCheckSensors(final VanillaCloudFoundryApplication entity,

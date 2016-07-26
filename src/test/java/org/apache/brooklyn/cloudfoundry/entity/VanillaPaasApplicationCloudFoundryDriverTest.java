@@ -18,6 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -39,6 +40,7 @@ import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -69,13 +71,13 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
 
     @Test
     public void testStartApplication() {
-        //TODO: Refactoring
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
+        mockLocationProfileUsingEntityConfig(location, entity);
 
         assertNull(entity.getAttribute(Attributes.MAIN_URI));
         assertNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
@@ -192,6 +194,10 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
+        mockLocationProfileUsingEntityConfig(location, entity);
+        when(location.getMemory(anyString())).thenReturn(
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
+                CUSTOM_MEMORY);
 
         VanillaPaasApplicationDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
@@ -210,10 +216,13 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
-        when(location.getDiskQuota(anyString())).thenReturn(CUSTOM_DISK);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
+        mockLocationProfileUsingEntityConfig(location, entity);
+        when(location.getDiskQuota(anyString())).thenReturn(
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK),
+                CUSTOM_DISK);
 
         VanillaPaasApplicationDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
@@ -236,6 +245,10 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
+        mockLocationProfileUsingEntityConfig(location, entity);
+        when(location.getInstancesNumber(anyString())).thenReturn(
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES),
+                CUSTOM_INSTANCES);
 
         VanillaPaasApplicationDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
@@ -296,6 +309,22 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         driver.delete();
         assertFalse(driver.isRunning());
         verify(location, times(1)).delete(anyString());
+    }
+
+    private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,
+                                                      VanillaCloudFoundryApplication entity) {
+        if (new MockUtil().isMock(location)) {
+            doNothing().when(location).setMemory(anyString(), anyInt());
+            doNothing().when(location).setDiskQuota(anyString(), anyInt());
+            doNothing().when(location).setInstancesNumber(anyString(), anyInt());
+
+            when(location.getMemory(anyString()))
+                    .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
+            when(location.getDiskQuota(anyString()))
+                    .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
+            when(location.getInstancesNumber(anyString()))
+                    .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+        }
     }
 
     private Dispatcher getGenericDispatcher() {
