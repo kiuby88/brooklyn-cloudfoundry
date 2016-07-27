@@ -49,7 +49,6 @@ public class CloudFoundryPaasClient {
 
     private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
 
-
     private final CloudFoundryPaasLocation location;
     private CloudFoundryClient client;
 

@@ -18,31 +18,38 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.Map;
 
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
+import org.apache.brooklyn.cloudfoundry.location.supplier.CloudFoundryClientSupplier;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation
-        implements PaasLocation, CloudFoundryPaasLocationConfig {
+public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
-    private CloudFoundryPaasClient client;
-
-    public CloudFoundryPaasLocation() {
-        client = new CloudFoundryPaasClient(this);
+    public CloudFoundryPaasLocation(Map<?, ?> properties) {
+        super(properties);
     }
 
-    @Override
-    public void init() {
-        super.init();
-    }
-
-    protected CloudFoundryPaasClient getClient() {
-        return client;
+    protected CloudFoundryClient getClient() throws MalformedURLException {
+        return new CloudFoundryClientSupplier(
+                getConfig(PaasLocationConfig.ACCESS_IDENTITY),
+                getConfig(PaasLocationConfig.ACCESS_CREDENTIAL),
+                URI.create(getConfig(PaasLocationConfig.CLOUD_ENDPOINT)).toURL(),
+                null,
+                null, // TODO getConfig(PaasLocationConfig.ORG),
+                null, // TODO getConfig(PaasLocationConfig.SPACE),
+                true// TODO getConfig(PaasLocationConfig.SELF_SIGNED_CERT)
+        ).get();
     }
 
     @Override
@@ -51,7 +58,20 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public String deploy(Map<?, ?> params) {
-        return getClient().deploy(params);
+        ConfigBag appSetUp = ConfigBag.newInstance(params);
+        String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
+        String applicationName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+
+        getClient().createApplication(applicationName, getStaging(appSetUp),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
+                getUris(appSetUp), null);
+
+        setInstancesNumber(applicationName,
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+
+        pushArtifact(applicationName, artifactLocalPath);
+        return getDomainUri(applicationName);
     }
 
     public void startApplication(String applicationName) {
