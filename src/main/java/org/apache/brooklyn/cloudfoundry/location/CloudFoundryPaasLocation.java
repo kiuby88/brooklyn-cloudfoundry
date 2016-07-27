@@ -58,7 +58,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
     }
 
     public String deploy(Map<?, ?> params) {
-        ConfigBag appSetUp = ConfigBag.newInstance(params);
+        ConfigBag appSetUp = ConfigBag.newInstanceExtending(config().getBag(), params);
+
         String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
         String applicationName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
 
