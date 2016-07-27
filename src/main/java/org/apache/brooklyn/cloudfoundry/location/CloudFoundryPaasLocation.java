@@ -33,16 +33,15 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     private CloudFoundryPaasClient client;
 
     public CloudFoundryPaasLocation() {
-        client = new CloudFoundryPaasClient(this);
+        super();
     }
 
-    @Override
-    public void init() {
-        super.init();
+    public CloudFoundryPaasLocation(Map<?, ?> properties) {
+        super(properties);
     }
 
     protected CloudFoundryPaasClient getClient() {
-        return client;
+        return client; // TODO use the supplier from the other PR
     }
 
     @Override
