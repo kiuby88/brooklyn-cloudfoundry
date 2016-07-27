@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -51,20 +51,18 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     public void setUp() throws Exception {
         super.setUp();
         cloudFoundryPaasClient = new CloudFoundryPaasClient(cloudFoundryPaasLocation);
-
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
-        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT_NAME);
-
+        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT);
     }
 
     @Test(groups = {"Live"})
     public void testWebApplicationManagement() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
@@ -72,11 +70,77 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @Test(groups = {"Live"})
     public void testWebApplicationManagementWithoutDomain() throws Exception {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudfoundryApplication.APPLICATION_NAME, applicationName);
-        params.configure(VanillaCloudfoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudfoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testAddEnvToApplication() throws Exception {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testAddNullEnvToApplication() throws Exception {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testModifyResourcesForApplication() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        assertFalse(Strings.isBlank(applicationUrl));
+
+        startApplication(applicationName, applicationUrl);
+        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), MEMORY);
+        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK);
+        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES);
+
+        cloudFoundryPaasClient.setMemory(applicationName, CUSTOM_MEMORY);
+        cloudFoundryPaasClient.setDiskQuota(applicationName, CUSTOM_DISK);
+        cloudFoundryPaasClient.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
+
+        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), CUSTOM_MEMORY);
+        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), CUSTOM_DISK);
+        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
+
+        stopApplication(applicationName, applicationUrl);
+        deleteApplicatin(applicationName);
+    }
+
+    @Test(groups = {"Live"})
+    public void testRestartApplication() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        assertFalse(Strings.isBlank(applicationUrl));
+        startApplication(applicationName, applicationUrl);
+
+        cloudFoundryPaasClient.restart(applicationName);
+        checkDeployedApplicationAvailability(applicationName, applicationUrl);
+
+        stopApplication(applicationName, applicationUrl);
+        deleteApplicatin(applicationName);
     }
 
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
@@ -88,11 +152,14 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         deleteApplicatin(applicationName);
     }
 
-    private void startApplication(final String applicationName, final String applicationDomain) {
+    private void startApplication(String applicationName, String applicationDomain) {
         cloudFoundryPaasClient.startApplication(applicationName);
+        checkDeployedApplicationAvailability(applicationName, applicationDomain);
+    }
 
+    private void checkDeployedApplicationAvailability(final String applicationName,
+                                                      final String applicationDomain) {
         Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
-
         Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {
                 try {
@@ -133,13 +200,13 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
 
     private ConfigBag getDefaultResourcesProfile() {
         ConfigBag params = new ConfigBag();
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_INSTANCES, INSTANCES);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_MEMORY, MEMORY);
-        params.configure(VanillaCloudfoundryApplication.REQUIRED_DISK, DISK);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_INSTANCES, INSTANCES);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_MEMORY, MEMORY);
+        params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
         return params;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     public String getLocalPath(String filename) {
         try {
             return Paths.get(getClass().getClassLoader().getResource(filename).toURI()).toString();

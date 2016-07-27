@@ -18,26 +18,30 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import java.util.Map;
+
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.annotation.Effector;
+import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.config.MapConfigKey;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
-@Catalog(name = "Vanilla CloudFoundry Application")
-@ImplementedBy(VanillaCloudfoundryApplicationImpl.class)
-public interface VanillaCloudfoundryApplication extends Entity, Startable {
+@Catalog(name = "Vanilla CloudFoundry Application entity")
+@ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
+public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
 
     @SetFromFlag("name")
     ConfigKey<String> APPLICATION_NAME = ConfigKeys.newStringConfigKey(
@@ -52,12 +56,18 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
             "cloudFoundry.application.buildpack", "Buildpack to deploy an application");
 
     @SetFromFlag("env")
-    MapConfigKey<String> ENVS = new MapConfigKey<String>(String.class, "cloudfoundry.application.env",
-            "Enviroment variables for the application", MutableMap.<String, String>of());
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    BasicAttributeSensorAndConfigKey<Map<String, String>> ENV =
+            new BasicAttributeSensorAndConfigKey(Map.class, "cloudFoundry.application.env",
+                    "Environment variables for the application", MutableMap.<String, String>of());
 
     @SetFromFlag("domain")
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.domain", "Domain for the application");
+
+    @SetFromFlag("host")
+    ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(
+            "cloudFoundry.application.host", "Host or sub-domain for the application");
 
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
@@ -77,14 +87,35 @@ public interface VanillaCloudfoundryApplication extends Entity, Startable {
     AttributeSensor<String> ROOT_URL =
             Sensors.newStringSensor("webapp.url", "URL of the application");
 
-    AttributeSensor<CloudFoundryPaasLocation> CLOUDFOUNDRY_LOCATION = Sensors.newSensor(
-            CloudFoundryPaasLocation.class, "cloudFoundryWebApp.paasLocation",
-            "CloudFoundry location used to deploy the application");
-
     AttributeSensor<Boolean> SERVICE_PROCESS_IS_RUNNING = Sensors.newBooleanSensor(
             "service.process.isRunning",
             "Whether the process for the service is confirmed as running");
 
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
 
+    AttributeSensor<Integer> INSTANCES =
+            Sensors.newIntegerSensor("cloudfoundry.application.instances",
+                    "Instances which are used to run the application");
+
+    AttributeSensor<Integer> ALLOCATED_MEMORY =
+            Sensors.newIntegerSensor("cloudfoundry.application.memory",
+                    "Application allocated memory");
+
+    AttributeSensor<Integer> ALLOCATED_DISK =
+            Sensors.newIntegerSensor("cloudfoundry.application.disk", "Application allocated disk (MB)");
+
+    @Effector(description = "Set an environment variable that can be retrieved by the web application")
+    public void setEnv(@EffectorParam(name = "name", description = "Name of the variable") String name,
+                       @EffectorParam(name = "value", description = "Value of the environment variable") String value);
+
+    @Effector(description = "Set the desired number of instances that will be user by the web application")
+    public void setInstancesNumber(@EffectorParam(name = "instancesNumber", description = "Number of " +
+            "instance that are being used by the application") int instancesNumber);
+
+    @Effector(description = "Set the desired disk quota that will be allocated")
+    public void setDiskQuota(@EffectorParam(name = "diskQuota", description = "Disk allocated" +
+            " that will be used by the web application") int diskQuota);
+
+    @Effector(description = "Set the desired memory that will be allocated")
+    public void setMemory(@EffectorParam(name = "memory", description = "Memory allocated") int memory);
 }

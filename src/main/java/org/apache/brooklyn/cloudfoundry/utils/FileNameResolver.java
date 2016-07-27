@@ -16,17 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.location;
+package org.apache.brooklyn.cloudfoundry.utils;
 
-import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
+public class FileNameResolver {
 
-    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
-            "Organization where paas resources will live.");
-
-    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
-            "Space from the CloudFoundry services will be managed.");
+    public static String findArchiveNameFromUrl(String url) {
+        String name = url.substring(url.lastIndexOf('/') + 1);
+        if (name.indexOf("?") > 0) {
+            Pattern p = Pattern.compile("[A-Za-z0-9_\\-]+\\..(ar|AR)($|(?=[^A-Za-z0-9_\\-]))");
+            Matcher wars = p.matcher(name);
+            if (wars.find()) {
+                name = wars.group();
+            }
+        }
+        return name;
+    }
 }

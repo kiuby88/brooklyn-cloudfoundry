@@ -18,10 +18,6 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -30,12 +26,11 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.drivers.EntityDriverManager;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
-import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.core.entity.AbstractEntity;
-import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -48,7 +43,6 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.http.HttpTool;
 import org.apache.brooklyn.util.repeat.Repeater;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
@@ -59,32 +53,32 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 
-public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implements VanillaCloudfoundryApplication {
+public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implements VanillaCloudFoundryApplication {
 
-    private static final Logger log = LoggerFactory.getLogger(VanillaCloudfoundryApplicationImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(VanillaCloudFoundryApplicationImpl.class);
     private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private CloudFoundryPaasLocation cfLocation;
     private String applicationName;
-    private String applicationUrl;
 
     protected boolean connectedSensors = false;
     private FunctionFeed serviceProcessIsRunning;
     private FunctionFeed serviceProcessUp;
+    private VanillaPaasApplicationDriver driver;
 
-    public VanillaCloudfoundryApplicationImpl() {
+    public VanillaCloudFoundryApplicationImpl() {
         super(MutableMap.of(), null);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Entity parent) {
+    public VanillaCloudFoundryApplicationImpl(Entity parent) {
         this(MutableMap.of(), parent);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Map properties) {
+    public VanillaCloudFoundryApplicationImpl(Map properties) {
         this(properties, null);
     }
 
-    public VanillaCloudfoundryApplicationImpl(Map properties, Entity parent) {
+    public VanillaCloudFoundryApplicationImpl(Map properties, Entity parent) {
         super(properties, parent);
     }
 
@@ -98,6 +92,16 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         if (Strings.isBlank(applicationName)) {
             applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
         }
+    }
+
+    @Override
+    public Class getDriverInterface() {
+        return VanillaPaasApplicationDriver.class;
+    }
+
+    @Override
+    public VanillaPaasApplicationDriver getDriver() {
+        return driver;
     }
 
     @Override
@@ -128,8 +132,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
             preStart(findLocation(locations));
             customStart();
             log.info("Entity {} was started", new Object[]{this});
-            connectSensors();
-            postStart();
+            postDriverStart();
 
             ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
         } catch (Throwable t) {
@@ -147,11 +150,12 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
             throw new ExceptionInInitializerError("Location should not be null in " + this +
                     " the entity needs a initialized Location");
         }
+        initDriver(cfLocation);
     }
 
     /*
      * TODO: avoiding boilerplate code
-     * This method is a copy of getLocations in MachineLifecycleEffectorTasks
+     * This method was gotten  getLocations in MachineLifecycleEffectorTasks
      */
     protected Location findLocation(@Nullable Collection<? extends Location> locations) {
         if (locations == null || locations.isEmpty()) {
@@ -174,42 +178,12 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     protected void customStart() {
-        deploy();
-        preLaunch();
-        launch();
-        postLaunch();
+        driver.start();
     }
 
-    private void deploy() {
-        Map<String, Object> params = MutableMap.copyOf(this.config().getBag().getAllConfig());
-        params.put(APPLICATION_NAME.getName(), applicationName);
-        if (params.containsKey(ARTIFACT_PATH.getName())) {
-            params.put(ARTIFACT_PATH.getName(), getLocalPath((String) params.get(ARTIFACT_PATH.getName())));
-        }
-        applicationUrl = cfLocation.deploy(params);
-    }
-
-    private void preLaunch() {
-        configureEnv();
-    }
-
-    private void configureEnv() {
-        //TODO
-        //Map<?, ?> envs = this.getConfig(VanillaCloudfoundryApplication.ENVS);
-        //cfLocation.configureEnv(applicationName, (Map<Object, Object>) envs);
-    }
-
-    private void launch() {
-        cfLocation.startApplication(applicationName);
-    }
-
-    private void postLaunch() {
+    protected void postDriverStart() {
         waitForEntityStart();
-        sensors().set(Attributes.MAIN_URI, URI.create(applicationUrl));
-        sensors().set(VanillaCloudfoundryApplication.ROOT_URL, applicationUrl);
-    }
-
-    protected void postStart() {
+        connectSensors();
         Entities.waitForServiceUp(this, Duration.of(
                 getConfig(BrooklynConfigKeys.START_TIMEOUT).toMilliseconds(),
                 TimeUnit.MILLISECONDS));
@@ -229,7 +203,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
                         .onException(Functions.constant(Boolean.FALSE))
                         .callable(new Callable<Boolean>() {
                             public Boolean call() {
-                                return isRunning();
+                                return driver.isRunning();
                             }
                         }))
                 .build();
@@ -243,24 +217,10 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
                         .onException(Functions.constant(Boolean.FALSE))
                         .callable(new Callable<Boolean>() {
                             public Boolean call() {
-                                return isRunning();
+                                return driver.isRunning();
                             }
                         }))
                 .build();
-    }
-
-    public boolean isRunning() {
-        return isApplicationDomainAvailable();
-    }
-
-    protected boolean isApplicationDomainAvailable() {
-        boolean result = false;
-        try {
-            result = HttpTool.getHttpStatusCode(applicationUrl) == HttpURLConnection.HTTP_OK;
-        } catch (Exception e) {
-            log.warn("Application " + applicationName + "is not available yet for entity " + this);
-        }
-        return result;
     }
 
     @Override
@@ -293,10 +253,8 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
         try {
-
             preStop();
             customStop();
-
             ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
             log.info("The entity stop operation {} is completed without errors",
                     new Object[]{this});
@@ -312,8 +270,8 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
     }
 
     protected void customStop() {
-        cfLocation.stop(applicationName);
-        cfLocation.delete(applicationName);
+        driver.stop();
+        driver.delete();
     }
 
     protected void disconnectSensors() {
@@ -340,22 +298,17 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
 
     @Override
     public void restart() {
-        //TODO
+        driver.restart();
     }
 
     @Override
     public void destroy() {
         super.destroy();
         disconnectSensors();
-        getCloudFoundryLocation().delete(applicationName);
+        driver.delete();
     }
 
-    protected CloudFoundryPaasLocation getCloudFoundryLocation() {
-        return cfLocation;
-    }
-
-
-    private void waitForEntityStart() {
+    public void waitForEntityStart() {
         if (log.isDebugEnabled()) {
             log.debug("waiting to ensure {} doesn't abort prematurely", this);
         }
@@ -365,7 +318,7 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         isRunningResult = Repeater.create("Wait until the application is running")
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
-                        return isRunning();
+                        return driver.isRunning();
                     }
                 })
                 .every(Duration.ONE_SECOND)
@@ -381,16 +334,56 @@ public class VanillaCloudfoundryApplicationImpl extends AbstractEntity implement
         }
     }
 
-    private String getLocalPath(String uri) {
-        try {
-            File war;
-            war = LocalResourcesDownloader
-                    .downloadResourceInLocalDir(uri);
-            return war.getCanonicalPath();
-        } catch (IOException e) {
-            log.error("Error obtaining local path in {} for artifact {}", this, uri);
-            throw Exceptions.propagate(e);
+    private void initDriver(CloudFoundryPaasLocation location) {
+        VanillaPaasApplicationDriver newDriver = doInitDriver(location);
+        if (newDriver == null) {
+            throw new UnsupportedOperationException("cannot start " + this +
+                    " on " + location + ": no driver available");
         }
+        driver = newDriver;
+    }
+
+    private VanillaPaasApplicationDriver doInitDriver(CloudFoundryPaasLocation location) {
+        if (driver != null) {
+            if ((driver instanceof VanillaPaasApplicationCloudFoundryDriver)
+                    && location.equals((driver).getLocation())) {
+                return driver; //just reuse
+            } else {
+                log.warn("driver/location change is untested for {} at {}; changing driver and continuing", this, location);
+                return newDriver(location);
+            }
+        } else {
+            return newDriver(location);
+        }
+    }
+
+    private VanillaPaasApplicationDriver newDriver(CloudFoundryPaasLocation location) {
+        EntityDriverManager entityDriverManager = getManagementContext().getEntityDriverManager();
+        return (VanillaPaasApplicationDriver) entityDriverManager.build(this, location);
+    }
+
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    @Override
+    public void setEnv(String name, String value) {
+        driver.setEnv(MutableMap.of(name, value));
+    }
+
+    @Override
+    public void setInstancesNumber(int instancesNumber) {
+        driver.setInstancesNumber(instancesNumber);
+    }
+
+    @Override
+    public void setDiskQuota(int diskQuota) {
+        driver.setDiskQuota(diskQuota);
+    }
+
+    @Override
+    public void setMemory(int memory) {
+        driver.setMemory(memory);
     }
 
 }

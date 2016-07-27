@@ -47,15 +47,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     @Override
     public String getPaasProviderName() {
-        return "cloudfoundry";
+        return "CloudFoundry";
     }
 
     public String deploy(Map<?, ?> params) {
         return getClient().deploy(params);
-    }
-
-    public void configureEnv(String applicationName, Map<Object, Object> envs) {
-        getClient().setEnv(applicationName, (Map<Object, Object>) envs);
     }
 
     public void startApplication(String applicationName) {
@@ -66,7 +62,44 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         getClient().stopApplication(applicationName);
     }
 
+    public void restart(String applicationName) {
+        getClient().restartApplication(applicationName);
+    }
+
     public void delete(String applicationName) {
         getClient().deleteApplication(applicationName);
     }
+
+    public void setEnv(String applicationName, Map<String, String> env) {
+        getClient().setEnv(applicationName, env);
+    }
+
+    public Map<String, String> getEnv(String applicationName) {
+        return getClient().getEnv(applicationName);
+    }
+
+    public void setInstancesNumber(String applicationName, int instancesNumber) {
+        getClient().setInstancesNumber(applicationName, instancesNumber);
+    }
+
+    public void setDiskQuota(String applicationName, int diskQuota) {
+        getClient().setDiskQuota(applicationName, diskQuota);
+    }
+
+    public void setMemory(String applicationName, int memory) {
+        getClient().setMemory(applicationName, memory);
+    }
+
+    public int getInstancesNumber(String applicationName) {
+        return getClient().getInstancesNumber(applicationName);
+    }
+
+    public int getDiskQuota(String applicationName) {
+        return getClient().getDiskQuota(applicationName);
+    }
+
+    public int getMemory(String applicationName) {
+        return getClient().getMemory(applicationName);
+    }
+
 }

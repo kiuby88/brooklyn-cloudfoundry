@@ -31,15 +31,46 @@ import org.apache.brooklyn.util.text.Strings;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
+
 public class LocalResourcesDownloaderTest {
 
     private static String ARTIFACT_NAME = "brooklyn-example-hello-world-sql-webapp-in-paas.war";
     private static String ARTIFACT_URL = "classpath://" + ARTIFACT_NAME;
     private static String TEMP_FOLDER = new Os.TmpDirFinder().get().get();
+    private static String NOT_VALID_URL = Strings.makeRandomId(10);
+
+    @Test
+    public void testDownloadUsingUrlsInLocalDir() {
+        File localFile = LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_NAME,
+                ImmutableList.of(ARTIFACT_URL));
+        assertTrue(localFile.exists());
+        assertTrue(localFile.canRead());
+        assertTrue(localFile.getAbsolutePath().startsWith(TEMP_FOLDER));
+    }
+
+    @Test
+    public void testDownloadUsingSomeNoValidUrlsInLocalDir() {
+        File localFile = LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_NAME,
+                ImmutableList.of(NOT_VALID_URL, ARTIFACT_URL));
+        assertTrue(localFile.exists());
+        assertTrue(localFile.canRead());
+        assertTrue(localFile.getAbsolutePath().startsWith(TEMP_FOLDER));
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testDownloadExceptionUsingUrlsInLocalDir() {
+        File localFile = LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_NAME,
+                ImmutableList.of(NOT_VALID_URL));
+        assertTrue(localFile.exists());
+        assertTrue(localFile.canRead());
+        assertTrue(localFile.getAbsolutePath().startsWith(TEMP_FOLDER));
+    }
 
     @Test
     public void testDownloadResourceInLocalDir() {
-        File localFile = LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_URL);
+        File localFile = LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_NAME,
+                ARTIFACT_URL);
         assertTrue(localFile.exists());
         assertTrue(localFile.canRead());
         assertTrue(localFile.getAbsolutePath().startsWith(TEMP_FOLDER));
@@ -47,7 +78,7 @@ public class LocalResourcesDownloaderTest {
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testExceptionDownloadingInLocalDir() {
-        LocalResourcesDownloader.downloadResourceInLocalDir(Strings.makeRandomId(2));
+        LocalResourcesDownloader.downloadResourceInLocalDir(ARTIFACT_NAME, NOT_VALID_URL);
     }
 
     @Test
@@ -69,6 +100,7 @@ public class LocalResourcesDownloaderTest {
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testExceptionDownloadingResource() throws URISyntaxException {
         File file = new File("tmp-file");
-        LocalResourcesDownloader.downloadResource(Strings.makeRandomId(8), file);
+        LocalResourcesDownloader.downloadResource(NOT_VALID_URL, file);
     }
+
 }

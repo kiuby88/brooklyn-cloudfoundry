@@ -25,7 +25,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -75,23 +75,23 @@ public class CloudFoundryPaasClient {
 
     public String deploy(Map<?, ?> params) {
         ConfigBag appSetUp = ConfigBag.newInstance(params);
-        String artifactLocalPath = appSetUp.get(VanillaCloudfoundryApplication.ARTIFACT_PATH);
-        String applicationName = appSetUp.get(VanillaCloudfoundryApplication.APPLICATION_NAME);
+        String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
+        String applicationName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
 
         getClient().createApplication(applicationName, getStaging(appSetUp),
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_DISK),
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_MEMORY),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK),
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
                 getUris(appSetUp), null);
 
-        getClient().updateApplicationInstances(applicationName,
-                appSetUp.get(VanillaCloudfoundryApplication.REQUIRED_INSTANCES));
+        setInstancesNumber(applicationName,
+                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
 
         pushArtifact(applicationName, artifactLocalPath);
         return getDomainUri(applicationName);
     }
 
     protected Staging getStaging(ConfigBag config) {
-        String buildpack = config.get(VanillaCloudfoundryApplication.BUILDPACK);
+        String buildpack = config.get(VanillaCloudFoundryApplication.BUILDPACK);
         return new Staging(null, buildpack);
     }
 
@@ -99,15 +99,21 @@ public class CloudFoundryPaasClient {
         return MutableList.of(inferApplicationRouteUri(config));
     }
 
-    private String inferApplicationRouteUri(ConfigBag config) {
-        String domain = config.get(VanillaCloudfoundryApplication.APPLICATION_DOMAIN);
-        if (Strings.isBlank(domain)) {
-            domain = getClient().getDefaultDomain().getName();
+    protected String inferApplicationRouteUri(ConfigBag config) {
+        String domainId = config.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        if (Strings.isBlank(domainId)) {
+            domainId = getClient().getDefaultDomain().getName();
         }
-        if (findSharedDomain(domain) == null) {
-            throw new RuntimeException("The target shared domain " + domain + " does not exist");
+        if (findSharedDomain(domainId) == null) {
+            throw new RuntimeException("The target shared domain " + domainId + " does not exist");
         }
-        return config.get(VanillaCloudfoundryApplication.APPLICATION_NAME) + "." + domain;
+
+        String host = config.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
+        if (Strings.isBlank(host)) {
+            host = config.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+        }
+
+        return host + "." + domainId;
     }
 
     private CloudDomain findSharedDomain(final String domainName) {
@@ -151,9 +157,21 @@ public class CloudFoundryPaasClient {
         return getClient().startApplication(applicationName);
     }
 
-    public void setEnv(String applicationName, Map<Object, Object> envs) {
-        //TODO
-        getClient().getApplication(applicationName).setEnv(envs);
+    public void setEnv(String applicationName, Map<String, String> env) {
+        if (env != null) {
+            CloudApplication app = getClient().getApplication(applicationName);
+            Map<String, String> oldEnv = app.getEnvAsMap();
+            oldEnv.putAll(env);
+            getClient().updateApplicationEnv(applicationName, oldEnv);
+        }
+    }
+
+    public Map<String, String> getEnv(String applicationName) {
+        return getClient().getApplication(applicationName).getEnvAsMap();
+    }
+
+    public void restartApplication(String applicationName) {
+        getClient().restartApplication(applicationName);
     }
 
     public void stopApplication(String applicationName) {
@@ -188,4 +206,29 @@ public class CloudFoundryPaasClient {
             throw new RuntimeException("The target URL is not valid: " + e.getMessage());
         }
     }
+
+    public void setInstancesNumber(String applicationName, int instancesNumber) {
+        getClient().updateApplicationInstances(applicationName, instancesNumber);
+    }
+
+    public void setDiskQuota(String applicationName, int diskQuota) {
+        getClient().updateApplicationDiskQuota(applicationName, diskQuota);
+    }
+
+    public void setMemory(String applicationName, int memory) {
+        getClient().updateApplicationMemory(applicationName, memory);
+    }
+
+    public int getInstancesNumber(String applicationName) {
+        return getClient().getApplication(applicationName).getInstances();
+    }
+
+    public int getDiskQuota(String applicationName) {
+        return getClient().getApplication(applicationName).getDiskQuota();
+    }
+
+    public int getMemory(String applicationName) {
+        return getClient().getApplication(applicationName).getMemory();
+    }
+
 }

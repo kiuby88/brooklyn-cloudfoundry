@@ -18,43 +18,35 @@
  */
 package org.apache.brooklyn.cloudfoundry;
 
+import static org.testng.Assert.assertEquals;
+
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
-import org.apache.brooklyn.core.internal.BrooklynProperties;
-import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
-import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.BeforeMethod;
 
-public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport {
+public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
+        implements CloudFoundryTestFixtures {
 
     protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
-
-    protected static final String APPLICATION_ARTIFACT_NAME =
-            "brooklyn-example-hello-world-sql-webapp-in-paas.war";
-    protected final String APPLICATION_ARTIFACT_URL =
-            "classpath://" + APPLICATION_ARTIFACT_NAME;
-
-    protected static final String DOMAIN = "brooklyndomain.io";
-    protected static final String DEFAULT_APPLICATION_DOMAIN
-            = APPLICATION_NAME + "." + DOMAIN;
+    protected static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
+    protected static final String DEFAULT_APPLICATION_BROOKLYN_DOMAIN
+            = APPLICATION_NAME + "." + BROOKLYN_DOMAIN;
     protected static final String DEFAULT_APPLICATION_ADDRESS
-            = "https://" + DEFAULT_APPLICATION_DOMAIN;
-
-    protected static final int MEMORY = 512;
-    protected static final int INSTANCES = 1;
-    protected static final int DISK = 1024;
-
+            = "https://" + DEFAULT_APPLICATION_BROOKLYN_DOMAIN;
+    protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
+    protected static final String MOCK_HOST = "mockedhost";
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        mgmt = newLocalManagementContext();
         cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
     }
 
@@ -70,8 +62,13 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport {
                 mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
     }
 
-    protected LocalManagementContext newLocalManagementContext() {
-        return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
+    public void checkDefaultResourceProfile(VanillaCloudFoundryApplication entity) {
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES),
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
     }
 
 }

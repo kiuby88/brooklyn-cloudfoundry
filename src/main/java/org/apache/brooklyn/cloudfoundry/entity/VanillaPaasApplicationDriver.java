@@ -16,17 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.location;
+package org.apache.brooklyn.cloudfoundry.entity;
 
-import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
+import java.util.Map;
 
-public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
+import org.apache.brooklyn.api.entity.drivers.EntityDriver;
 
-    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
-            "Organization where paas resources will live.");
+public interface VanillaPaasApplicationDriver extends EntityDriver {
 
-    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
-            "Space from the CloudFoundry services will be managed.");
+    boolean isRunning();
+
+    void rebind();
+
+    void start();
+
+    void restart();
+
+    void stop();
+
+    void delete();
+
+    void setEnv(Map<String, String> env);
+
+    void setInstancesNumber(int instancesNumber);
+
+    void setDiskQuota(int diskQuota);
+
+    void setMemory(int memory);
 }
