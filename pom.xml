@@ -47,6 +47,23 @@
         </license>
     </licenses>
 
+    <repositories>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>http://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>http://repo.spring.io/milestone</url>
+        </repository>
+    </repositories>
+
+
     <dependencies>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
@@ -68,9 +85,25 @@
 
         <dependency>
             <groupId>org.cloudfoundry</groupId>
-            <artifactId>cloudfoundry-client-lib</artifactId>
-            <version>${cloudfoundry.client.version}</version>
+            <artifactId>cloudfoundry-client-reactor</artifactId>
+            <version>2.0.0.M10</version>
         </dependency>
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-operations</artifactId>
+            <version>2.0.0.M10</version>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>3.0.0.RC1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor.ipc</groupId>
+            <artifactId>reactor-netty</artifactId>
+            <version>0.5.0.M2</version>
+        </dependency>
+
 
         <dependency>
             <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->

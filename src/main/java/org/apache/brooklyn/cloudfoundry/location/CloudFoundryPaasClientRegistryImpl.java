@@ -20,22 +20,14 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
-import org.apache.brooklyn.location.jclouds.ComputeServiceRegistryImpl;
 import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.api.client.repackaged.com.google.common.base.Throwables;
+import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.reactor.DefaultConnectionContext;
+import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
+import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
 
 public class CloudFoundryPaasClientRegistryImpl implements CloudFoundryClientRegistry {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ComputeServiceRegistryImpl.class);
 
     public static final CloudFoundryPaasClientRegistryImpl INSTANCE = new CloudFoundryPaasClientRegistryImpl();
 
@@ -46,21 +38,27 @@ public class CloudFoundryPaasClientRegistryImpl implements CloudFoundryClientReg
     public CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
 
         String provider = checkNotNull(conf.get(PaasLocationConfig.CLOUD_PROVIDER), "provider must not be null");
-        String identity = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
-        String credential = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
-        String endpoint = checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
+        String username = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
+        String password = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
+        String apiHost = checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
 
         switch (provider) {
-            case "cloudfoundry":
-                // TODO use complete constructor
-                CloudCredentials credentials = new CloudCredentials(identity, credential);
-                try {
-                    return new CloudFoundryClient(credentials, URI.create(endpoint).toURL());
-                } catch (MalformedURLException e) {
-                    throw Throwables.propagate(e);
-                }
+            case "pivotal":
+                DefaultConnectionContext connectionContext = DefaultConnectionContext.builder()
+                        .apiHost(apiHost)
+                        .build();
+
+                PasswordGrantTokenProvider tokenProvider = PasswordGrantTokenProvider.builder()
+                        .username(username)
+                        .password(password)
+                        .build();
+
+                return ReactorCloudFoundryClient.builder()
+                        .connectionContext(connectionContext)
+                        .tokenProvider(tokenProvider)
+                        .build();
             default:
-                throw new IllegalStateException("Unexpected scope "+ provider);
+                throw new IllegalStateException("Unexpected scope " + provider);
         }
     }
 }

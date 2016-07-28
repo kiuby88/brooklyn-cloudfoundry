@@ -19,7 +19,7 @@
 package org.apache.brooklyn.cloudfoundry.location;
 
 import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.CloudFoundryClient;
 
 public interface CloudFoundryClientRegistry {
 

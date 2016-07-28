@@ -18,33 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.CloudFoundryException;
-import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudDomain;
-import org.cloudfoundry.client.lib.domain.Staging;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-
+/*
 public class CloudFoundryPaasClient {
 
     private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
@@ -230,5 +204,5 @@ public class CloudFoundryPaasClient {
     public int getMemory(String applicationName) {
         return getClient().getApplication(applicationName).getMemory();
     }
-
 }
+*/
