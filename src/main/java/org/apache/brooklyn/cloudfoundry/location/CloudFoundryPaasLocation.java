@@ -18,31 +18,53 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.nio.file.Paths;
 import java.util.Map;
 
+import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
+import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.client.v3.applications.Application;
+import org.cloudfoundry.operations.DefaultCloudFoundryOperations;
+import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
+import org.cloudfoundry.operations.applications.PushApplicationRequest;
+import org.cloudfoundry.operations.applications.StartApplicationRequest;
+import org.cloudfoundry.operations.organizations.OrganizationSummary;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation
-        implements PaasLocation, CloudFoundryPaasLocationConfig {
+import reactor.core.publisher.Flux;
+
+public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
-    private CloudFoundryPaasClient client;
-
     public CloudFoundryPaasLocation() {
-        client = new CloudFoundryPaasClient(this);
+        super();
     }
 
-    @Override
-    public void init() {
-        super.init();
+    public CloudFoundryPaasLocation(Map<?, ?> properties) {
+        super(properties);
     }
 
-    protected CloudFoundryPaasClient getClient() {
-        return client;
+    public CloudFoundryClient getClient() {
+        return getClient(MutableMap.of());
+    }
+    public CloudFoundryClient getClient(Map<?,?> flags) {
+        ConfigBag conf = (flags==null || flags.isEmpty())
+                ? config().getBag()
+                : ConfigBag.newInstanceExtending(config().getBag(), flags);
+        return getClient(conf);
+    }
+
+    public CloudFoundryClient getClient(ConfigBag config) {
+        CloudFoundryClientRegistry registry = getConfig(CF_CLIENT_REGISTRY);
+        return registry.getCloudFoundryClient(ResolvingConfigBag.newInstanceExtending(getManagementContext(), config), true);
     }
 
     @Override
@@ -50,12 +72,45 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return "CloudFoundry";
     }
 
-    public String deploy(Map<?, ?> params) {
-        return getClient().deploy(params);
+    public void push() {
+
+        DefaultCloudFoundryOperations cloudFoundryOperations = DefaultCloudFoundryOperations.builder()
+                .cloudFoundryClient(getClient())
+                //.dopplerClient(dopplerClient)
+                //.uaaClient(uaaClient)
+                .organization("example-organization")
+                .space("example-space")
+                .build();
+
+        cloudFoundryOperations.applications()
+                .push(PushApplicationRequest.builder()
+                        .application(Paths.get("path"))
+                        .healthCheckType(ApplicationHealthCheck.PORT)
+                        .buildpack("staticfile_buildpack")
+                        .diskQuota(512)
+                        .memory(64)
+                        .name("name")
+                        .noStart(true)
+                        .build());
+    }
+
+    public Iterable<OrganizationSummary> listOrganizations() {
+        DefaultCloudFoundryOperations cloudFoundryOperations = DefaultCloudFoundryOperations.builder()
+                .cloudFoundryClient(getClient())
+                .organization("example-organization")
+                .space("example-space")
+                .build();
+
+        return cloudFoundryOperations.organizations().list().toIterable();
     }
 
     public void startApplication(String applicationName) {
-        getClient().startApplication(applicationName);
+        DefaultCloudFoundryOperations cloudFoundryOperations = DefaultCloudFoundryOperations.builder()
+                .cloudFoundryClient(getClient())
+                .organization("example-organization")
+                .space("example-space")
+                .build();
+        cloudFoundryOperations.applications().start(StartApplicationRequest.builder().name(applicationName).build()).block();
     }
 
     public void stop(String applicationName) {

@@ -24,9 +24,16 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 
 public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
 
-    public static ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
+
+    ConfigKey<CloudFoundryClientRegistry> CF_CLIENT_REGISTRY = ConfigKeys.newConfigKey(
+            CloudFoundryClientRegistry.class,
+            "cloudFoundryPaasClientRegistry",
+            "Registry/Factory for creating cloudfoundry client; default is almost always fine, except where tests want to customize behaviour",
+            CloudFoundryPaasClientRegistryImpl.INSTANCE);
+
+    ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
             "Organization where paas resources will live.");
 
-    public static ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
+    ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
             "Space from the CloudFoundry services will be managed.");
 }

@@ -16,24 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.location.paas;
+package org.apache.brooklyn.cloudfoundry.location;
 
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.location.LocationConfigKeys;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import java.net.MalformedURLException;
+import java.net.URL;
 
-public interface PaasLocationConfig {
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.lib.CloudFoundryClient;
 
-    @SetFromFlag("provider")
-    ConfigKey<String> CLOUD_PROVIDER = LocationConfigKeys.CLOUD_PROVIDER;
+import com.google.api.client.repackaged.com.google.common.base.Throwables;
 
-    @SetFromFlag("identity")
-    ConfigKey<String> ACCESS_IDENTITY = LocationConfigKeys.ACCESS_IDENTITY;
+public class StubbedCloudFoundryPaasClientRegistry implements CloudFoundryClientRegistry {
 
-    @SetFromFlag("credential")
-    ConfigKey<String> ACCESS_CREDENTIAL = LocationConfigKeys.ACCESS_CREDENTIAL;
-
-    @SetFromFlag("endpoint")
-    ConfigKey<String> CLOUD_ENDPOINT = LocationConfigKeys.CLOUD_ENDPOINT;
-
+    @Override
+    public CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+        try {
+            return new FakeCloudFoundryClient(new URL(conf.get(CloudFoundryPaasLocationConfig.CLOUD_ENDPOINT)));
+        } catch (MalformedURLException e) {
+            throw Throwables.propagate(e);
+        }
+    }
 }

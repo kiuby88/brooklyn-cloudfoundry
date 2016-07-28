@@ -22,7 +22,6 @@ import static org.testng.Assert.assertEquals;
 
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -63,17 +62,19 @@ public class CloudFoundryPaasLocationResolverTest {
     }
 
     @Test
-    public void testCloudFoundryTakesProvidersScopedProperties() {
-        ConfigBag config = resolve(MY_PAAS_LOCATION).config().getBag();
-        assertEquals(config.get(CloudFoundryPaasLocation.ACCESS_IDENTITY), IDENTITY);
-        assertEquals(config.get(CloudFoundryPaasLocation.ACCESS_CREDENTIAL), CREDENTIAL);
-        assertEquals(config.get(CloudFoundryPaasLocation.CLOUD_ENDPOINT), ENDPOINT);
-        assertEquals(config.get(CloudFoundryPaasLocation.CF_ORG), ORG);
-        assertEquals(config.get(CloudFoundryPaasLocation.CF_SPACE), SPACE);
+    public void testCloudFoundryScopedProperties() {
+
+        CloudFoundryPaasLocation paasLocation = resolve(MY_PAAS_LOCATION);
+
+        assertEquals(paasLocation.config().get(CloudFoundryPaasLocation.ACCESS_IDENTITY), IDENTITY);
+        assertEquals(paasLocation.config().get(CloudFoundryPaasLocation.ACCESS_CREDENTIAL), CREDENTIAL);
+        assertEquals(paasLocation.config().get(CloudFoundryPaasLocation.CLOUD_ENDPOINT), ENDPOINT);
+        assertEquals(paasLocation.config().get(CloudFoundryPaasLocation.CF_ORG), ORG);
+        assertEquals(paasLocation.config().get(CloudFoundryPaasLocation.CF_SPACE), SPACE);
     }
 
     private CloudFoundryPaasLocation resolve(String spec) {
-        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().resolve(spec);
+        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().getLocationManaged(spec);
     }
 
 }
