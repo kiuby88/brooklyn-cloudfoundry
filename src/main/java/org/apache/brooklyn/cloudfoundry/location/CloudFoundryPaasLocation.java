@@ -22,18 +22,25 @@ import java.util.Map;
 
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CloudFoundryPaasLocation extends AbstractLocation
-        implements PaasLocation, CloudFoundryPaasLocationConfig {
+public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
     private CloudFoundryPaasClient client;
 
+
     public CloudFoundryPaasLocation() {
-        client = new CloudFoundryPaasClient(this);
+        super();
+    }
+
+    public CloudFoundryPaasLocation(Map<?, ?> properties) {
+        super(properties);
     }
 
     @Override
@@ -42,6 +49,22 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     protected CloudFoundryPaasClient getClient() {
+        return getClient(MutableMap.of());
+    }
+
+    protected CloudFoundryPaasClient getClient(Map<?, ?> flags) {
+        ConfigBag conf = (flags == null || flags.isEmpty())
+                ? config().getBag()
+                : ConfigBag.newInstanceExtending(config().getBag(), flags);
+        return getClient(conf);
+    }
+
+    protected CloudFoundryPaasClient getClient(ConfigBag config) {
+        if (client == null) {
+
+            CloudFoundryClientRegistry registry = getConfig(CF_CLIENT_REGISTRY);
+            client = registry.getCloudFoundryClient(ResolvingConfigBag.newInstanceExtending(getManagementContext(), config), true);
+        }
         return client;
     }
 

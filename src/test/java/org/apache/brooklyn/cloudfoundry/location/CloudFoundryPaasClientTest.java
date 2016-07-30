@@ -18,217 +18,124 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.Assert.assertTrue;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudDomain;
-import org.cloudfoundry.client.lib.domain.Staging;
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
 
-    @Mock
-    private CloudFoundryClient cloudFoundryClient;
-
+    private CloudFoundryOperations cloudFoundryClient;
     private CloudFoundryPaasClient client;
+
+    @SuppressWarnings("all")
+    public final String APPLICATION_LOCAL_PATH = getClass()
+            .getClassLoader().getResource(APPLICATION_ARTIFACT).getPath();
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);
-        client = spy(new CloudFoundryPaasClient(cloudFoundryPaasLocation));
-        doReturn(cloudFoundryClient).when(client).getClient();
+        cloudFoundryClient = spy(new FakeCloudFoundryClient());
+        client = new CloudFoundryPaasClient(cloudFoundryClient);
     }
 
     @Test
-    public void testDeployApplication() throws IOException {
-        CloudDomain cloudDomain = mock(CloudDomain.class);
-        when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
-
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
+    public void testDeployApplicationWithDomain() throws IOException {
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
-
-        mockApplicationDeployment(params, cloudDomain);
+        testDeployApplication(params);
         verify(cloudFoundryClient, never()).getDefaultDomain();
     }
 
     @Test
     public void testDeployApplicationWithoutDomain() throws IOException {
-        CloudDomain cloudDomain = mock(CloudDomain.class);
-        when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
-
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
-
-        mockApplicationDeployment(params, cloudDomain);
+        testDeployApplication(getDefaultApplicationConfiguration());
         verify(cloudFoundryClient, times(1)).getDefaultDomain();
     }
 
     @Test(expectedExceptions = RuntimeException.class)
     public void testDeployApplicationWithNonExistentDomain() throws IOException {
-        CloudDomain cloudDomain = mock(CloudDomain.class);
-        when(cloudDomain.getName()).thenReturn(Strings.makeRandomId(10));
-
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-
-        mockApplicationDeployment(params, cloudDomain);
-    }
-
-    private void mockApplicationDeployment(ConfigBag params, CloudDomain domain) throws IOException {
-        doNothing().when(cloudFoundryClient).
-                createApplication(
-                        Matchers.anyString(),
-                        Matchers.any(Staging.class),
-                        Matchers.anyInt(),
-                        Matchers.anyInt(),
-                        Matchers.anyListOf(String.class),
-                        Matchers.anyListOf(String.class));
-        doNothing().when(cloudFoundryClient).uploadApplication(anyString(), anyString());
-
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_BROOKLYN_DOMAIN));
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-
-        when(cloudFoundryClient.getDefaultDomain()).thenReturn(domain);
-        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
-
-        String applicationDomain = client.deploy(params.getAllConfig());
-        assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, Strings.makeRandomId(8));
+        testDeployApplication(params);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testDeployNonExistentArtifact() throws IOException {
-        //TODO join with mockApplicationDeployment method
-        doNothing().when(cloudFoundryClient).
-                createApplication(
-                        Matchers.anyString(),
-                        Matchers.any(Staging.class),
-                        Matchers.anyInt(),
-                        Matchers.anyInt(),
-                        Matchers.anyListOf(String.class),
-                        Matchers.anyListOf(String.class));
-        doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
-                .when(cloudFoundryClient).uploadApplication(anyString(), anyString());
-
-        CloudDomain cloudDomain = mock(CloudDomain.class);
-        when(cloudDomain.getName()).thenReturn(BROOKLYN_DOMAIN);
-        when(cloudFoundryClient.getDefaultDomain()).thenReturn(cloudDomain);
-        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(cloudDomain));
-
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getUris()).thenReturn(MutableList.of(DEFAULT_APPLICATION_BROOKLYN_DOMAIN));
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, Strings.makeRandomId(10));
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
 
         client.deploy(params.getAllConfig());
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testUpdateAnNotExistentArtifact() throws IOException {
-        doThrow(new PropagatedRuntimeException(new FileNotFoundException()))
-                .when(cloudFoundryClient).uploadApplication(anyString(), anyString());
         client.pushArtifact(APPLICATION_NAME, Strings.makeRandomId(10));
     }
 
     @Test
-    public void testStartApplication() {
-        when(cloudFoundryClient.startApplication(anyString())).thenReturn(new StartingInfo(Strings.EMPTY));
+    public void testStartApplication() throws IOException {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        deployApplication(params);
 
         StartingInfo startingInfo = client.startApplication(APPLICATION_NAME);
         assertNotNull(startingInfo);
         assertEquals(startingInfo.getStagingFile(), Strings.EMPTY);
-    }
-
-    @Test(expectedExceptions = CloudFoundryException.class)
-    public void testStartNonExistentApplication() {
-        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).startApplication(anyString());
-
-        client.startApplication(APPLICATION_NAME);
-    }
-
-    @Test
-    public void testGetApplicationStatus() {
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STARTED);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-
         assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STARTED);
     }
 
     @Test(expectedExceptions = CloudFoundryException.class)
+    public void testStartNonExistentApplication() {
+        client.startApplication(APPLICATION_NAME);
+    }
+
+    @Test
+    public void testGetApplicationStatus() throws IOException {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        deployApplication(params);
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STOPPED);
+    }
+
+    @Test(expectedExceptions = CloudFoundryException.class)
     public void testGetStateNonExistentApplication() {
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
         client.getApplicationStatus(APPLICATION_NAME);
     }
 
     @Test
     public void testInferApplicationRouteUriNoHost() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-
-        CloudDomain domain = mock(CloudDomain.class);
-        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
-        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
-
         assertEquals(client.inferApplicationRouteUri(params),
                 APPLICATION_NAME + "." + BROOKLYN_DOMAIN);
     }
 
     @Test
     public void testInferApplicationRouteUriWithHost() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
         params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, MOCK_HOST);
-
-        CloudDomain domain = mock(CloudDomain.class);
-        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
-        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
 
         assertEquals(client.inferApplicationRouteUri(params),
                 MOCK_HOST + "." + BROOKLYN_DOMAIN);
@@ -239,51 +146,42 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
 
-        CloudDomain domain = mock(CloudDomain.class);
-        when(domain.getName()).thenReturn(BROOKLYN_DOMAIN);
-
-        when(cloudFoundryClient.getSharedDomains()).thenReturn(MutableList.of(domain));
-        when(cloudFoundryClient.getDefaultDomain()).thenReturn(domain);
-
         assertEquals(client.inferApplicationRouteUri(params),
                 APPLICATION_NAME + "." + BROOKLYN_DOMAIN);
     }
 
     @Test
-    public void testStopApplication() {
-        doNothing().when(client).stopApplication(anyString());
+    public void testStopApplication() throws IOException {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
+        deployApplication(params);
 
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getState()).thenReturn(CloudApplication.AppState.STOPPED);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
+        client.startApplication(APPLICATION_NAME);
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STARTED);
 
         client.stopApplication(APPLICATION_NAME);
-        CloudApplication.AppState state = client
-                .getApplicationStatus(APPLICATION_NAME);
-        assertEquals(state, CloudApplication.AppState.STOPPED);
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STOPPED);
     }
 
     @Test(expectedExceptions = CloudFoundryException.class)
     public void testStopNonExistentApplication() {
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
-        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).stopApplication(anyString());
-
         client.stopApplication(APPLICATION_NAME);
     }
 
     @Test
-    public void restartApplication() {
-        StartingInfo info = mock(StartingInfo.class);
-        doReturn(info).when(cloudFoundryClient).restartApplication(anyString());
+    public void restartApplication() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+
+        client.startApplication(APPLICATION_NAME);
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STARTED);
+
         client.restartApplication(APPLICATION_NAME);
-        verify(cloudFoundryClient, times(1)).restartApplication(APPLICATION_NAME);
+        assertEquals(client.getApplicationStatus(APPLICATION_NAME), CloudApplication.AppState.STARTED);
     }
 
     @Test
-    public void testDeleteApplication() {
-        doNothing().when(cloudFoundryClient).deleteApplication(anyString());
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(null);
+    public void testDeleteApplication() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
 
         client.deleteApplication(APPLICATION_NAME);
         assertFalse(client.isDeployed(APPLICATION_NAME));
@@ -291,52 +189,120 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
 
     @Test(expectedExceptions = CloudFoundryException.class)
     public void testDeleteNonExistentApplication() {
-        doThrow(new CloudFoundryException(HttpStatus.NOT_FOUND))
-                .when(cloudFoundryClient).stopApplication(anyString());
-
         client.getApplicationStatus(APPLICATION_NAME);
     }
 
     @Test
-    public void testAddEnvToEmptyApplication() {
+    public void testDefaultEmptyEnvConfiguration() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertTrue(client.getEnv(APPLICATION_NAME).isEmpty());
+    }
+
+    @Test
+    public void testAddEnvToEmptyApplication() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+
         testAdditionOfEnv(MutableMap.<String, String>of(), SIMPLE_ENV);
         verify(cloudFoundryClient, times(1)).updateApplicationEnv(APPLICATION_NAME, SIMPLE_ENV);
     }
 
     @Test
-    public void testAddNullEnvToEmptyApplication() {
+    public void testAddNullEnvToEmptyApplication() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+
         testAdditionOfEnv(EMPTY_ENV, null);
         verify(cloudFoundryClient, never()).updateApplicationEnv(APPLICATION_NAME, EMPTY_ENV);
     }
 
     @Test
-    public void testAddEnvToNotEmptyApplication() {
+    public void testAddEnvToNotEmptyApplication() throws IOException {
         Map<String, String> defaultEnv = MutableMap.of("keyDefault1", "valueDefault1");
         Map<String, String> joinedEnv = MutableMap.copyOf(defaultEnv);
+
+        deployApplication(getDefaultApplicationConfiguration());
+        assertTrue(client.getEnv(APPLICATION_NAME).isEmpty());
+
+        testAdditionOfEnv(client.getEnv(APPLICATION_NAME), defaultEnv);
         joinedEnv.putAll(SIMPLE_ENV);
         testAdditionOfEnv(defaultEnv, SIMPLE_ENV);
+
         verify(cloudFoundryClient, times(1)).updateApplicationEnv(APPLICATION_NAME, joinedEnv);
+    }
+
+    @Test
+    public void testSetMemory() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getMemory(APPLICATION_NAME), MEMORY);
+
+        client.setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
+        assertEquals(client.getMemory(APPLICATION_NAME), CUSTOM_MEMORY);
+        verify(cloudFoundryClient, times(1)).updateApplicationMemory(APPLICATION_NAME, CUSTOM_MEMORY);
+    }
+
+    @Test
+    public void testGetMemory() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getMemory(APPLICATION_NAME), MEMORY);
+    }
+
+    @Test
+    public void testSetDiskQuota() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getDiskQuota(APPLICATION_NAME), DISK);
+
+        client.setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
+        verify(cloudFoundryClient, times(1)).updateApplicationDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
+    }
+
+    @Test
+    public void testGetDiskQuota() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getDiskQuota(APPLICATION_NAME), DISK);
+    }
+
+    @Test
+    public void testSetIntances() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getInstancesNumber(APPLICATION_NAME), INSTANCES);
+
+        client.setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
+        verify(cloudFoundryClient, times(1)).updateApplicationInstances(APPLICATION_NAME, CUSTOM_INSTANCES);
+    }
+
+    @Test
+    public void testGetInstances() throws IOException {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(client.getInstancesNumber(APPLICATION_NAME), INSTANCES);
+    }
+
+    private ConfigBag getDefaultApplicationConfiguration() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_LOCAL_PATH);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
+        return params;
+    }
+
+    private void testDeployApplication(ConfigBag params) throws IOException {
+        String applicationDomain = deployApplication(params);
+        String applicationName = params.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+        assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
+        assertEquals(client.getApplicationStatus(applicationName), CloudApplication.AppState.STOPPED);
+    }
+
+    private String deployApplication(ConfigBag params) throws IOException {
+        return client.deploy(params.getAllConfig());
     }
 
     private void testAdditionOfEnv(Map<String, String> applicationEnv,
                                    Map<String, String> envToAdd) {
-        boolean addNullEnvs = envToAdd == null;
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-
+        boolean addNullEnv = (envToAdd == null);
         Map<String, String> joinedEnv = MutableMap.copyOf(applicationEnv);
-        if (!addNullEnvs) {
+        if (!addNullEnv) {
             joinedEnv.putAll(envToAdd);
         }
-
-        when(cloudApp.getEnvAsMap())
-                .thenReturn(applicationEnv)
-                .thenReturn(joinedEnv);
-        doNothing().when(cloudFoundryClient)
-                .updateApplicationEnv(anyString(), anyMapOf(String.class, String.class));
         assertEquals(client.getEnv(APPLICATION_NAME), applicationEnv);
         client.setEnv(APPLICATION_NAME, envToAdd);
-
         Map<String, String> returnedEnv = client.getEnv(APPLICATION_NAME);
         assertEquals(returnedEnv, joinedEnv);
     }
@@ -348,50 +314,4 @@ public class CloudFoundryPaasClientTest extends AbstractCloudFoundryUnitTest {
         params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
         return params;
     }
-
-    @Test
-    public void testSetMemory() {
-        client.setMemory(APPLICATION_NAME, MEMORY);
-        verify(cloudFoundryClient, times(1)).updateApplicationMemory(APPLICATION_NAME, MEMORY);
-        verifyNoMoreInteractions(cloudFoundryClient);
-    }
-
-    @Test
-    public void testGetMemory() {
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getMemory()).thenReturn(MEMORY);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-        assertEquals(client.getMemory(APPLICATION_NAME), MEMORY);
-    }
-
-    @Test
-    public void testSetDiskQuota() {
-        client.setDiskQuota(APPLICATION_NAME, DISK);
-        verify(cloudFoundryClient, times(1)).updateApplicationDiskQuota(APPLICATION_NAME, DISK);
-        verifyNoMoreInteractions(cloudFoundryClient);
-    }
-
-    @Test
-    public void testGetDiskQuota() {
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getDiskQuota()).thenReturn(MEMORY);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-        assertEquals(client.getDiskQuota(APPLICATION_NAME), MEMORY);
-    }
-
-    @Test
-    public void testSetIntances() {
-        client.setInstancesNumber(APPLICATION_NAME, INSTANCES);
-        verify(cloudFoundryClient, times(1)).updateApplicationInstances(APPLICATION_NAME, INSTANCES);
-        verifyNoMoreInteractions(cloudFoundryClient);
-    }
-
-    @Test
-    public void testGetInstances() {
-        CloudApplication cloudApp = mock(CloudApplication.class);
-        when(cloudApp.getInstances()).thenReturn(INSTANCES);
-        when(cloudFoundryClient.getApplication(anyString())).thenReturn(cloudApp);
-        assertEquals(client.getInstancesNumber(APPLICATION_NAME), INSTANCES);
-    }
-
 }

@@ -50,7 +50,9 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        cloudFoundryPaasClient = new CloudFoundryPaasClient(cloudFoundryPaasLocation);
+        cloudFoundryPaasClient = cloudFoundryPaasLocation.getConfig(CloudFoundryPaasLocation.CF_CLIENT_REGISTRY)
+                .getCloudFoundryClient(cloudFoundryPaasLocation.config().getBag(), false);
+
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
         artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT);
@@ -136,7 +138,7 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         assertFalse(Strings.isBlank(applicationUrl));
         startApplication(applicationName, applicationUrl);
 
-        cloudFoundryPaasClient.restart(applicationName);
+        cloudFoundryPaasClient.restartApplication(applicationName);
         checkDeployedApplicationAvailability(applicationName, applicationUrl);
 
         stopApplication(applicationName, applicationUrl);
@@ -214,5 +216,6 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
             return "";
         }
     }
+
 
 }
