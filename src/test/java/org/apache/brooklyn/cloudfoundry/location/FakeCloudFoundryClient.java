@@ -73,7 +73,7 @@ import com.squareup.okhttp.mockwebserver.RecordedRequest;
 
 public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
-    private static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
+    public static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
 
     private Map<String, CloudApplication> applications;
 
@@ -164,7 +164,9 @@ public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
     @Override
     public void deleteApplication(String appName) {
-        applications.remove(appName);
+        if (getApplication(appName) != null) {
+            applications.remove(appName);
+        }
     }
 
     @Override

@@ -25,7 +25,9 @@ import java.util.UUID;
 
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.location.CloudFoundryClientRegistry;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryClientWitServerRegistry;
 import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryPaasClientRegistry;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -46,15 +48,19 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
     protected static final String MOCK_HOST = "mockedhost";
 
+    @SuppressWarnings("all")
+    protected final String APPLICATION_LOCAL_PATH = getClass()
+            .getClassLoader().getResource(APPLICATION_ARTIFACT).getPath();
+
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
+        cloudFoundryPaasLocation = createCloudFoundryPaasLocation(false);
     }
 
-    private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
+    protected CloudFoundryPaasLocation createCloudFoundryPaasLocation(boolean withServer) {
         Map<String, String> m = MutableMap.of();
         m.put("user", "super_user");
         m.put("password", "super_secret");
@@ -65,7 +71,7 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         LocationSpec<CloudFoundryPaasLocation> spec = LocationSpec
                 .create(CloudFoundryPaasLocation.class)
                 .configure(m)
-                .configure(CloudFoundryPaasLocation.CF_CLIENT_REGISTRY, getStubberRegistry());
+                .configure(CloudFoundryPaasLocation.CF_CLIENT_REGISTRY, getStubberRegistry(withServer));
         return createCloudFoundryPaasLocation(spec);
     }
 
@@ -80,8 +86,12 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         }
     }
 
-    private StubbedCloudFoundryPaasClientRegistry getStubberRegistry() {
-        return new StubbedCloudFoundryPaasClientRegistry();
+    private CloudFoundryClientRegistry getStubberRegistry(boolean withServer) {
+        if (withServer) {
+            return new StubbedCloudFoundryClientWitServerRegistry();
+        } else {
+            return new StubbedCloudFoundryPaasClientRegistry();
+        }
     }
 
     public void checkDefaultResourceProfile(VanillaCloudFoundryApplication entity) {
