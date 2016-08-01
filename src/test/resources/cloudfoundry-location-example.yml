@@ -25,9 +25,6 @@ location:
     endpoint: https://api.run.secret.io
     space: development
     address: run.secret.io
-    memory: 1024
-    disk_quota: 10
-    instances: 1
 services:
 - type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudfoundryApplication
   id: vanilla-app
