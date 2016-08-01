@@ -138,7 +138,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     @Test
     public void testInferApplicationRouteUriNoDomain() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), APPLICATION_NAME);
 
         assertEquals(cloudFoundryPaasLocation.inferApplicationRouteUri(params),
                 APPLICATION_NAME + "." + BROOKLYN_DOMAIN);
@@ -271,7 +271,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
     private ConfigBag getDefaultApplicationConfiguration() {
         ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), APPLICATION_NAME);
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_LOCAL_PATH);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, MOCK_BUILDPACK);
         return params;
@@ -287,7 +287,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
     private void testDeployApplication(ConfigBag params) throws IOException {
         String applicationDomain = deployApplication(params);
-        String applicationName = params.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+        String applicationName = params.get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
         assertEquals(applicationDomain, DEFAULT_APPLICATION_ADDRESS);
         assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName), AppState.STOPPED);
     }

@@ -91,6 +91,7 @@ public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implement
         applicationName = getConfig(APPLICATION_NAME);
         if (Strings.isBlank(applicationName)) {
             applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
+            this.sensors().set(APPLICATION_NAME, applicationName);
         }
     }
 

@@ -19,6 +19,7 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -32,56 +33,102 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.launcher.camp.SimpleYamlLauncher;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
 
 public class VanillaCloudFoundryYamlLiveTest {
 
+    private static final String DEFAULT_ID = "vanilla-app";
+    private static final String DEFAULT_NAME = "vanilla-cf-app-example";
+    private static final String DEFAULT_DOMAIN = "cfapps.io";
+
     @Test(groups = {"Live"})
-    public void deployWebappFromYaml() {
+    public void deploySimpleWebapp() {
         SimpleYamlLauncher launcher = new SimpleYamlLauncher();
         launcher.setShutdownAppsOnExit(true);
-        Application app = launcher.launchAppYaml("vanilla-cf-stadalone.yml").getApplication();
+        Application app = launcher.launchAppYaml("vanilla-cf-standalone.yml").getApplication();
 
-        final VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
-                findChildEntitySpecByPlanId(app, "vanilla-app");
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
+    }
 
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                        .SERVICE_PROCESS_IS_RUNNING));
+    @Test(groups = {"Live"})
+    public void deployWebappWithName() {
+        SimpleYamlLauncher launcher = new SimpleYamlLauncher();
+        launcher.setShutdownAppsOnExit(true);
+        Application app = launcher.launchAppYaml("vanilla-cf-app-name.yml").getApplication();
 
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
-                assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
-            }
-        });
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL),
+                createApplicationUrl(DEFAULT_NAME));
+    }
+
+    @Test(groups = {"Live"})
+    public void deployWebappWitDomain() {
+        SimpleYamlLauncher launcher = new SimpleYamlLauncher();
+        launcher.setShutdownAppsOnExit(true);
+        Application app = launcher.launchAppYaml("vanilla-cf-domain.yml").getApplication();
+
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
+
+        String domain = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        assertFalse(Strings.isBlank(domain));
+        String name = entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL),
+                createApplicationUrl(name, domain));
+    }
+
+    @Test(groups = {"Live"})
+    public void deployWebappWitHostAndDomain() {
+        SimpleYamlLauncher launcher = new SimpleYamlLauncher();
+        launcher.setShutdownAppsOnExit(true);
+        Application app = launcher.launchAppYaml("vanilla-cf-host-and-domain.yml").getApplication();
+
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
+
+        String domain = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        String host = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_HOST);
+        assertFalse(Strings.isBlank(domain));
+        assertFalse(Strings.isBlank(host));
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL),
+                createApplicationUrl(host, domain));
     }
 
     @Test(groups = {"Live"})
     @SuppressWarnings("unchecked")
-    public void deployWebappWithEnvFromYaml() {
+    public void deployWebappWithEnv() {
         SimpleYamlLauncher launcher = new SimpleYamlLauncher();
         launcher.setShutdownAppsOnExit(true);
         Application app = launcher.launchAppYaml("vanilla-cf-env.yml").getApplication();
 
-        final VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
-                findChildEntitySpecByPlanId(app, "vanilla-app");
-
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                        .SERVICE_PROCESS_IS_RUNNING));
-
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
-                assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
-            }
-        });
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
         Map<String, String> env = (Map<String, String>)
                 entity.getAttribute(VanillaCloudFoundryApplication.ENV);
         assertEquals(env, MutableMap.of("env1", "value1", "env2", "2", "env3", "value3"));
+    }
+
+    @Test(groups = {"Live"})
+    public void deployWebappResourceProfile() {
+        SimpleYamlLauncher launcher = new SimpleYamlLauncher();
+        launcher.setShutdownAppsOnExit(true);
+        Application app = launcher.launchAppYaml("vanilla-cf-resources-profile.yml").getApplication();
+
+        VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
+                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+        testEntitySensors(entity);
+
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(), 1024);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(), 1);
+        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(), 2048);
     }
 
     private Entity findChildEntitySpecByPlanId(Application app, String planId) {
@@ -92,6 +139,27 @@ public class VanillaCloudFoundryYamlLiveTest {
             }
         }
         return null;
+    }
+
+    private void testEntitySensors(final VanillaCloudFoundryApplication entity) {
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
+                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
+                        .SERVICE_PROCESS_IS_RUNNING));
+                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
+                assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
+                assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
+            }
+        });
+    }
+
+    private String createApplicationUrl(String host) {
+        return createApplicationUrl(host, DEFAULT_DOMAIN);
+    }
+
+    private String createApplicationUrl(String host, String domain) {
+        return "https://" + host + "." + domain;
     }
 
 }
