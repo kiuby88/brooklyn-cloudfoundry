@@ -44,6 +44,7 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.AfterMethod;
@@ -86,7 +87,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testDeployApplication() throws IOException {
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
@@ -101,7 +102,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testDeployApplicationWithEnv() throws IOException {
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(SIMPLE_ENV).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
@@ -125,7 +126,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     public void testSetEnvEffector() throws IOException {
         Map<String, String> env = MutableMap.copyOf(EMPTY_ENV);
         CloudFoundryPaasLocation location = spy(cloudFoundryPaasLocation);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(env).when(location).getEnv(anyString());
         doNothing().when(location).setEnv(anyString(), anyMapOf(String.class, String.class));
@@ -143,7 +144,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testSetMemory() {
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
@@ -160,7 +161,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testSetDisk() {
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
@@ -178,7 +179,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testSetInstances() {
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
@@ -197,9 +198,9 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testStopApplication() {
-        doNothing().when(location).startApplication(anyString());
-        doNothing().when(location).stop(anyString());
-        doNothing().when(location).delete(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).stopApplication(anyString());
+        doNothing().when(location).deleteApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
@@ -219,8 +220,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
     @Test
     public void testRestartApplication() {
-        doNothing().when(location).startApplication(anyString());
-        doNothing().when(location).restart(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).restartApplication(anyString());
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
@@ -229,7 +230,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, location);
 
         entity.restart();
-        verify(location, times(1)).restart(APPLICATION_NAME);
+        verify(location, times(1)).restartApplication(APPLICATION_NAME);
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(

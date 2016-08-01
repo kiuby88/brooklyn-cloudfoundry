@@ -33,5 +33,5 @@ public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
     ConfigKey<CloudFoundryClientRegistry> CF_CLIENT_REGISTRY = ConfigKeys.newConfigKey(
             CloudFoundryClientRegistry.class, "cloudFoundryPaasClientRegistry",
             "Registry/Factory for creating cloudfoundry client; default is almost always fine, " +
-                    "except where tests want to customize behaviour", CloudFoundryPaasClientRegistryImpl.INSTANCE);
+                    "except where tests want to customize behaviour", CloudFoundryClientRegistryImpl.INSTANCE);
 }

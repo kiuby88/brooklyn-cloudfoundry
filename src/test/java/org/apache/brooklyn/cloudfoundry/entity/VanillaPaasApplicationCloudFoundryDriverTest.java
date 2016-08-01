@@ -22,6 +22,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -40,6 +41,7 @@ import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.BeforeMethod;
@@ -52,7 +54,6 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
 
 public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudFoundryUnitTest {
-
     CloudFoundryPaasLocation location;
 
     private MockWebServer mockWebServer;
@@ -73,7 +74,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStartApplication() throws MalformedURLException {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -95,7 +96,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStartApplicationWithEnv() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -118,7 +119,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStartApplicationWithoutEnv() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -142,7 +143,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     public void testSetEnvToApplication() {
         Map<String, String> env = SIMPLE_ENV;
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(env);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -169,7 +170,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     public void testSetNullEnvToApplication() {
         Map<String, String> newEnv = null;
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -189,7 +190,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testSetMemory() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
         when(location.getMemory(anyString())).thenReturn(CUSTOM_MEMORY);
 
@@ -215,7 +216,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testSetDisk() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
@@ -240,7 +241,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testSetInstances() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
         when(location.getInstancesNumber(anyString())).thenReturn(CUSTOM_INSTANCES);
 
@@ -266,8 +267,8 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStopApplication() throws IOException {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
-        doNothing().when(location).stop(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).stopApplication(anyString());
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
@@ -280,14 +281,14 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         driver.stop();
         mockWebServer.shutdown();
         assertFalse(driver.isRunning());
-        verify(location, times(1)).stop(anyString());
+        verify(location, times(1)).stopApplication(anyString());
     }
 
     @Test
     public void testRestartApplication() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doNothing().when(location).startApplication(anyString());
-        doNothing().when(location).restart(anyString());
+        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).restartApplication(anyString());
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
@@ -298,7 +299,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         assertTrue(driver.isRunning());
 
         driver.restart();
-        verify(location, times(1)).restart(entity.getApplicationName());
+        verify(location, times(1)).restartApplication(entity.getApplicationName());
     }
 
     @Test
@@ -309,7 +310,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
         driver.delete();
         assertFalse(driver.isRunning());
-        verify(location, times(1)).delete(anyString());
+        verify(location, times(1)).deleteApplication(anyString());
     }
 
     private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,

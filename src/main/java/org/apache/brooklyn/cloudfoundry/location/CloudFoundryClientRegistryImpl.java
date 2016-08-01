@@ -28,17 +28,17 @@ import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 
+public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistry {
 
-public class CloudFoundryPaasClientRegistryImpl implements CloudFoundryClientRegistry {
+    public static final CloudFoundryClientRegistryImpl INSTANCE = new CloudFoundryClientRegistryImpl();
 
-    public static final CloudFoundryPaasClientRegistryImpl INSTANCE = new CloudFoundryPaasClientRegistryImpl();
-
-    protected CloudFoundryPaasClientRegistryImpl() {
+    protected CloudFoundryClientRegistryImpl() {
     }
 
     @Override
-    public CloudFoundryPaasClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+    public CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
         String username = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
         String password = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
         URL apiHost = getTargetURL(checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null"));
@@ -47,14 +47,9 @@ public class CloudFoundryPaasClientRegistryImpl implements CloudFoundryClientReg
 
         CloudCredentials credentials = new CloudCredentials(username, password);
         CloudFoundryClient client = new CloudFoundryClient(credentials, apiHost, organization, space, true);
-
         client.login();
 
-        return getClougFoundryPaasClient(client);
-    }
-
-    private CloudFoundryPaasClient getClougFoundryPaasClient(CloudFoundryClient client) {
-        return new CloudFoundryPaasClient(client);
+        return client;
     }
 
     private static URL getTargetURL(String target) {
@@ -66,4 +61,3 @@ public class CloudFoundryPaasClientRegistryImpl implements CloudFoundryClientReg
     }
 
 }
-
