@@ -83,7 +83,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
     protected CloudFoundryOperations getClient(ConfigBag config) {
         if (client == null) {
             CloudFoundryClientRegistry registry = getConfig(CF_CLIENT_REGISTRY);
-            client = registry.getCloudFoundryClient(ResolvingConfigBag.newInstanceExtending(getManagementContext(), config), true);
+            client = registry.getCloudFoundryClient(
+                    ResolvingConfigBag.newInstanceExtending(getManagementContext(), config), true);
         }
         return client;
     }
@@ -91,7 +92,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
     public String deploy(Map<?, ?> params) {
         ConfigBag appSetUp = ConfigBag.newInstance(params);
         String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
-        String applicationName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+        String applicationName = appSetUp
+                .get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
 
         getClient().createApplication(applicationName, getStaging(appSetUp),
                 appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK),
@@ -125,7 +127,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
 
         String host = config.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
         if (Strings.isBlank(host)) {
-            host = config.get(VanillaCloudFoundryApplication.APPLICATION_NAME);
+            host = config.get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
         }
 
         return host + "." + domainId;

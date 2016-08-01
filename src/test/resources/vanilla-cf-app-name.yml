@@ -16,20 +16,12 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: CloudFoundryPaasLocation configuration example
-location:
-  cloudfoundry:
-    user: user@mail.com
-    password: secret
-    org: secret_organization
-    endpoint: https://api.run.secret.io
-    space: development
+name: Vanilla CloudFoundry application using a name
+location: pivotal-ws
 services:
 - type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication
   id: vanilla-app
   brooklyn.config:
-    name-app: name
+    name-app: vanilla-cf-app-example
     path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
-    domain: domain
-    host: application-host
