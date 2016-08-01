@@ -58,7 +58,7 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
     }
 
     protected CloudFoundryPaasLocation newSampleCloudFoundryLocationForTesting(String spec) {
-        return (CloudFoundryPaasLocation) mgmt.getLocationRegistry().resolve(spec);
+        return (CloudFoundryPaasLocation) mgmt.getLocationRegistry().getLocationManaged(spec);
     }
 
     protected LocalManagementContext newLocalManagementContext() {

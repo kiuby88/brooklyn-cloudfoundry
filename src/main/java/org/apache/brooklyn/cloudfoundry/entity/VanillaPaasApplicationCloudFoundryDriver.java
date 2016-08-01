@@ -153,17 +153,17 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void restart() {
-        location.restart(applicationName);
+        location.restartApplication(applicationName);
     }
 
     @Override
     public void stop() {
-        location.stop(applicationName);
+        location.stopApplication(applicationName);
     }
 
     @Override
     public void delete() {
-        location.delete(applicationName);
+        location.deleteApplication(applicationName);
     }
 
     @Override

@@ -23,8 +23,10 @@ import static org.testng.Assert.assertEquals;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryPaasClientRegistry;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
@@ -60,8 +62,26 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         m.put("endpoint", "https://api.super.secret.io");
         m.put("space", "development");
 
-        return (CloudFoundryPaasLocation)
-                mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", m);
+        LocationSpec<CloudFoundryPaasLocation> spec = LocationSpec
+                .create(CloudFoundryPaasLocation.class)
+                .configure(m)
+                .configure(CloudFoundryPaasLocation.CF_CLIENT_REGISTRY, getStubberRegistry());
+        return createCloudFoundryPaasLocation(spec);
+    }
+
+    private CloudFoundryPaasLocation createCloudFoundryPaasLocation(
+            LocationSpec<CloudFoundryPaasLocation> spec) {
+        try {
+            return mgmt.getLocationManager().createLocation(spec);
+        } catch (NullPointerException e) {
+            throw new AssertionError("Failed to create " + CloudFoundryPaasLocation.class.getName() +
+                    ". Have you configured brooklyn.location.cloudfoundry.{identity,credential} " +
+                    "in your brooklyn.properties file?");
+        }
+    }
+
+    private StubbedCloudFoundryPaasClientRegistry getStubberRegistry() {
+        return new StubbedCloudFoundryPaasClientRegistry();
     }
 
     public void checkDefaultResourceProfile(VanillaCloudFoundryApplication entity) {

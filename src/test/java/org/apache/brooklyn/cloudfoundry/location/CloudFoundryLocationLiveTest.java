@@ -42,18 +42,14 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest {
+public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
-    private CloudFoundryPaasClient cloudFoundryPaasClient;
     private String applicationName;
     private String artifactLocalPath;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
-        cloudFoundryPaasClient = cloudFoundryPaasLocation.getConfig(CloudFoundryPaasLocation.CF_CLIENT_REGISTRY)
-                .getCloudFoundryClient(cloudFoundryPaasLocation.config().getBag(), false);
-
         applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
                 .toString().substring(0, 8);
         artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT);
@@ -87,14 +83,14 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         startApplication(applicationName, applicationUrl);
 
-        Map<String, String> env = cloudFoundryPaasClient.getEnv(applicationName);
+        Map<String, String> env = cloudFoundryPaasLocation.getEnv(applicationName);
         assertTrue(env.isEmpty());
 
-        cloudFoundryPaasClient.setEnv(applicationName, SIMPLE_ENV);
-        env = cloudFoundryPaasClient.getEnv(applicationName);
+        cloudFoundryPaasLocation.setEnv(applicationName, SIMPLE_ENV);
+        env = cloudFoundryPaasLocation.getEnv(applicationName);
         assertEquals(env, SIMPLE_ENV);
         destroyApplication(applicationName, applicationUrl);
     }
@@ -106,14 +102,14 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         startApplication(applicationName, applicationUrl);
 
-        Map<String, String> env = cloudFoundryPaasClient.getEnv(applicationName);
+        Map<String, String> env = cloudFoundryPaasLocation.getEnv(applicationName);
         assertTrue(env.isEmpty());
 
-        cloudFoundryPaasClient.setEnv(applicationName, null);
-        env = cloudFoundryPaasClient.getEnv(applicationName);
+        cloudFoundryPaasLocation.setEnv(applicationName, null);
+        env = cloudFoundryPaasLocation.getEnv(applicationName);
         assertTrue(env.isEmpty());
         destroyApplication(applicationName, applicationUrl);
     }
@@ -126,21 +122,21 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         assertFalse(Strings.isBlank(applicationUrl));
 
         startApplication(applicationName, applicationUrl);
-        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), MEMORY);
-        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), DISK);
-        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), INSTANCES);
+        assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), MEMORY);
+        assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), DISK);
+        assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), INSTANCES);
 
-        cloudFoundryPaasClient.setMemory(applicationName, CUSTOM_MEMORY);
-        cloudFoundryPaasClient.setDiskQuota(applicationName, CUSTOM_DISK);
-        cloudFoundryPaasClient.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
+        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY);
+        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK);
+        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
 
-        assertEquals(cloudFoundryPaasClient.getMemory(applicationName), CUSTOM_MEMORY);
-        assertEquals(cloudFoundryPaasClient.getDiskQuota(applicationName), CUSTOM_DISK);
-        assertEquals(cloudFoundryPaasClient.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
+        assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), CUSTOM_MEMORY);
+        assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), CUSTOM_DISK);
+        assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
         destroyApplication(applicationName, applicationUrl);
     }
 
@@ -151,24 +147,24 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
-        String applicationUrl = cloudFoundryPaasClient.deploy(params.getAllConfig());
+        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         assertFalse(Strings.isBlank(applicationUrl));
         startApplication(applicationName, applicationUrl);
 
-        cloudFoundryPaasClient.restartApplication(applicationName);
+        cloudFoundryPaasLocation.restartApplication(applicationName);
         checkDeployedApplicationAvailability(applicationName, applicationUrl);
         destroyApplication(applicationName, applicationUrl);
     }
 
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
-        String applicationUrl = cloudFoundryPaasClient.deploy(params);
+        String applicationUrl = cloudFoundryPaasLocation.deploy(params);
         assertFalse(Strings.isBlank(applicationUrl));
         startApplication(applicationName, applicationUrl);
         destroyApplication(applicationName, applicationUrl);
     }
 
     private void startApplication(String applicationName, String applicationDomain) {
-        cloudFoundryPaasClient.startApplication(applicationName);
+        cloudFoundryPaasLocation.startApplication(applicationName);
         checkDeployedApplicationAvailability(applicationName, applicationDomain);
     }
 
@@ -179,7 +175,7 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
             public void run() {
                 try {
                     assertEquals(HttpTool.getHttpStatusCode(applicationDomain), HttpURLConnection.HTTP_OK);
-                    assertEquals(cloudFoundryPaasClient.getApplicationStatus(applicationName),
+                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
                             CloudApplication.AppState.STARTED);
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
@@ -194,13 +190,13 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     }
 
     private void stopApplication(final String applicationName, final String applicationDomain) {
-        cloudFoundryPaasClient.stopApplication(applicationName);
+        cloudFoundryPaasLocation.stopApplication(applicationName);
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 try {
                     assertEquals(HttpTool.getHttpStatusCode(applicationDomain),
                             HttpURLConnection.HTTP_NOT_FOUND);
-                    assertEquals(cloudFoundryPaasClient.getApplicationStatus(applicationName),
+                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
                             CloudApplication.AppState.STOPPED);
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
@@ -210,10 +206,10 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
     }
 
     private void deleteApplicatin(final String applicationName) {
-        cloudFoundryPaasClient.deleteApplication(applicationName);
+        cloudFoundryPaasLocation.deleteApplication(applicationName);
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
-                assertFalse(cloudFoundryPaasClient.isDeployed(applicationName));
+                assertFalse(cloudFoundryPaasLocation.isDeployed(applicationName));
             }
         });
     }
@@ -234,6 +230,5 @@ public class CloudFoundryPaasClientLiveTest extends AbstractCloudFoundryLiveTest
             return "";
         }
     }
-
 
 }
