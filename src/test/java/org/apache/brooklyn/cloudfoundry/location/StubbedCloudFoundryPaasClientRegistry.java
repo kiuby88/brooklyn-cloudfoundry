@@ -18,12 +18,15 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static org.mockito.Mockito.spy;
+
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 
 public class StubbedCloudFoundryPaasClientRegistry implements CloudFoundryClientRegistry {
 
     @Override
-    public CloudFoundryPaasClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
-        return new CloudFoundryPaasClient(new FakeCloudFoundryClient());
+    public CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+        return spy(new FakeCloudFoundryClient());
     }
 }

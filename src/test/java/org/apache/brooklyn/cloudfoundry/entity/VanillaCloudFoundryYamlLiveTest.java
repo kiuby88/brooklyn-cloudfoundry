@@ -34,7 +34,7 @@ import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.testng.annotations.Test;
 
-public class VanillaCloudFoundryYamlTest {
+public class VanillaCloudFoundryYamlLiveTest {
 
     @Test(groups = {"Live"})
     public void deployWebappFromYaml() {

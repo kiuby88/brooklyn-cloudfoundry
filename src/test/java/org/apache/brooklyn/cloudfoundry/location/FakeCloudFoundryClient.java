@@ -164,7 +164,6 @@ public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
     @Override
     public void deleteApplication(String appName) {
-        CloudApplication application = getApplication(appName);
         applications.remove(appName);
     }
 
