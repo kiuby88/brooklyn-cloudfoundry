@@ -22,7 +22,6 @@ import static org.testng.Assert.assertEquals;
 
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -34,12 +33,13 @@ public class CloudFoundryPaasLocationResolverTest {
 
     private final String MY_PAAS_LOCATION = "my-cloudfoundry";
 
-    private final String IDENTITY = "user";
-    private final String CREDENTIAL = "password";
-    private final String ORG = "organization";
-    private final String SPACE = "space";
-    private final String ENDPOINT = "endpoint";
-    private final String ADDRESS = "run.provider.io";
+    private static final String PROVIDER = "provider";
+    private static final String IDENTITY = "user";
+    private static final String CREDENTIAL = "password";
+    private static final String ORG = "organization";
+    private static final String SPACE = "space";
+    private static final String ENDPOINT = "endpoint";
+    private static final String ADDRESS = "run.provider.io";
 
     @BeforeMethod
     public void setUp() {
@@ -47,6 +47,7 @@ public class CloudFoundryPaasLocationResolverTest {
         brooklynProperties = managementContext.getBrooklynProperties();
 
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION, "cloudfoundry");
+        brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".provider", PROVIDER);
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".identity", IDENTITY);
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".credential", CREDENTIAL);
         brooklynProperties.put("brooklyn.location.named." + MY_PAAS_LOCATION + ".org", ORG);
@@ -64,16 +65,17 @@ public class CloudFoundryPaasLocationResolverTest {
 
     @Test
     public void testCloudFoundryTakesProvidersScopedProperties() {
-        ConfigBag config = resolve(MY_PAAS_LOCATION).config().getBag();
-        assertEquals(config.get(CloudFoundryPaasLocation.ACCESS_IDENTITY), IDENTITY);
-        assertEquals(config.get(CloudFoundryPaasLocation.ACCESS_CREDENTIAL), CREDENTIAL);
-        assertEquals(config.get(CloudFoundryPaasLocation.CLOUD_ENDPOINT), ENDPOINT);
-        assertEquals(config.get(CloudFoundryPaasLocation.CF_ORG), ORG);
-        assertEquals(config.get(CloudFoundryPaasLocation.CF_SPACE), SPACE);
+        CloudFoundryPaasLocation paasLocation = resolve(MY_PAAS_LOCATION);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.CLOUD_PROVIDER), PROVIDER);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.ACCESS_IDENTITY), IDENTITY);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.ACCESS_CREDENTIAL), CREDENTIAL);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.CLOUD_ENDPOINT), ENDPOINT);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.CF_ORG), ORG);
+        assertEquals(paasLocation.getConfig(CloudFoundryPaasLocation.CF_SPACE), SPACE);
     }
 
     private CloudFoundryPaasLocation resolve(String spec) {
-        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().resolve(spec);
+        return (CloudFoundryPaasLocation) managementContext.getLocationRegistry().getLocationManaged(spec);
     }
 
 }

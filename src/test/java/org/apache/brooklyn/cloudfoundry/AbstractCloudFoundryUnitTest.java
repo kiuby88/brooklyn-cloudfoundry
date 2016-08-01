@@ -34,7 +34,9 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         implements CloudFoundryTestFixtures {
 
     protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
+
     protected static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
+
     protected static final String DEFAULT_APPLICATION_BROOKLYN_DOMAIN
             = APPLICATION_NAME + "." + BROOKLYN_DOMAIN;
     protected static final String DEFAULT_APPLICATION_ADDRESS

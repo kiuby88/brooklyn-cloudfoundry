@@ -33,6 +33,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
@@ -70,7 +71,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     }
 
     @Test
-    public void testStartApplication() {
+    public void testStartApplication() throws MalformedURLException {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
         doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);

@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -30,9 +32,8 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
@@ -49,27 +50,13 @@ public class CloudFoundryPaasClient {
 
     private static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasClient.class);
 
+    private CloudFoundryOperations client;
 
-    private final CloudFoundryPaasLocation location;
-    private CloudFoundryClient client;
-
-    public CloudFoundryPaasClient(CloudFoundryPaasLocation location) {
-        this.location = location;
+    public CloudFoundryPaasClient(CloudFoundryOperations client) {
+        this.client = checkNotNull(client, "client must not be null");
     }
 
-    protected CloudFoundryClient getClient() {
-        if (client == null) {
-            CloudCredentials credentials =
-                    new CloudCredentials(
-                            location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_IDENTITY),
-                            location.getConfig(CloudFoundryPaasLocationConfig.ACCESS_CREDENTIAL));
-            client = new CloudFoundryClient(credentials,
-                    getTargetURL(location.getConfig(CloudFoundryPaasLocationConfig.CLOUD_ENDPOINT)),
-                    location.getConfig(CloudFoundryPaasLocationConfig.CF_ORG),
-                    location.getConfig(CloudFoundryPaasLocationConfig.CF_SPACE), true);
-
-            client.login();
-        }
+    protected CloudFoundryOperations getClient() {
         return client;
     }
 
@@ -182,10 +169,6 @@ public class CloudFoundryPaasClient {
         getClient().deleteApplication(applicationName);
     }
 
-    public void restart(String applicationName) {
-        //TODO
-    }
-
     public CloudApplication.AppState getApplicationStatus(String applicationName) {
         Optional<CloudApplication> optional = getApplication(applicationName);
         if (optional.isPresent()) {
@@ -197,14 +180,6 @@ public class CloudFoundryPaasClient {
 
     public boolean isDeployed(String applicationName) {
         return getApplication(applicationName).isPresent();
-    }
-
-    private static URL getTargetURL(String target) {
-        try {
-            return URI.create(target).toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
-        }
     }
 
     public void setInstancesNumber(String applicationName, int instancesNumber) {

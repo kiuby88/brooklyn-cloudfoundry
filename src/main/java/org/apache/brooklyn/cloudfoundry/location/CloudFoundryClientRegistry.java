@@ -16,24 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.location.paas;
+package org.apache.brooklyn.cloudfoundry.location;
 
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.location.LocationConfigKeys;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-public interface PaasLocationConfig {
+import org.apache.brooklyn.util.core.config.ConfigBag;
 
-    @SetFromFlag("provider")
-    ConfigKey<String> CLOUD_PROVIDER = LocationConfigKeys.CLOUD_PROVIDER;
+public interface CloudFoundryClientRegistry {
 
-    @SetFromFlag("identity")
-    ConfigKey<String> ACCESS_IDENTITY = LocationConfigKeys.ACCESS_IDENTITY;
-
-    @SetFromFlag("credential")
-    ConfigKey<String> ACCESS_CREDENTIAL = LocationConfigKeys.ACCESS_CREDENTIAL;
-
-    @SetFromFlag("endpoint")
-    ConfigKey<String> CLOUD_ENDPOINT = LocationConfigKeys.CLOUD_ENDPOINT;
-
+    CloudFoundryPaasClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse);
 }
