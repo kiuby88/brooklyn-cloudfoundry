@@ -46,10 +46,6 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
     private CloudFoundryOperations client;
 
-    @SuppressWarnings("all")
-    public final String APPLICATION_LOCAL_PATH = getClass()
-            .getClassLoader().getResource(APPLICATION_ARTIFACT).getPath();
-
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();

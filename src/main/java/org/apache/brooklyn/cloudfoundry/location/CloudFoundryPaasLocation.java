@@ -144,9 +144,17 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
         String domainUri = null;
         Optional<CloudApplication> optional = getApplication(applicationName);
         if (optional.isPresent()) {
-            domainUri = "https://" + optional.get().getUris().get(0);
+            domainUri = composeApplicationUri(optional.get().getUris().get(0));
         }
         return domainUri;
+    }
+
+    private String composeApplicationUri(String baseApplicationDomain) {
+        if ((!baseApplicationDomain.startsWith("https://"))
+                && (!baseApplicationDomain.startsWith("http://"))) {
+            baseApplicationDomain = "https://" + baseApplicationDomain;
+        }
+        return baseApplicationDomain;
     }
 
     private Optional<CloudApplication> getApplication(String applicationName) {

@@ -81,7 +81,6 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
 
-
         if (!Strings.isBlank(entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH))) {
             params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
         }
