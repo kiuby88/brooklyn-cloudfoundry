@@ -43,7 +43,7 @@ import org.apache.brooklyn.util.time.Duration;
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
 public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
 
-    @SetFromFlag("name-app")
+    @SetFromFlag("nameApp")
     BasicAttributeSensorAndConfigKey<String> APPLICATION_NAME =
             new BasicAttributeSensorAndConfigKey<String>(String.class,
                     "cloudFoundry.application.name", "Name of the application");
