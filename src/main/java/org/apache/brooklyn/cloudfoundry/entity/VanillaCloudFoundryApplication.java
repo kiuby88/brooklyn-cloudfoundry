@@ -37,6 +37,7 @@ import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
@@ -64,7 +65,7 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
 
     @SetFromFlag("domain")
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.application.domain", "Domain for the application");
+            "cloudFoundry.application.domain", "Domain for the application", Strings.EMPTY);
 
     @SetFromFlag("host")
     ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(

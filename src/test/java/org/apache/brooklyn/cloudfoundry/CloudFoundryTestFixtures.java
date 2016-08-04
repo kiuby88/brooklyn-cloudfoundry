@@ -32,7 +32,9 @@ public interface CloudFoundryTestFixtures {
     public static final int CUSTOM_INSTANCES = INSTANCES * 2;
     public static final String APPLICATION_ARTIFACT =
             "brooklyn-example-hello-world-sql-webapp-in-paas.war";
-    public static final String APPLICATION_ARTIFACT_URL = "classpath://" + APPLICATION_ARTIFACT;
+    public static final String ARTIFACT_URL = "classpath://" + APPLICATION_ARTIFACT;
     public static final Map<String, String> EMPTY_ENV = MutableMap.of();
     public static final Map<String, String> SIMPLE_ENV = MutableMap.of("k1", "v1");
+    public static final String BROOKLYN_HOST = "test-brooklyn-host";
+
 }

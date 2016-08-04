@@ -18,14 +18,19 @@
  */
 package org.apache.brooklyn.cloudfoundry;
 
+import static org.testng.Assert.assertNotNull;
+
+import java.util.Map;
 import java.util.UUID;
 
+import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
 import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
 import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
+import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -36,6 +41,7 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
     protected static final String DEFAULT_DOMAIN = "cfapps.io";
     protected final String LOCATION_SPEC_NAME = "pivotal-ws";
     protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
+
 
     protected String applicationName;
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
@@ -63,6 +69,23 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
 
     protected LocalManagementContext newLocalManagementContext() {
         return new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
+    }
+
+    public static String inferApplicationUrl(Map<String, Object> params) {
+        String host = (String) params
+                .get(VanillaCloudFoundryApplication.APPLICATION_HOST.getName());
+        if (Strings.isBlank(host)) {
+            host = (String) params
+                    .get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey().getName());
+        }
+        String domain = (String) params
+                .get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN.getName());
+        if (Strings.isBlank(domain)) {
+            domain = DEFAULT_DOMAIN;
+        }
+        assertNotNull(host);
+        assertNotNull(domain);
+        return "https://" + host + "." + domain;
     }
 
 }

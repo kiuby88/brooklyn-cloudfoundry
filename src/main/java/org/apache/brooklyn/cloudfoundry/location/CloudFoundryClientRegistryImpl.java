@@ -20,15 +20,13 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.operations.CloudFoundryOperations;
+import org.cloudfoundry.operations.DefaultCloudFoundryOperations;
+import org.cloudfoundry.reactor.DefaultConnectionContext;
+import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
+import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
 
 public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistry {
 
@@ -41,23 +39,30 @@ public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistr
     public CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
         String username = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
         String password = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
-        URL apiHost = getTargetURL(checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null"));
+        String apiHost = checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
         String organization = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_ORG), "organization must not be null");
         String space = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_SPACE), "space must not be null");
 
-        CloudCredentials credentials = new CloudCredentials(username, password);
-        CloudFoundryClient client = new CloudFoundryClient(credentials, apiHost, organization, space, true);
-        client.login();
+        DefaultConnectionContext connectionContext = DefaultConnectionContext.builder()
+                .apiHost(apiHost)
+                .build();
+        //TODO: using singleton for the class instance
+        PasswordGrantTokenProvider tokenProvider = PasswordGrantTokenProvider.builder()
+                .username(username)
+                .password(password)
+                .build();
 
-        return client;
-    }
+        //TODO: using singleton for the class instance
+        ReactorCloudFoundryClient client = ReactorCloudFoundryClient.builder()
+                .connectionContext(connectionContext)
+                .tokenProvider(tokenProvider)
+                .build();
 
-    private static URL getTargetURL(String target) {
-        try {
-            return URI.create(target).toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("The target URL is not valid: " + e.getMessage());
-        }
+        return DefaultCloudFoundryOperations.builder()
+                .cloudFoundryClient(client)
+                .organization(organization)
+                .space(space)
+                .build();
     }
 
 }

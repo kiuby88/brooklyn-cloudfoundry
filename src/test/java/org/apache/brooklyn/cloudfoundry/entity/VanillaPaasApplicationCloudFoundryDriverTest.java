@@ -22,7 +22,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -34,14 +33,12 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.cloudfoundry.client.lib.StartingInfo;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.BeforeMethod;
@@ -54,6 +51,7 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
 
 public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudFoundryUnitTest {
+
     CloudFoundryPaasLocation location;
 
     private MockWebServer mockWebServer;
@@ -72,13 +70,14 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     }
 
     @Test
-    public void testStartApplication() throws MalformedURLException {
+    public void testStartApplication() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
         entity.setManagementContext(mgmt);
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         mockLocationProfileUsingEntityConfig(location, entity);
 
         assertNull(entity.getAttribute(Attributes.MAIN_URI));
@@ -96,10 +95,11 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStartApplicationWithEnv() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ENV, SIMPLE_ENV);
         entity.setManagementContext(mgmt);
 
@@ -119,10 +119,11 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testStartApplicationWithoutEnv() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
 
         assertNull(entity.getAttribute(Attributes.MAIN_URI));
@@ -143,10 +144,11 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     public void testSetEnvToApplication() {
         Map<String, String> env = SIMPLE_ENV;
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(env);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ENV, env);
         entity.setManagementContext(mgmt);
 
@@ -170,10 +172,11 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     public void testSetNullEnvToApplication() {
         Map<String, String> newEnv = null;
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(SIMPLE_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ENV, SIMPLE_ENV);
         entity.setManagementContext(mgmt);
 
@@ -190,69 +193,73 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testSetMemory() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
         when(location.getMemory(anyString())).thenReturn(CUSTOM_MEMORY);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
         mockLocationProfileUsingEntityConfig(location, entity);
         when(location.getMemory(anyString())).thenReturn(
-                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
-                CUSTOM_MEMORY);
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY), CUSTOM_MEMORY);
 
-        VanillaPaasApplicationDriver driver =
+        VanillaPaasApplicationCloudFoundryDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
         driver.start();
         assertTrue(driver.isRunning());
         checkDefaultResourceProfile(entity);
 
         driver.setMemory(CUSTOM_MEMORY);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(),
-                CUSTOM_MEMORY);
-        verify(location, times(1)).setMemory(entity.getApplicationName(), CUSTOM_MEMORY);
+        int memory =
+                entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY);
+        assertEquals(memory, CUSTOM_MEMORY);
+        verify(location, times(1))
+                .setMemory(entity.getApplicationName(), CUSTOM_MEMORY, driver.localPathArtifact);
     }
 
     @Test
     public void testSetDisk() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
         mockLocationProfileUsingEntityConfig(location, entity);
         when(location.getDiskQuota(anyString())).thenReturn(
-                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK),
-                CUSTOM_DISK);
+                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK), CUSTOM_DISK);
 
-        VanillaPaasApplicationDriver driver =
+        VanillaPaasApplicationCloudFoundryDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
         driver.start();
         assertTrue(driver.isRunning());
         checkDefaultResourceProfile(entity);
 
         driver.setDiskQuota(CUSTOM_DISK);
-        assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(),
-                CUSTOM_DISK);
-        verify(location, times(1)).setDiskQuota(entity.getApplicationName(), CUSTOM_DISK);
+        int disk = entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK);
+        assertEquals(disk, CUSTOM_DISK);
+        verify(location, times(1))
+                .setDiskQuota(entity.getApplicationName(), CUSTOM_DISK, driver.localPathArtifact);
     }
 
     @Test
     public void testSetInstances() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         when(location.getEnv(anyString())).thenReturn(EMPTY_ENV);
         when(location.getInstancesNumber(anyString())).thenReturn(CUSTOM_INSTANCES);
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
         mockLocationProfileUsingEntityConfig(location, entity);
-        when(location.getInstancesNumber(anyString())).thenReturn(
-                entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES),
-                CUSTOM_INSTANCES);
+        when(location.getInstancesNumber(anyString()))
+                .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES),
+                        CUSTOM_INSTANCES);
 
-        VanillaPaasApplicationDriver driver =
+        VanillaPaasApplicationCloudFoundryDriver driver =
                 new VanillaPaasApplicationCloudFoundryDriver(entity, location);
         driver.start();
         assertTrue(driver.isRunning());
@@ -261,16 +268,17 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         driver.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
                 CUSTOM_INSTANCES);
-        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES);
+        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES, driver.localPathArtifact);
     }
 
     @Test
     public void testStopApplication() throws IOException {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         doNothing().when(location).stopApplication(anyString());
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
 
         VanillaPaasApplicationDriver driver =
@@ -287,10 +295,11 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     @Test
     public void testRestartApplication() {
         when(location.deploy(anyMap())).thenReturn(applicationUrl);
-        doReturn(new StartingInfo(null)).when(location).startApplication(anyString());
+        doNothing().when(location).startApplication(anyString());
         doNothing().when(location).restartApplication(anyString());
 
         VanillaCloudFoundryApplicationImpl entity = new VanillaCloudFoundryApplicationImpl();
+        entity.setConfigEvenIfOwned(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL);
         entity.setManagementContext(mgmt);
 
         VanillaPaasApplicationDriver driver =
@@ -316,9 +325,9 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,
                                                       VanillaCloudFoundryApplication entity) {
         if (new MockUtil().isMock(location)) {
-            doNothing().when(location).setMemory(anyString(), anyInt());
-            doNothing().when(location).setDiskQuota(anyString(), anyInt());
-            doNothing().when(location).setInstancesNumber(anyString(), anyInt());
+            doNothing().when(location).setMemory(anyString(), anyInt(), anyString());
+            doNothing().when(location).setDiskQuota(anyString(), anyInt(), anyString());
+            doNothing().when(location).setInstancesNumber(anyString(), anyInt(), anyString());
 
             when(location.getMemory(anyString()))
                     .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));

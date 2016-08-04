@@ -18,38 +18,60 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import java.io.IOException;
-import java.util.List;
+import static com.google.api.client.util.Preconditions.checkNotNull;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.lib.CloudFoundryException;
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudDomain;
-import org.cloudfoundry.client.lib.domain.Staging;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.cloudfoundry.operations.CloudFoundryOperations;
+import org.cloudfoundry.operations.applications.ApplicationDetail;
+import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
+import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
+import org.cloudfoundry.operations.applications.GetApplicationEnvironmentsRequest;
+import org.cloudfoundry.operations.applications.GetApplicationRequest;
+import org.cloudfoundry.operations.applications.PushApplicationRequest;
+import org.cloudfoundry.operations.applications.RestartApplicationRequest;
+import org.cloudfoundry.operations.applications.SetEnvironmentVariableApplicationRequest;
+import org.cloudfoundry.operations.applications.StartApplicationRequest;
+import org.cloudfoundry.operations.applications.StopApplicationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
-public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLocation, CloudFoundryPaasLocationConfig {
+public class CloudFoundryPaasLocation extends AbstractLocation
+        implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
     private CloudFoundryOperations client;
+
+    public enum AppState {
+
+        UPDATING("UPDATING"),
+        STARTED("STARTED"),
+        STOPPED("STOPPED");
+
+        private final String state;
+
+        private AppState(final String state) {
+            this.state = state;
+        }
+
+        @Override
+        public String toString() {
+            return state;
+        }
+    }
 
     public CloudFoundryPaasLocation() {
         super();
@@ -91,149 +113,256 @@ public class CloudFoundryPaasLocation extends AbstractLocation implements PaasLo
 
     public String deploy(Map<?, ?> params) {
         ConfigBag appSetUp = ConfigBag.newInstance(params);
-        String artifactLocalPath = appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH);
+        String artifact = checkNotNull(appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH),
+                VanillaCloudFoundryApplication.ARTIFACT_PATH.getName() + " can not be null");
         String applicationName = appSetUp
                 .get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
+        String buildpack = appSetUp.get(VanillaCloudFoundryApplication.BUILDPACK);
+        Path artifactLocalPath =
+                Paths.get(artifact);
+        String host = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
 
-        getClient().createApplication(applicationName, getStaging(appSetUp),
-                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK),
-                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY),
-                getUris(appSetUp), null);
+        String domain = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        int memory = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY);
+        int disk = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK);
+        int instances = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES);
 
-        setInstancesNumber(applicationName,
-                appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
-
-        pushArtifact(applicationName, artifactLocalPath);
-        return getDomainUri(applicationName);
-    }
-
-    protected Staging getStaging(ConfigBag config) {
-        String buildpack = config.get(VanillaCloudFoundryApplication.BUILDPACK);
-        return new Staging(null, buildpack);
-    }
-
-    protected List<String> getUris(ConfigBag config) {
-        return MutableList.of(inferApplicationRouteUri(config));
-    }
-
-    protected String inferApplicationRouteUri(ConfigBag config) {
-        String domainId = config.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
-        if (Strings.isBlank(domainId)) {
-            domainId = getClient().getDefaultDomain().getName();
-        }
-        if (findSharedDomain(domainId) == null) {
-            throw new RuntimeException("The target shared domain " + domainId + " does not exist");
-        }
-
-        String host = config.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
-        if (Strings.isBlank(host)) {
-            host = config.get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
-        }
-
-        return host + "." + domainId;
-    }
-
-    private CloudDomain findSharedDomain(final String domainName) {
-        return Iterables.find(getClient().getSharedDomains(), new Predicate<CloudDomain>() {
-            @Override
-            public boolean apply(CloudDomain domain) {
-                return domainName.equals(domain.getName());
-            }
-        }, null);
-    }
-
-    private String getDomainUri(String applicationName) {
-        String domainUri = null;
-        Optional<CloudApplication> optional = getApplication(applicationName);
-        if (optional.isPresent()) {
-            domainUri = "https://" + optional.get().getUris().get(0);
-        }
-        return domainUri;
-    }
-
-    private Optional<CloudApplication> getApplication(String applicationName) {
-        Optional<CloudApplication> app;
         try {
-            app = Optional.fromNullable(getClient().getApplication(applicationName));
-        } catch (CloudFoundryException e) {
-            app = Optional.absent();
+            getClient().applications()
+                    .push(PushApplicationRequest.builder()
+                            .name(applicationName)
+                            .buildpack(buildpack)
+                            .application(artifactLocalPath)
+                            .host(host)
+                            .noHostname(false)
+                            .domain(domain)
+                            .memory(memory)
+                            .diskQuota(disk)
+                            .instances(instances)
+                            .healthCheckType(ApplicationHealthCheck.PORT)
+                            .noStart(true)
+                            .noRoute(false)
+                            .build())
+                    .toFuture()
+                    .get();
+            return getApplicationUrl(applicationName);
+        } catch (Exception e) {
+            throw new PropagatedRuntimeException(e);
         }
-        return app;
+    }
+
+    protected String getApplicationUrl(String applicationName) {
+        return completeUrlProtocol(getApplicationUri(applicationName));
+    }
+
+    protected String getApplicationUri(String applicationName) {
+        ApplicationDetail application = getApplication(applicationName);
+        return Iterables.getOnlyElement(application.getUrls());
+    }
+
+    private String completeUrlProtocol(String baseUrl) {
+        if ((!baseUrl.startsWith("https://"))
+                && (!baseUrl.startsWith("http://"))) {
+            baseUrl = "https://" + baseUrl;
+        }
+        return baseUrl;
+    }
+
+    private ApplicationDetail getApplication(final String applicationName) {
+        try {
+            return getClient().applications()
+                    .get(GetApplicationRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public void pushArtifact(String applicationName, String artifact) {
         try {
-            getClient().uploadApplication(applicationName, artifact);
-        } catch (IOException e) {
-            log.error("Error updating the application artifact {} in {} ", artifact, this);
-            throw Exceptions.propagate(e);
+            getClient().applications()
+                    .push(PushApplicationRequest.builder()
+                            .name(applicationName)
+                            .application(Paths.get(artifact))
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
         }
     }
 
-    public StartingInfo startApplication(String applicationName) {
-        return getClient().startApplication(applicationName);
+    public void startApplication(String applicationName) {
+        try {
+            getClient().applications()
+                    .start(StartApplicationRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public void stopApplication(String applicationName) {
-        getClient().stopApplication(applicationName);
+        try {
+            getClient().applications()
+                    .stop(StopApplicationRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public void restartApplication(String applicationName) {
-        getClient().restartApplication(applicationName);
+        try {
+            getClient().applications()
+                    .restart(RestartApplicationRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public void deleteApplication(String applicationName) {
-        getClient().deleteApplication(applicationName);
+        try {
+            getClient().applications()
+                    .delete(DeleteApplicationRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public void setEnv(String applicationName, Map<String, String> env) {
         if (env != null) {
-            CloudApplication app = getClient().getApplication(applicationName);
-            Map<String, String> oldEnv = app.getEnvAsMap();
-            oldEnv.putAll(env);
-            getClient().updateApplicationEnv(applicationName, oldEnv);
+            for (Map.Entry<String, String> envEntry : env.entrySet()) {
+                setEnv(applicationName, envEntry.getKey(), String.valueOf(envEntry.getValue()));
+            }
+        }
+    }
+
+    public void setEnv(String applicationName, String variableName, String variableValue) {
+        try {
+            getClient().applications()
+                    .setEnvironmentVariable(SetEnvironmentVariableApplicationRequest.builder()
+                            .name(applicationName)
+                            .variableName(variableName)
+                            .variableValue(variableValue)
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
         }
     }
 
     public Map<String, String> getEnv(String applicationName) {
-        return getClient().getApplication(applicationName).getEnvAsMap();
-    }
-
-    public CloudApplication.AppState getApplicationStatus(String applicationName) {
-        Optional<CloudApplication> optional = getApplication(applicationName);
-        if (optional.isPresent()) {
-            return optional.get().getState();
-        } else {
-            throw Exceptions.propagate(new CloudFoundryException(HttpStatus.NOT_FOUND));
+        try {
+            Map<String, Object>
+                    userProvided = getClient().applications()
+                    .getEnvironments(GetApplicationEnvironmentsRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .toFuture()
+                    .get()
+                    .getUserProvided();
+            return mapOfStrings(userProvided);
+        } catch (ExecutionException | InterruptedException e) {
+            throw new PropagatedRuntimeException(e);
         }
     }
 
+    private Map<String, String> mapOfStrings(Map<String, Object> map) {
+        Map<String, String> result = MutableMap.of();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().toString());
+        }
+        return result;
+    }
+
+    public AppState getApplicationStatus(String applicationName) {
+        return AppState.valueOf(getApplication(applicationName).getRequestedState());
+    }
+
     public boolean isDeployed(String applicationName) {
-        return getApplication(applicationName).isPresent();
+        boolean result;
+        try {
+            result = getApplication(applicationName) != null;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
     }
 
-    public void setInstancesNumber(String applicationName, int instancesNumber) {
-        getClient().updateApplicationInstances(applicationName, instancesNumber);
+    public void setMemory(String applicationName, int memory, String artifact) {
+        try {
+            getClient().applications()
+                    .push(PushApplicationRequest.builder()
+                            .name(applicationName)
+                            .memory(memory)
+                            .application(Paths.get(artifact))
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (Exception e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
-    public void setDiskQuota(String applicationName, int diskQuota) {
-        getClient().updateApplicationDiskQuota(applicationName, diskQuota);
+    public void setDiskQuota(String applicationName, int diskQuota, String artifact) {
+        try {
+            getClient().applications()
+                    .push(PushApplicationRequest.builder()
+                            .name(applicationName)
+                            .diskQuota(diskQuota)
+                            .application(Paths.get(artifact))
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (Exception e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
-    public void setMemory(String applicationName, int memory) {
-        getClient().updateApplicationMemory(applicationName, memory);
+    public void setInstancesNumber(String applicationName, int instances, String artifact) {
+        try {
+            getClient().applications()
+                    .push(PushApplicationRequest.builder()
+                            .name(applicationName)
+                            .instances(instances)
+                            .application(Paths.get(artifact))
+                            .build())
+                    .toFuture()
+                    .get();
+        } catch (Exception e) {
+            throw new PropagatedRuntimeException(e);
+        }
     }
 
     public int getInstancesNumber(String applicationName) {
-        return getClient().getApplication(applicationName).getInstances();
+        return getApplication(applicationName).getInstances();
     }
 
     public int getDiskQuota(String applicationName) {
-        return getClient().getApplication(applicationName).getDiskQuota();
+        return getApplication(applicationName).getDiskQuota();
     }
 
     public int getMemory(String applicationName) {
-        return getClient().getApplication(applicationName).getMemory();
+        return getApplication(applicationName).getMemoryLimit();
     }
 
 }

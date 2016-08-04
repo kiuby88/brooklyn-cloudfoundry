@@ -46,11 +46,10 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
-
         assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
     }
 
@@ -59,24 +58,21 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
     }
 
     @Test(groups = {"Live"})
     public void testDeployApplicationWitEnv() throws IOException {
         Map<String, String> env = MutableMap.copyOf(SIMPLE_ENV);
-
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.ENV, env)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ENV), env);
     }
@@ -87,7 +83,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
 
@@ -101,23 +97,44 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
     }
 
     @Test(groups = {"Live"})
-    public void testModifyApplicationResources() throws IOException {
+    public void testModifyApplicationMemory() throws IOException {
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(),
                 CUSTOM_MEMORY);
+    }
+
+    @Test(groups = {"Live"})
+    public void testModifyApplicationDiskQuota() throws IOException {
+        final VanillaCloudFoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(),
                 CUSTOM_DISK);
+    }
+
+    @Test(groups = {"Live"})
+    public void testModifyApplicationInstances() throws IOException {
+        final VanillaCloudFoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
+                        .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
@@ -129,11 +146,11 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-
         startAndCheckEntitySensors(entity, cloudFoundryPaasLocation);
+
         entity.stop();
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
@@ -149,10 +166,11 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
-                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
         startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+
         entity.restart();
         checkEntityIsRunningAndAvailable(entity);
     }
@@ -173,7 +191,6 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         });
         assertFalse(Strings.isBlank(entity.getAttribute(Attributes.MAIN_URI).toString()));
         assertFalse(Strings.isBlank(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL)));
-
     }
 
     private void startAndCheckEntitySensorsAndDefaultProfile(VanillaCloudFoundryApplication entity,

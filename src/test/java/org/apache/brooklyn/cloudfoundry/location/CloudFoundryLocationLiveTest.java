@@ -33,10 +33,10 @@ import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.http.HttpTool;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -56,7 +56,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     }
 
     @Test(groups = {"Live"})
-    public void testWebApplicationManagement() throws Exception {
+    public void testWebApplicationManagement() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
@@ -66,7 +66,27 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     }
 
     @Test(groups = {"Live"})
-    public void testWebApplicationManagementWithDomain() throws Exception {
+    public void testWebApplicationManagementWithHost() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, BROOKLYN_HOST);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testWebApplicationManagemenNoNameNoHostt() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"})
+    public void testWebApplicationManagementWithDomain() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
@@ -76,8 +96,17 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
 
+    @Test(groups = {"Live"}, expectedExceptions = NullPointerException.class)
+    public void testWebApplicationManagementNoArtifact() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+
+        applicationLifecycleManagement(applicationName, params.getAllConfig());
+    }
+
     @Test(groups = {"Live"})
-    public void testAddEnvToApplication() throws Exception {
+    public void testAddEnvToApplication() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
@@ -96,7 +125,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     }
 
     @Test(groups = {"Live"})
-    public void testAddNullEnvToApplication() throws Exception {
+    public void testAddNullEnvToApplication() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
@@ -130,9 +159,9 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), DISK);
         assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), INSTANCES);
 
-        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY);
-        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK);
-        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
+        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY, artifactLocalPath);
+        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK, artifactLocalPath);
+        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES, artifactLocalPath);
 
         assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), CUSTOM_MEMORY);
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), CUSTOM_DISK);
@@ -158,25 +187,26 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
         String applicationUrl = cloudFoundryPaasLocation.deploy(params);
+        assertEquals(applicationUrl, inferApplicationUrl(params));
         assertFalse(Strings.isBlank(applicationUrl));
         startApplication(applicationName, applicationUrl);
         destroyApplication(applicationName, applicationUrl);
     }
 
-    private void startApplication(String applicationName, String applicationDomain) {
+    private void startApplication(String applicationName, String applicationUrl) {
         cloudFoundryPaasLocation.startApplication(applicationName);
-        checkDeployedApplicationAvailability(applicationName, applicationDomain);
+        checkDeployedApplicationAvailability(applicationName, applicationUrl);
     }
 
     private void checkDeployedApplicationAvailability(final String applicationName,
-                                                      final String applicationDomain) {
+                                                      final String applicationUrl) {
         Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
         Asserts.succeedsEventually(flags, new Runnable() {
             public void run() {
                 try {
-                    assertEquals(HttpTool.getHttpStatusCode(applicationDomain), HttpURLConnection.HTTP_OK);
+                    assertEquals(HttpTool.getHttpStatusCode(applicationUrl), HttpURLConnection.HTTP_OK);
                     assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
-                            CloudApplication.AppState.STARTED);
+                            CloudFoundryPaasLocation.AppState.STARTED);
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
                 }
@@ -197,7 +227,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
                     assertEquals(HttpTool.getHttpStatusCode(applicationDomain),
                             HttpURLConnection.HTTP_NOT_FOUND);
                     assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
-                            CloudApplication.AppState.STOPPED);
+                            CloudFoundryPaasLocation.AppState.STOPPED);
                 } catch (Exception e) {
                     throw Exceptions.propagate(e);
                 }
@@ -227,7 +257,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         try {
             return Paths.get(getClass().getClassLoader().getResource(filename).toURI()).toString();
         } catch (URISyntaxException e) {
-            return "";
+            return Strings.EMPTY;
         }
     }
 
