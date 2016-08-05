@@ -50,7 +50,7 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private VanillaCloudFoundryApplicationImpl entity;
     private String applicationName;
     private String applicationUrl;
-    protected String localPathArtifact;
+    protected String localArtifactPath;
 
     public VanillaPaasApplicationCloudFoundryDriver(VanillaCloudFoundryApplicationImpl entity,
                                                     CloudFoundryPaasLocation location) {
@@ -81,8 +81,8 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
         String artifactPath = entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH);
-        localPathArtifact = getLocalPath(artifactPath);
-        params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), localPathArtifact);
+        localArtifactPath = getLocalPath(artifactPath);
+        params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), localArtifactPath);
 
         applicationUrl = location.deploy(params);
         return applicationUrl;
@@ -167,19 +167,19 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void setMemory(int memory) {
-        location.setMemory(applicationName, memory, localPathArtifact);
+        location.setMemory(applicationName, memory, localArtifactPath);
         updateMemorySensor(location.getMemory(applicationName));
     }
 
     @Override
     public void setDiskQuota(int diskQuota) {
-        location.setDiskQuota(applicationName, diskQuota, localPathArtifact);
+        location.setDiskQuota(applicationName, diskQuota, localArtifactPath);
         updateDiskSensor(location.getDiskQuota(applicationName));
     }
 
     @Override
     public void setInstancesNumber(int instances) {
-        location.setInstancesNumber(applicationName, instances, localPathArtifact);
+        location.setInstancesNumber(applicationName, instances, localArtifactPath);
         updateInstancesSensor(location.getInstancesNumber(applicationName));
     }
 

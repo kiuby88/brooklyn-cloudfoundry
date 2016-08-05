@@ -215,7 +215,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
                 entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY);
         assertEquals(memory, CUSTOM_MEMORY);
         verify(location, times(1))
-                .setMemory(entity.getApplicationName(), CUSTOM_MEMORY, driver.localPathArtifact);
+                .setMemory(entity.getApplicationName(), CUSTOM_MEMORY, driver.localArtifactPath);
     }
 
     @Test
@@ -241,7 +241,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         int disk = entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK);
         assertEquals(disk, CUSTOM_DISK);
         verify(location, times(1))
-                .setDiskQuota(entity.getApplicationName(), CUSTOM_DISK, driver.localPathArtifact);
+                .setDiskQuota(entity.getApplicationName(), CUSTOM_DISK, driver.localArtifactPath);
     }
 
     @Test
@@ -268,7 +268,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         driver.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
                 CUSTOM_INSTANCES);
-        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES, driver.localPathArtifact);
+        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES, driver.localArtifactPath);
     }
 
     @Test
