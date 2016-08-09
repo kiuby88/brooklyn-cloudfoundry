@@ -23,7 +23,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.IOException;
-import java.nio.file.FileSystemNotFoundException;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
@@ -96,7 +95,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.deploy(params.getAllConfig());
     }
 
-    @Test(expectedExceptions = FileSystemNotFoundException.class)
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testUpdateAnNotExistentArtifact() {
         String nonExistentArtifact = Strings.makeRandomId(10);
         cloudFoundryPaasLocation.pushArtifact(APPLICATION_NAME, nonExistentArtifact);
@@ -111,7 +110,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
                 AppState.STARTED);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testStartNonExistentApplication() {
         cloudFoundryPaasLocation.startApplication(APPLICATION_NAME);
     }
@@ -124,7 +123,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
                 AppState.STOPPED);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testGetStateNonExistentApplication() {
         cloudFoundryPaasLocation.getApplicationStatus(APPLICATION_NAME);
     }

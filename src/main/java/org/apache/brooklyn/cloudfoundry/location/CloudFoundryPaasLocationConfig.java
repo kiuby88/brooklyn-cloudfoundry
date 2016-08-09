@@ -34,4 +34,7 @@ public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
             CloudFoundryClientRegistry.class, "cloudFoundryPaasClientRegistry",
             "Registry/Factory for creating cloudfoundry client; default is almost always fine, " +
                     "except where tests want to customize behaviour", CloudFoundryClientRegistryImpl.INSTANCE);
+
+    ConfigKey<Integer> OPERATIONS_TIMEOUT = ConfigKeys.newIntegerConfigKey("cloudfoundry.timeout",
+            "Timeout for cloudfoundry operations", 5);
 }

@@ -22,6 +22,7 @@ import static com.google.api.client.util.Preconditions.checkNotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -115,7 +116,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         ConfigBag appSetUp = ConfigBag.newInstance(params);
         String artifact = checkNotNull(appSetUp.get(VanillaCloudFoundryApplication.ARTIFACT_PATH),
                 VanillaCloudFoundryApplication.ARTIFACT_PATH.getName() + " can not be null");
-        String applicationName = appSetUp
+        final String name = appSetUp
                 .get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
         String buildpack = appSetUp.get(VanillaCloudFoundryApplication.BUILDPACK);
         Path artifactLocalPath =
@@ -130,7 +131,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         try {
             getClient().applications()
                     .push(PushApplicationRequest.builder()
-                            .name(applicationName)
+                            .name(name)
                             .buildpack(buildpack)
                             .application(artifactLocalPath)
                             .host(host)
@@ -143,10 +144,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .noStart(true)
                             .noRoute(false)
                             .build())
-                    .toFuture()
-                    .get();
-            return getApplicationUrl(applicationName);
+                    .doOnSuccess(v -> log.info("Done uploading for {} in {}", name, this))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+            return getApplicationUrl(name);
         } catch (Exception e) {
+            log.error("Error creating application {}, error was {}", name, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -174,9 +176,9 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .get(GetApplicationRequest.builder()
                             .name(applicationName)
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.error("Error getting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -188,9 +190,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .application(Paths.get(artifact))
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .doOnSuccess(v -> log.info("Pushed artifact {}, for application " +
+                            "{} in {}", new Object[]{artifact, applicationName, this}))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.error("Error pushing articat {} for application {}, error was {}",
+                    new Object[]{artifact, applicationName, e});
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -201,9 +206,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .start(StartApplicationRequest.builder()
                             .name(applicationName)
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .doOnSuccess(v ->
+                            log.info("Application {} was started correctly", applicationName))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.error("Error starting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -214,9 +221,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .stop(StopApplicationRequest.builder()
                             .name(applicationName)
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .doOnSuccess(v ->
+                            log.info("Application {} was stopped correctly", applicationName))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.info("Error stopping application {}, error was {}",
+                    applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -227,9 +237,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .restart(RestartApplicationRequest.builder()
                             .name(applicationName)
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .doOnSuccess(v ->
+                            log.info("Application {} was restarted correctly", applicationName))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.info("Error restarting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -240,9 +252,11 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .delete(DeleteApplicationRequest.builder()
                             .name(applicationName)
                             .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
+                    .doOnSuccess(v ->
+                            log.info("Application {} was deleted correctly", applicationName))
+                    .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
+        } catch (Exception e) {
+            log.info("Error deleting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -256,18 +270,18 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public void setEnv(String applicationName, String variableName, String variableValue) {
-        try {
-            getClient().applications()
-                    .setEnvironmentVariable(SetEnvironmentVariableApplicationRequest.builder()
-                            .name(applicationName)
-                            .variableName(variableName)
-                            .variableValue(variableValue)
-                            .build())
-                    .toFuture()
-                    .get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw new PropagatedRuntimeException(e);
-        }
+        getClient().applications()
+                .setEnvironmentVariable(SetEnvironmentVariableApplicationRequest.builder()
+                        .name(applicationName)
+                        .variableName(variableName)
+                        .variableValue(variableValue)
+                        .build())
+                .doOnSuccess(v -> log.info("Setting env {} with value {} for application {}",
+                        new Object[]{variableName, variableValue, applicationName}))
+                .doOnError(e -> log.error("Error setting env {} with value {} for  application" +
+                        " {} the error was {}", new Object[]{variableName, variableValue,
+                        applicationName, e}))
+                .block(Duration.ofMinutes(getConfig(OPERATIONS_TIMEOUT)));
     }
 
     public Map<String, String> getEnv(String applicationName) {
