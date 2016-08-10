@@ -155,8 +155,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
 
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(), CUSTOM_MEMORY);
-        //TODO: verify(location, times(1)).setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
-        //currently not possible because artifact path is required
+        verify(location, times(1)).setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
     }
 
     @Test
@@ -174,8 +173,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(),
                 CUSTOM_DISK);
-        //TODO verify(location, times(1)).setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
-        //currently not possible because artifact path is required
+        verify(location, times(1)).setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
     }
 
     @Test
@@ -184,7 +182,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(serverAddress).when(location).deploy(anyMap());
         doReturn(EMPTY_ENV).when(location).getEnv(anyString());
 
-        doNothing().when(location).setInstancesNumber(anyString(), anyInt(), anyString());
+        doNothing().when(location).setInstancesNumber(anyString(), anyInt());
 
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(location);
         startEntityInLocationAndCheckSensors(entity, location);
@@ -194,8 +192,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         entity.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
                 CUSTOM_INSTANCES);
-        //TODO verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
-        //currently not possible because artifact path is required
+        verify(location, times(1)).setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
     }
 
     @Test
@@ -267,9 +264,9 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,
                                                       VanillaCloudFoundryApplication entity) {
         if (new MockUtil().isMock(location)) {
-            doNothing().when(location).setMemory(anyString(), anyInt(), anyString());
-            doNothing().when(location).setDiskQuota(anyString(), anyInt(), anyString());
-            doNothing().when(location).setInstancesNumber(anyString(), anyInt(), anyString());
+            doNothing().when(location).setMemory(anyString(), anyInt());
+            doNothing().when(location).setDiskQuota(anyString(), anyInt());
+            doNothing().when(location).setInstancesNumber(anyString(), anyInt());
 
             doReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY))
                     .when(location).getMemory(anyString());

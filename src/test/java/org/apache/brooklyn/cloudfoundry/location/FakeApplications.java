@@ -270,7 +270,20 @@ public class FakeApplications implements Applications {
 
     @Override
     public Mono<Void> scale(ScaleApplicationRequest request) {
-        return null;
+        String name = request.getName();
+        ApplicationDetail application = applications.get(name);
+        ApplicationDetail.Builder builder = ApplicationDetail.builder().from(application);
+        if (request.getMemoryLimit() != null) {
+            builder.memoryLimit(request.getMemoryLimit());
+        }
+        if (request.getDiskLimit() != null) {
+            builder.diskQuota(request.getDiskLimit());
+        }
+        if (request.getInstances() != null) {
+            builder.instances(request.getInstances());
+        }
+        applications.put(name, builder.build());
+        return Mono.empty();
     }
 
     @Override

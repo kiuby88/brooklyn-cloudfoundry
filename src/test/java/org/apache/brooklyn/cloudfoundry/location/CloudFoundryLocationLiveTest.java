@@ -159,14 +159,29 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), DISK);
         assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), INSTANCES);
 
-        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY, artifactLocalPath);
-        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK, artifactLocalPath);
-        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES, artifactLocalPath);
+        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY);
+        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK);
+        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
 
         assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), CUSTOM_MEMORY);
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), CUSTOM_DISK);
         assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
         destroyApplication(applicationName, applicationUrl);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetMemoryNonExistentApplication() {
+        cloudFoundryPaasLocation.setMemory(applicationName, MEMORY);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetDiskQuotaNonExistentApplication() {
+        cloudFoundryPaasLocation.setDiskQuota(applicationName, DISK);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetInstancesNonExistentApplication() {
+        cloudFoundryPaasLocation.setInstancesNumber(applicationName, INSTANCES);
     }
 
     @Test(groups = {"Live"})

@@ -40,6 +40,7 @@ import org.cloudfoundry.operations.applications.GetApplicationEnvironmentsReques
 import org.cloudfoundry.operations.applications.GetApplicationRequest;
 import org.cloudfoundry.operations.applications.PushApplicationRequest;
 import org.cloudfoundry.operations.applications.RestartApplicationRequest;
+import org.cloudfoundry.operations.applications.ScaleApplicationRequest;
 import org.cloudfoundry.operations.applications.SetEnvironmentVariableApplicationRequest;
 import org.cloudfoundry.operations.applications.StartApplicationRequest;
 import org.cloudfoundry.operations.applications.StopApplicationRequest;
@@ -308,13 +309,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return result;
     }
 
-    public void setMemory(String applicationName, int memory, String artifact) {
+    public void setMemory(String applicationName, int memory) {
         try {
             getClient().applications()
-                    .push(PushApplicationRequest.builder()
+                    .scale(ScaleApplicationRequest.builder()
                             .name(applicationName)
-                            .memory(memory)
-                            .application(Paths.get(artifact))
+                            .memoryLimit(memory)
                             .build())
                     .toFuture()
                     .get();
@@ -323,13 +323,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public void setDiskQuota(String applicationName, int diskQuota, String artifact) {
+    public void setDiskQuota(String applicationName, int diskQuota) {
         try {
             getClient().applications()
-                    .push(PushApplicationRequest.builder()
+                    .scale(ScaleApplicationRequest.builder()
                             .name(applicationName)
-                            .diskQuota(diskQuota)
-                            .application(Paths.get(artifact))
+                            .diskLimit(diskQuota)
                             .build())
                     .toFuture()
                     .get();
@@ -338,13 +337,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public void setInstancesNumber(String applicationName, int instances, String artifact) {
+    public void setInstancesNumber(String applicationName, int instances) {
         try {
             getClient().applications()
-                    .push(PushApplicationRequest.builder()
+                    .scale(ScaleApplicationRequest.builder()
                             .name(applicationName)
                             .instances(instances)
-                            .application(Paths.get(artifact))
                             .build())
                     .toFuture()
                     .get();

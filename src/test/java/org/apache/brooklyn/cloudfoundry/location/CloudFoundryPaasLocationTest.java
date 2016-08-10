@@ -217,8 +217,19 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         deployApplication(getDefaultApplicationConfiguration());
         assertEquals(cloudFoundryPaasLocation.getMemory(APPLICATION_NAME), MEMORY);
 
-        cloudFoundryPaasLocation.setMemory(APPLICATION_NAME, CUSTOM_MEMORY, APPLICATION_LOCAL_PATH);
+        cloudFoundryPaasLocation.setMemory(APPLICATION_NAME, CUSTOM_MEMORY);
         assertEquals(cloudFoundryPaasLocation.getMemory(APPLICATION_NAME), CUSTOM_MEMORY);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetMemoryNonExistentApplication() {
+        cloudFoundryPaasLocation.setMemory(APPLICATION_NAME, MEMORY);
+    }
+
+    @Test
+    public void testGetDiskQuota() {
+        deployApplication(getDefaultApplicationConfiguration());
+        assertEquals(cloudFoundryPaasLocation.getDiskQuota(APPLICATION_NAME), DISK);
     }
 
     @Test
@@ -226,14 +237,13 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         deployApplication(getDefaultApplicationConfiguration());
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(APPLICATION_NAME), DISK);
 
-        cloudFoundryPaasLocation.setDiskQuota(APPLICATION_NAME, CUSTOM_DISK, APPLICATION_LOCAL_PATH);
+        cloudFoundryPaasLocation.setDiskQuota(APPLICATION_NAME, CUSTOM_DISK);
         assertEquals(cloudFoundryPaasLocation.getDiskQuota(APPLICATION_NAME), CUSTOM_DISK);
     }
 
-    @Test
-    public void testGetDiskQuota() {
-        deployApplication(getDefaultApplicationConfiguration());
-        assertEquals(cloudFoundryPaasLocation.getDiskQuota(APPLICATION_NAME), DISK);
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetDiskQuotaNonExistentApplication() {
+        cloudFoundryPaasLocation.setDiskQuota(APPLICATION_NAME, DISK);
     }
 
     @Test
@@ -247,8 +257,13 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         deployApplication(getDefaultApplicationConfiguration());
         assertEquals(cloudFoundryPaasLocation.getInstancesNumber(APPLICATION_NAME), INSTANCES);
 
-        cloudFoundryPaasLocation.setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES, APPLICATION_LOCAL_PATH);
+        cloudFoundryPaasLocation.setInstancesNumber(APPLICATION_NAME, CUSTOM_INSTANCES);
         assertEquals(cloudFoundryPaasLocation.getInstancesNumber(APPLICATION_NAME), CUSTOM_INSTANCES);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testSetInstancesNonExistentApplication() {
+        cloudFoundryPaasLocation.setInstancesNumber(APPLICATION_NAME, INSTANCES);
     }
 
     private ConfigBag getDefaultApplicationConfiguration() {
