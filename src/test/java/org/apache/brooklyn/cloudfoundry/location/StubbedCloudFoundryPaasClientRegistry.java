@@ -21,12 +21,26 @@ package org.apache.brooklyn.cloudfoundry.location;
 import static org.mockito.Mockito.spy;
 
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 
 public class StubbedCloudFoundryPaasClientRegistry implements CloudFoundryClientRegistry {
 
+    private final FakeCloudFoundryOperations operations;
+    private final CloudFoundryClient client;
+
+    public StubbedCloudFoundryPaasClientRegistry() {
+        operations = spy(new FakeCloudFoundryOperations());
+        client = operations.getClient();
+    }
+
     @Override
-    public CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
-        return spy(new FakeCloudFoundryClient());
+    public CloudFoundryOperations getCloudFoundryOperations(ConfigBag conf, boolean allowReuse) {
+        return operations;
+    }
+
+    @Override
+    public CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+        return client;
     }
 }

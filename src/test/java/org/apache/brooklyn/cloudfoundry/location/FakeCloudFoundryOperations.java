@@ -18,6 +18,14 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.client.v2.applications.ApplicationsV2;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationResponse;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.advanced.Advanced;
 import org.cloudfoundry.operations.applications.Applications;
@@ -31,24 +39,45 @@ import org.cloudfoundry.operations.services.Services;
 import org.cloudfoundry.operations.spaceadmin.SpaceAdmin;
 import org.cloudfoundry.operations.spaces.Spaces;
 import org.cloudfoundry.operations.stacks.Stacks;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import reactor.core.publisher.Mono;
 
 
-public class FakeCloudFoundryClient implements CloudFoundryOperations {
+public class FakeCloudFoundryOperations implements CloudFoundryOperations {
 
-    private Applications applications;
+    private FakeApplications applications;
+    private CloudFoundryClient client;
 
-    public FakeCloudFoundryClient() {
+    public FakeCloudFoundryOperations() {
         applications = new FakeApplications();
+        init();
     }
 
-    @Override
-    public Advanced advanced() {
-        return null;
+    protected void init() {
+        ApplicationsV2 applicationsV2 = mock(ApplicationsV2.class);
+        when(applicationsV2.update(any(UpdateApplicationRequest.class)))
+                .thenAnswer(new Answer<Mono<UpdateApplicationResponse>>() {
+                    @Override
+                    public Mono<UpdateApplicationResponse> answer(InvocationOnMock invocation) throws Throwable {
+                        UpdateApplicationRequest request =
+                                (UpdateApplicationRequest) invocation.getArguments()[0];
+                        return applications.updateApplication(request);
+                    }
+                });
+        client = mock(CloudFoundryClient.class);
+        when(client.applicationsV2()).thenReturn(applicationsV2);
     }
 
     @Override
     public Applications applications() {
         return applications;
+    }
+
+    @Override
+    public Advanced advanced() {
+        return null;
     }
 
     @Override
@@ -99,6 +128,10 @@ public class FakeCloudFoundryClient implements CloudFoundryOperations {
     @Override
     public Stacks stacks() {
         return null;
+    }
+
+    public CloudFoundryClient getClient() {
+        return client;
     }
 
 }

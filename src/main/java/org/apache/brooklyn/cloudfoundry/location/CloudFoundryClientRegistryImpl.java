@@ -22,6 +22,7 @@ import static com.google.api.client.util.Preconditions.checkNotNull;
 
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.DefaultCloudFoundryOperations;
 import org.cloudfoundry.reactor.DefaultConnectionContext;
@@ -33,25 +34,34 @@ import com.google.common.base.Supplier;
 public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistry {
 
     public static final CloudFoundryClientRegistryImpl INSTANCE = new CloudFoundryClientRegistryImpl();
-    private CloudFoundryOperationsSupplier operationsSupplier;
+    private CloudFoundryClientSupplier clientSupplier;
 
     protected CloudFoundryClientRegistryImpl() {
     }
 
     @Override
-    public synchronized CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
-        if (operationsSupplier == null) {
+    public synchronized CloudFoundryOperations getCloudFoundryOperations(ConfigBag conf, boolean allowReuse) {
+        String organization = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_ORG), "organization must not be null");
+        String space = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_SPACE), "space must not be null");
+        return DefaultCloudFoundryOperations.builder()
+                .cloudFoundryClient(getCloudFoundryClient(conf, allowReuse))
+                .organization(organization)
+                .space(space)
+                .build();
+    }
+
+    @Override
+    public synchronized CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+        if (clientSupplier == null) {
             initSupplier(conf);
         }
-        return operationsSupplier.get();
+        return clientSupplier.get();
     }
 
     private void initSupplier(ConfigBag conf) {
         String user = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
         String password = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
         String apiHost = checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
-        String organization = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_ORG), "organization must not be null");
-        String space = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_SPACE), "space must not be null");
 
         DefaultConnectionContext connectionContext = DefaultConnectionContext.builder()
                 .apiHost(apiHost)
@@ -60,33 +70,25 @@ public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistr
                 .username(user)
                 .password(password)
                 .build();
-        operationsSupplier =
-                new CloudFoundryOperationsSupplier(token, connectionContext, organization, space);
+        clientSupplier =
+                new CloudFoundryClientSupplier(token, connectionContext);
     }
 
-    protected static class CloudFoundryOperationsSupplier implements Supplier<CloudFoundryOperations> {
+    protected static class CloudFoundryClientSupplier implements Supplier<CloudFoundryClient> {
 
         private final PasswordGrantTokenProvider token;
         private final DefaultConnectionContext context;
-        private final String organization;
-        private final String space;
 
-        protected CloudFoundryOperationsSupplier(PasswordGrantTokenProvider token, DefaultConnectionContext context, String organization, String space) {
+        protected CloudFoundryClientSupplier(PasswordGrantTokenProvider token, DefaultConnectionContext context) {
             this.token = token;
             this.context = context;
-            this.organization = organization;
-            this.space = space;
         }
 
         @Override
-        public CloudFoundryOperations get() {
-            return DefaultCloudFoundryOperations.builder()
-                    .cloudFoundryClient(ReactorCloudFoundryClient.builder()
-                            .connectionContext(context)
-                            .tokenProvider(token)
-                            .build())
-                    .organization(organization)
-                    .space(space)
+        public CloudFoundryClient get() {
+            return ReactorCloudFoundryClient.builder()
+                    .connectionContext(context)
+                    .tokenProvider(token)
                     .build();
         }
     }

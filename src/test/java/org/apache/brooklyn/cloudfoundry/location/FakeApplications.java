@@ -26,6 +26,8 @@ import java.util.Map;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationResponse;
 import org.cloudfoundry.doppler.LogMessage;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
 import org.cloudfoundry.operations.applications.ApplicationEnvironments;
@@ -82,8 +84,6 @@ public class FakeApplications implements Applications {
         String name = request.getName();
         if (!applications.containsKey(name)) {
             manageNewReques(request);
-        } else {
-            updateApplication(request);
         }
         return Mono.empty();
     }
@@ -145,45 +145,6 @@ public class FakeApplications implements Applications {
 
     private void initEnv(PushApplicationRequest request) {
         applicationEnv.put(request.getName(), MutableMap.<String, String>of());
-    }
-
-    private void updateApplication(PushApplicationRequest request) {
-        updateMemory(request);
-        updateDiskQuota(request);
-        updateInstances(request);
-    }
-
-    private void updateMemory(PushApplicationRequest request) {
-        if (request.getMemory() != null) {
-            String applicationName = request.getName();
-            ApplicationDetail baseApplicationDetail = applications.get(applicationName);
-            applications.put(request.getName(), ApplicationDetail.builder()
-                    .from(baseApplicationDetail)
-                    .memoryLimit(request.getMemory())
-                    .build());
-        }
-    }
-
-    private void updateDiskQuota(PushApplicationRequest request) {
-        if (request.getDiskQuota() != null) {
-            String applicationName = request.getName();
-            ApplicationDetail baseApplicationDetail = applications.get(applicationName);
-            applications.put(request.getName(), ApplicationDetail.builder()
-                    .from(baseApplicationDetail)
-                    .diskQuota(request.getDiskQuota())
-                    .build());
-        }
-    }
-
-    private void updateInstances(PushApplicationRequest request) {
-        if (request.getInstances() != null) {
-            String applicationName = request.getName();
-            ApplicationDetail baseApplicationDetail = applications.get(applicationName);
-            applications.put(request.getName(), ApplicationDetail.builder()
-                    .from(baseApplicationDetail)
-                    .instances(request.getInstances())
-                    .build());
-        }
     }
 
     @Override
@@ -330,4 +291,33 @@ public class FakeApplications implements Applications {
     public Mono<Void> unsetEnvironmentVariable(UnsetEnvironmentVariableApplicationRequest request) {
         return null;
     }
+
+    public Mono<UpdateApplicationResponse> updateApplication(UpdateApplicationRequest request) {
+        ApplicationDetail.Builder builder = ApplicationDetail.builder()
+                .from(findApplicationById(request.getApplicationId()));
+        if (request.getMemory() != null) {
+            builder.memoryLimit(request.getMemory());
+        }
+        if (request.getDiskQuota() != null) {
+            builder.diskQuota(request.getDiskQuota());
+        }
+        if (request.getInstances() != null) {
+            builder.instances(request.getInstances());
+        }
+        ApplicationDetail app = builder.build();
+        applications.put(app.getName(), app);
+        return Mono.just(UpdateApplicationResponse.builder()
+                .build());
+    }
+
+    private ApplicationDetail findApplicationById(String id) {
+        for (Map.Entry<String, ApplicationDetail> entry : applications.entrySet()) {
+            if (entry.getValue().getId().equals(id)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+
 }

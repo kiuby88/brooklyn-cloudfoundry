@@ -36,6 +36,7 @@ import org.apache.brooklyn.core.entity.drivers.downloads.BasicDownloadResolver;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,6 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private VanillaCloudFoundryApplicationImpl entity;
     private String applicationName;
     private String applicationUrl;
-    protected String localArtifactPath;
 
     public VanillaPaasApplicationCloudFoundryDriver(VanillaCloudFoundryApplicationImpl entity,
                                                     CloudFoundryPaasLocation location) {
@@ -80,17 +80,16 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private String deploy() {
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
-        String artifactPath = entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH);
-        localArtifactPath = getLocalPath(artifactPath);
-        params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), localArtifactPath);
+        if (!Strings.isBlank(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName())) {
+            params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
+        }
 
         applicationUrl = location.deploy(params);
         return applicationUrl;
     }
 
-    private String getLocalPath(String artifactUrl) {
-        DownloadResolver downloadResolver = new BasicDownloadResolver(ImmutableList.of(artifactUrl),
-                FileNameResolver.findArchiveNameFromUrl(artifactUrl));
+    private String getLocalPath() {
+        DownloadResolver downloadResolver = getDownloadResolver();
         try {
             File war;
             war = LocalResourcesDownloader
@@ -102,6 +101,12 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
                     this, downloadResolver.getTargets());
             throw Exceptions.propagate(e);
         }
+    }
+
+    private DownloadResolver getDownloadResolver() {
+        String artifactUrl = entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH);
+        return new BasicDownloadResolver(ImmutableList.of(artifactUrl),
+                FileNameResolver.findArchiveNameFromUrl(artifactUrl));
     }
 
     protected void preLaunch() {
@@ -167,19 +172,19 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
 
     @Override
     public void setMemory(int memory) {
-        location.setMemory(applicationName, memory, localArtifactPath);
+        location.setMemory(applicationName, memory);
         updateMemorySensor(location.getMemory(applicationName));
     }
 
     @Override
     public void setDiskQuota(int diskQuota) {
-        location.setDiskQuota(applicationName, diskQuota, localArtifactPath);
+        location.setDiskQuota(applicationName, diskQuota);
         updateDiskSensor(location.getDiskQuota(applicationName));
     }
 
     @Override
     public void setInstancesNumber(int instances) {
-        location.setInstancesNumber(applicationName, instances, localArtifactPath);
+        location.setInstancesNumber(applicationName, instances);
         updateInstancesSensor(location.getInstancesNumber(applicationName));
     }
 

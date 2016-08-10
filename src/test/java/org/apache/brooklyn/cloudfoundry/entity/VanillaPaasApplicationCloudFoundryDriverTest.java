@@ -215,7 +215,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
                 entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY);
         assertEquals(memory, CUSTOM_MEMORY);
         verify(location, times(1))
-                .setMemory(entity.getApplicationName(), CUSTOM_MEMORY, driver.localArtifactPath);
+                .setMemory(entity.getApplicationName(), CUSTOM_MEMORY);
     }
 
     @Test
@@ -241,7 +241,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         int disk = entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK);
         assertEquals(disk, CUSTOM_DISK);
         verify(location, times(1))
-                .setDiskQuota(entity.getApplicationName(), CUSTOM_DISK, driver.localArtifactPath);
+                .setDiskQuota(entity.getApplicationName(), CUSTOM_DISK);
     }
 
     @Test
@@ -268,7 +268,7 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
         driver.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
                 CUSTOM_INSTANCES);
-        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES, driver.localArtifactPath);
+        verify(location, times(1)).setInstancesNumber(entity.getApplicationName(), CUSTOM_INSTANCES);
     }
 
     @Test
@@ -325,9 +325,9 @@ public class VanillaPaasApplicationCloudFoundryDriverTest extends AbstractCloudF
     private void mockLocationProfileUsingEntityConfig(CloudFoundryPaasLocation location,
                                                       VanillaCloudFoundryApplication entity) {
         if (new MockUtil().isMock(location)) {
-            doNothing().when(location).setMemory(anyString(), anyInt(), anyString());
-            doNothing().when(location).setDiskQuota(anyString(), anyInt(), anyString());
-            doNothing().when(location).setInstancesNumber(anyString(), anyInt(), anyString());
+            doNothing().when(location).setMemory(anyString(), anyInt());
+            doNothing().when(location).setDiskQuota(anyString(), anyInt());
+            doNothing().when(location).setInstancesNumber(anyString(), anyInt());
 
             when(location.getMemory(anyString()))
                     .thenReturn(entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));

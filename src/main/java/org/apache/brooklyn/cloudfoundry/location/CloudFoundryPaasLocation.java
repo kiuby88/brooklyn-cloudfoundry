@@ -32,6 +32,8 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
 import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
@@ -53,7 +55,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
-    private CloudFoundryOperations client;
+    private CloudFoundryOperations operations;
+    private CloudFoundryClient client;
 
     public enum AppState {
 
@@ -91,18 +94,38 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return "CloudFoundry";
     }
 
-    protected CloudFoundryOperations getClient() {
+    protected CloudFoundryOperations getOperations() {
+        return getOperations(MutableMap.of());
+    }
+
+    protected CloudFoundryOperations getOperations(Map<?, ?> flags) {
+        ConfigBag conf = (flags == null || flags.isEmpty())
+                ? config().getBag()
+                : ConfigBag.newInstanceExtending(config().getBag(), flags);
+        return getOperations(conf);
+    }
+
+    protected CloudFoundryOperations getOperations(ConfigBag config) {
+        if (operations == null) {
+            CloudFoundryClientRegistry registry = getConfig(CF_CLIENT_REGISTRY);
+            operations = registry.getCloudFoundryOperations(
+                    ResolvingConfigBag.newInstanceExtending(getManagementContext(), config), true);
+        }
+        return operations;
+    }
+
+    protected CloudFoundryClient getClient() {
         return getClient(MutableMap.of());
     }
 
-    protected CloudFoundryOperations getClient(Map<?, ?> flags) {
+    protected CloudFoundryClient getClient(Map<?, ?> flags) {
         ConfigBag conf = (flags == null || flags.isEmpty())
                 ? config().getBag()
                 : ConfigBag.newInstanceExtending(config().getBag(), flags);
         return getClient(conf);
     }
 
-    protected CloudFoundryOperations getClient(ConfigBag config) {
+    protected CloudFoundryClient getClient(ConfigBag config) {
         if (client == null) {
             CloudFoundryClientRegistry registry = getConfig(CF_CLIENT_REGISTRY);
             client = registry.getCloudFoundryClient(
@@ -128,7 +151,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         int instances = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES);
 
         try {
-            getClient().applications()
+            getOperations().applications()
                     .push(PushApplicationRequest.builder()
                             .name(applicationName)
                             .buildpack(buildpack)
@@ -170,7 +193,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     private ApplicationDetail getApplication(final String applicationName) {
         try {
-            return getClient().applications()
+            return getOperations().applications()
                     .get(GetApplicationRequest.builder()
                             .name(applicationName)
                             .build())
@@ -183,7 +206,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void pushArtifact(String applicationName, String artifact) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .push(PushApplicationRequest.builder()
                             .name(applicationName)
                             .application(Paths.get(artifact))
@@ -197,7 +220,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void startApplication(String applicationName) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .start(StartApplicationRequest.builder()
                             .name(applicationName)
                             .build())
@@ -210,7 +233,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void stopApplication(String applicationName) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .stop(StopApplicationRequest.builder()
                             .name(applicationName)
                             .build())
@@ -223,7 +246,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void restartApplication(String applicationName) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .restart(RestartApplicationRequest.builder()
                             .name(applicationName)
                             .build())
@@ -236,7 +259,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void deleteApplication(String applicationName) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .delete(DeleteApplicationRequest.builder()
                             .name(applicationName)
                             .build())
@@ -257,7 +280,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void setEnv(String applicationName, String variableName, String variableValue) {
         try {
-            getClient().applications()
+            getOperations().applications()
                     .setEnvironmentVariable(SetEnvironmentVariableApplicationRequest.builder()
                             .name(applicationName)
                             .variableName(variableName)
@@ -273,7 +296,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public Map<String, String> getEnv(String applicationName) {
         try {
             Map<String, Object>
-                    userProvided = getClient().applications()
+                    userProvided = getOperations().applications()
                     .getEnvironments(GetApplicationEnvironmentsRequest.builder()
                             .name(applicationName)
                             .build())
@@ -308,13 +331,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return result;
     }
 
-    public void setMemory(String applicationName, int memory, String artifact) {
+    public void setMemory(String applicationName, int memory) {
         try {
-            getClient().applications()
-                    .push(PushApplicationRequest.builder()
-                            .name(applicationName)
+            getClient().applicationsV2()
+                    .update(UpdateApplicationRequest.builder()
+                            .applicationId(getApplication(applicationName).getId())
                             .memory(memory)
-                            .application(Paths.get(artifact))
                             .build())
                     .toFuture()
                     .get();
@@ -323,13 +345,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public void setDiskQuota(String applicationName, int diskQuota, String artifact) {
+    public void setDiskQuota(String applicationName, int diskQuota) {
         try {
-            getClient().applications()
-                    .push(PushApplicationRequest.builder()
-                            .name(applicationName)
+            getClient().applicationsV2()
+                    .update(UpdateApplicationRequest.builder()
+                            .applicationId(getApplication(applicationName).getId())
                             .diskQuota(diskQuota)
-                            .application(Paths.get(artifact))
                             .build())
                     .toFuture()
                     .get();
@@ -338,13 +359,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public void setInstancesNumber(String applicationName, int instances, String artifact) {
+    public void setInstancesNumber(String applicationName, int instances) {
         try {
-            getClient().applications()
-                    .push(PushApplicationRequest.builder()
-                            .name(applicationName)
+            getClient().applicationsV2()
+                    .update(UpdateApplicationRequest.builder()
+                            .applicationId(getApplication(applicationName).getId())
                             .instances(instances)
-                            .application(Paths.get(artifact))
                             .build())
                     .toFuture()
                     .get();
