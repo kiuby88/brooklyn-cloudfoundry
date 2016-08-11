@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -200,6 +201,41 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         destroyApplication(applicationName, applicationUrl);
     }
 
+    @Test(groups = {"Live"})
+    public void testCreateService() {
+        cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
+        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"})
+    public void testRepeatInstanceNameService() {
+        cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
+        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+        boolean errorCreating = false;
+        try {
+            cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
+        } catch (PropagatedRuntimeException e) {
+            errorCreating = true;
+        }
+        assertTrue(errorCreating);
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testCreateInstanceOfNonExistentService() {
+        ConfigBag params = getDefaultClearDbServiceConfig();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
+        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testCreateInstanceOfNonSupportedPlan() {
+        ConfigBag params = getDefaultClearDbServiceConfig();
+        params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
+        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
+    }
+
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
         String applicationUrl = cloudFoundryPaasLocation.deploy(params);
         assertEquals(applicationUrl, inferApplicationUrl(params));
@@ -265,6 +301,23 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         params.configure(VanillaCloudFoundryApplication.REQUIRED_MEMORY, MEMORY);
         params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
         return params;
+    }
+
+    private Map<String, Object> getDefaultClearDbServiceConfigMap() {
+        return getDefaultClearDbServiceConfig().getAllConfig();
+    }
+
+    private ConfigBag getDefaultClearDbServiceConfig() {
+        ConfigBag params = ConfigBag.newInstance();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
+        return params;
+    }
+
+    private void deleteServiceAndCheck(String serviceName) {
+        cloudFoundryPaasLocation.deleteServiceInstance(serviceName);
+        assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(serviceName));
     }
 
     @SuppressWarnings("all")

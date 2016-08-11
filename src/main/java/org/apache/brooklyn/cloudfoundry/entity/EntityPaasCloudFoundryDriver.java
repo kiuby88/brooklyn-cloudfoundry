@@ -31,16 +31,16 @@ public abstract class EntityPaasCloudFoundryDriver implements EntityPaasDriver {
             .getLogger(EntityPaasCloudFoundryDriver.class);
 
     private final CloudFoundryPaasLocation location;
-    private VanillaCloudFoundryApplicationImpl entity;
+    private CloudFoundryEntityImpl entity;
 
-    public EntityPaasCloudFoundryDriver(VanillaCloudFoundryApplicationImpl entity,
+    public EntityPaasCloudFoundryDriver(CloudFoundryEntityImpl entity,
                                         CloudFoundryPaasLocation location) {
         this.entity = checkNotNull(entity, "entity");
         this.location = checkNotNull(location, "location");
     }
 
     @Override
-    public VanillaCloudFoundryApplicationImpl getEntity() {
+    public CloudFoundryEntityImpl getEntity() {
         return entity;
     }
 

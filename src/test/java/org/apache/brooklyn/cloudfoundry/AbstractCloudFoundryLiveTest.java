@@ -41,6 +41,9 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
     protected static final String DEFAULT_DOMAIN = "cfapps.io";
     protected final String LOCATION_SPEC_NAME = "pivotal-ws";
     protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
+    protected final String CLEARDB_SERVICE = "cleardb";
+    protected final String CLEARDB_SPARK_PLAN = "spark";
+    protected final String SERVICE_INSTANCE_NAME = "test-service";
 
 
     protected String applicationName;

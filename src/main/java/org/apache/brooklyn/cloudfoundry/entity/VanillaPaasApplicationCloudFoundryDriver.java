@@ -57,7 +57,7 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
 
     @Override
     public VanillaCloudFoundryApplicationImpl getEntity() {
-        return super.getEntity();
+        return (VanillaCloudFoundryApplicationImpl) super.getEntity();
     }
 
     @Override
@@ -69,18 +69,21 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
     }
 
     private String deploy() {
-        Map<String, Object> params = MutableMap.copyOf(getEntity().config().getBag().getAllConfig());
+        Map<String, Object> params =
+                MutableMap.copyOf(getEntity().config().getBag().getAllConfig());
         params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
-        if (!Strings.isBlank(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName())) {
-            params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
+        String artifactPropertyName = VanillaCloudFoundryApplication.ARTIFACT_PATH.getName();
+        String artifactPath = (String) params.get(artifactPropertyName);
+        if (!Strings.isBlank(artifactPath)) {
+            params.put(artifactPropertyName, getLocalPath(artifactPath));
         }
 
         applicationUrl = getLocation().deploy(params);
         return applicationUrl;
     }
 
-    private String getLocalPath() {
-        DownloadResolver downloadResolver = getDownloadResolver();
+    private String getLocalPath(String artifactPath) {
+        DownloadResolver downloadResolver = getDownloadResolver(artifactPath);
         try {
             File war;
             war = LocalResourcesDownloader
@@ -94,10 +97,9 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
         }
     }
 
-    private DownloadResolver getDownloadResolver() {
-        String artifactUrl = getEntity().getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH);
-        return new BasicDownloadResolver(ImmutableList.of(artifactUrl),
-                FileNameResolver.findArchiveNameFromUrl(artifactUrl));
+    private DownloadResolver getDownloadResolver(String artifactPath) {
+        return new BasicDownloadResolver(ImmutableList.of(artifactPath),
+                FileNameResolver.findArchiveNameFromUrl(artifactPath));
     }
 
     protected void preLaunch() {

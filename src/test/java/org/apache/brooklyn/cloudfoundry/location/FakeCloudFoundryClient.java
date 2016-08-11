@@ -32,13 +32,14 @@ import org.cloudfoundry.operations.spaceadmin.SpaceAdmin;
 import org.cloudfoundry.operations.spaces.Spaces;
 import org.cloudfoundry.operations.stacks.Stacks;
 
-
 public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
+    private Services services;
     private Applications applications;
 
     public FakeCloudFoundryClient() {
         applications = new FakeApplications();
+        services = new FakeServices();
     }
 
     @Override
@@ -83,7 +84,7 @@ public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
     @Override
     public Services services() {
-        return null;
+        return services;
     }
 
     @Override

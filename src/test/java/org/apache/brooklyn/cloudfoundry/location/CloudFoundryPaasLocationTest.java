@@ -27,11 +27,13 @@ import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation.AppState;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -265,6 +267,34 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.setInstancesNumber(APPLICATION_NAME, INSTANCES);
     }
 
+    @Test
+    public void testCreateService() {
+        cloudFoundryPaasLocation.createServiceInstance(getDefaultServiceConfig().getAllConfig());
+        cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME);
+        Assert.assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testRepeatInstanceNameService() {
+        testCreateService();
+        cloudFoundryPaasLocation.createServiceInstance(getDefaultServiceConfig().getAllConfig());
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testCreateInstanceOfNonExistentService() {
+        ConfigBag params = getDefaultServiceConfig();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
+        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
+        Assert.assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testCreateInstanceOfNonSupportedPlan() {
+        ConfigBag params = getDefaultServiceConfig();
+        params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
+        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
+    }
+
     private ConfigBag getDefaultApplicationConfiguration() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), APPLICATION_NAME);
@@ -304,6 +334,14 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.setEnv(APPLICATION_NAME, envToAdd);
         Map<String, String> returnedEnv = cloudFoundryPaasLocation.getEnv(APPLICATION_NAME);
         assertEquals(returnedEnv, joinedEnv);
+    }
+
+    private ConfigBag getDefaultServiceConfig() {
+        ConfigBag params = ConfigBag.newInstance();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN_A);
+        return params;
     }
 
 }

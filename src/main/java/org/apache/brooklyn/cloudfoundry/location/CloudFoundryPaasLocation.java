@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -43,6 +44,10 @@ import org.cloudfoundry.operations.applications.ScaleApplicationRequest;
 import org.cloudfoundry.operations.applications.SetEnvironmentVariableApplicationRequest;
 import org.cloudfoundry.operations.applications.StartApplicationRequest;
 import org.cloudfoundry.operations.applications.StopApplicationRequest;
+import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
+import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
+import org.cloudfoundry.operations.services.GetServiceInstanceRequest;
+import org.cloudfoundry.operations.services.ServiceInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +59,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
 
     private CloudFoundryOperations client;
+
 
     public enum AppState {
 
@@ -180,7 +186,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
             log.error("Error getting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
-
     }
 
     public void pushArtifact(String applicationName, String artifact) {
@@ -334,7 +339,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .memoryLimit(memory)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting memory {} for application {}", memory, applicationName))
+                    .doOnSuccess(v -> log.info("Setting memory {} for application {}",
+                            memory, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting memory {} for application {} the error was {}",
@@ -350,7 +356,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .diskLimit(diskQuota)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting diskQouta {} for application {}", diskQuota, applicationName))
+                    .doOnSuccess(v -> log.info("Setting diskQouta {} for application {}",
+                            diskQuota, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting diskQuota {} for application {} the error was {}",
@@ -366,7 +373,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .instances(instances)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting instances {} for application {}", instances, applicationName))
+                    .doOnSuccess(v -> log.info("Setting instances {} for application {}",
+                            instances, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting instances {} for application {} the error was {}",
@@ -385,6 +393,68 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public int getMemory(String applicationName) {
         return getApplication(applicationName).getMemoryLimit();
+    }
+
+    public void createServiceInstance(Map<?, ?> params) {
+        ConfigBag serviceSetUp = ConfigBag.newInstance(params);
+        String serviceName = checkNotNull(serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME),
+                "Service Name can not be null");
+        String serviceInstanceName = checkNotNull(
+                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+                "Service Instance Name can not be null");
+        String plan = checkNotNull(
+                serviceSetUp.get(VanillaCloudFoundryService.PLAN),
+                "Plan can not be null");
+        try {
+            getClient().services()
+                    .createInstance(CreateServiceInstanceRequest.builder()
+                            .serviceName(serviceName)
+                            .serviceInstanceName(serviceInstanceName)
+                            .planName(plan)
+                            .build())
+                    .doOnSuccess(v ->
+                            log.info("Service {} was created correctly", serviceInstanceName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error creating the service {}, the error was {}", serviceInstanceName, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public boolean serviceInstanceExist(String serviceInstanceName) {
+        boolean result;
+        try {
+            result = getServiceInstance(serviceInstanceName) != null;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
+    }
+
+    public ServiceInstance getServiceInstance(String serviceInstanceName) {
+        try {
+            return getClient().services()
+                    .getInstance(GetServiceInstanceRequest.builder()
+                            .name(serviceInstanceName)
+                            .build())
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error gettin the service {} the error was {}", serviceInstanceName, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public void deleteServiceInstance(String serviceInstanceId) {
+        try {
+            getClient().services()
+                    .deleteInstance(DeleteServiceInstanceRequest.builder()
+                            .name(serviceInstanceId)
+                            .build())
+                    .doOnSuccess(v -> log.info("Deleted service instance {}", serviceInstanceId))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error deleting service {}, the error was {}", serviceInstanceId, e);
+        }
     }
 
 }
