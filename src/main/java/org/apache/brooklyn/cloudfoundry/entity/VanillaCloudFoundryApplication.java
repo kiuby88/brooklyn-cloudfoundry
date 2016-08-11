@@ -21,28 +21,21 @@ package org.apache.brooklyn.cloudfoundry.entity;
 import java.util.Map;
 
 import org.apache.brooklyn.api.catalog.Catalog;
-import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
-import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
-import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
-import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.text.Strings;
-import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
-public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
+public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
 
     @SetFromFlag("nameApp")
     BasicAttributeSensorAndConfigKey<String> APPLICATION_NAME =
@@ -84,17 +77,8 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
     ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
 
-    @SetFromFlag("startTimeout")
-    ConfigKey<Duration> START_TIMEOUT = BrooklynConfigKeys.START_TIMEOUT;
-
     AttributeSensor<String> ROOT_URL =
             Sensors.newStringSensor("webapp.url", "URL of the application");
-
-    AttributeSensor<Boolean> SERVICE_PROCESS_IS_RUNNING = Sensors.newBooleanSensor(
-            "service.process.isRunning",
-            "Whether the process for the service is confirmed as running");
-
-    AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = Attributes.SERVICE_STATE_ACTUAL;
 
     AttributeSensor<Integer> INSTANCES =
             Sensors.newIntegerSensor("cloudfoundry.application.instances",
