@@ -33,7 +33,6 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.v2.CloudFoundryException;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -72,19 +71,19 @@ public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLive
         assertTrue(errorCreating);
     }
 
-    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInvalidService() throws IOException {
         VanillaCloudFoundryService invalidService = addInvalidServiceToApp();
         startServiceInLocationAndCheckSensors(invalidService, cloudFoundryPaasLocation);
     }
 
-    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateUsingInvalidPlanService() throws IOException {
         VanillaCloudFoundryService invalidService = addServiceToAppWithInvalidPlan();
         startServiceInLocationAndCheckSensors(invalidService, cloudFoundryPaasLocation);
     }
 
-    @Test
+    @Test(groups = {"Live"})
     public void testStopService() throws IOException {
         VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);

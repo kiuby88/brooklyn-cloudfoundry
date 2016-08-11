@@ -157,7 +157,6 @@ public class VanillaCloudFoundryYamlLiveTest {
                         assertTrue(entity.getAttribute(Startable.SERVICE_UP));
                         assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
                                 .SERVICE_PROCESS_IS_RUNNING));
-                        assertTrue(entity.getAttribute(Startable.SERVICE_UP));
                         assertNotNull(entity.getAttribute(Attributes.MAIN_URI).toString());
                         assertNotNull(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL));
                     }

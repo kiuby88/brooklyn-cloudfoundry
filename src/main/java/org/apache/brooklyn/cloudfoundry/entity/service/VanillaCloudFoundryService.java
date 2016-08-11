@@ -36,7 +36,7 @@ public interface VanillaCloudFoundryService extends CloudFoundryEntity {
     ConfigKey<String> SERVICE_INSTANCE_NAME = ConfigKeys.newStringConfigKey(
             "cloudFoundry.service.instance.name", "Given name for the service instance");
 
-    @SetFromFlag("name")
+    @SetFromFlag("serviceName")
     ConfigKey<String> SERVICE_NAME = ConfigKeys.newStringConfigKey(
             "cloudFoundry.service.name", "Given name for the service instance");
 
