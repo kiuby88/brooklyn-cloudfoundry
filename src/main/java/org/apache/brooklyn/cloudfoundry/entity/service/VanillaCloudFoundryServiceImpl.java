@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity.services;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
 import java.util.Map;
 

@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation.AppState;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
@@ -340,7 +340,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         ConfigBag params = ConfigBag.newInstance();
         params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
         params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
-        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN_A);
+        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
         return params;
     }
 

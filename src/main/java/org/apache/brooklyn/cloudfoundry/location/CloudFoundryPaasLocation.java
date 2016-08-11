@@ -18,6 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static com.google.api.client.util.Preconditions.checkArgument;
 import static com.google.api.client.util.Preconditions.checkNotNull;
 
 import java.nio.file.Path;
@@ -25,13 +26,14 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
 import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
@@ -397,26 +399,26 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void createServiceInstance(Map<?, ?> params) {
         ConfigBag serviceSetUp = ConfigBag.newInstance(params);
-        String serviceName = checkNotNull(serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME),
-                "Service Name can not be null");
-        String serviceInstanceName = checkNotNull(
-                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
-                "Service Instance Name can not be null");
-        String plan = checkNotNull(
-                serviceSetUp.get(VanillaCloudFoundryService.PLAN),
-                "Plan can not be null");
+        String serviceName = serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME);
+        checkArgument(Strings.isNonBlank(serviceName), "Service Name can not be blank");
+        String instanceName =
+                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
+        checkArgument(Strings.isNonBlank(instanceName), "Service Instance Name can not be blank");
+        String plan = serviceSetUp.get(VanillaCloudFoundryService.PLAN);
+        checkArgument(Strings.isNonBlank(plan), "Plan can not be blank");
+
         try {
             getClient().services()
                     .createInstance(CreateServiceInstanceRequest.builder()
                             .serviceName(serviceName)
-                            .serviceInstanceName(serviceInstanceName)
+                            .serviceInstanceName(instanceName)
                             .planName(plan)
                             .build())
                     .doOnSuccess(v ->
-                            log.info("Service {} was created correctly", serviceInstanceName))
+                            log.info("Service {} was created correctly", instanceName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
-            log.error("Error creating the service {}, the error was {}", serviceInstanceName, e);
+            log.error("Error creating the service {}, the error was {}", instanceName, e);
             throw new PropagatedRuntimeException(e);
         }
     }

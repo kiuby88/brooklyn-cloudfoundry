@@ -46,7 +46,7 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
     public static final String SERVICE_X = "service1";
-    public static final String SERVICE_X_PLAN_A = "planX";
+    public static final String SERVICE_X_PLAN = "planX";
     public static final String SERVICE_INSTANCE_NAME = "serviceInstance";
 
     @BeforeMethod

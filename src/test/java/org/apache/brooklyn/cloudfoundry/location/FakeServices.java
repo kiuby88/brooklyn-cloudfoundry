@@ -61,7 +61,7 @@ public class FakeServices implements Services {
         availableServices = MutableMap.of();
         availableServices
                 .put(AbstractCloudFoundryUnitTest.SERVICE_X,
-                        ImmutableList.of(AbstractCloudFoundryUnitTest.SERVICE_X_PLAN_A));
+                        ImmutableList.of(AbstractCloudFoundryUnitTest.SERVICE_X_PLAN));
     }
 
     @Override

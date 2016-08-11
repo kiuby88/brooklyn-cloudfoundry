@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity.services;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
 import java.util.Map;
 
@@ -28,7 +28,6 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
         implements VanillaPaasServiceDriver {
 
     private String serviceInstanceId;
-
 
     public VanillaPaasServiceCloudFoundryDriver(VanillaCloudFoundryServiceImpl entity,
                                                 CloudFoundryPaasLocation location) {
@@ -47,7 +46,7 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
 
     @Override
     public void rebind() {
-
+        //TODO
     }
 
     @Override
@@ -64,11 +63,6 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
         getLocation().createServiceInstance(params);
     }
 
-    private void configInstanceIdSensor() {
-        getEntity().sensors().set(VanillaCloudFoundryService.SERVICE_INSTANCE_ID,
-                serviceInstanceId);
-    }
-
     @Override
     public void restart() {
         //TODO
@@ -76,8 +70,7 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
 
     @Override
     public void stop() {
-        log.info("Stopping service " + getEntity().getServiceInstanceName());
-        delete();
+        log.info("Service " + serviceInstanceId + " can only be started and deleted");
     }
 
     @Override

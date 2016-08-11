@@ -30,7 +30,7 @@ import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.services.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
