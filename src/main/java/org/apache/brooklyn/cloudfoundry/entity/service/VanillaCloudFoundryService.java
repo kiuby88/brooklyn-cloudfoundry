@@ -28,6 +28,9 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
+import com.google.common.annotations.Beta;
+
+@Beta
 @Catalog(name = "Vanilla CloudFoundry Service entity")
 @ImplementedBy(VanillaCloudFoundryServiceImpl.class)
 public interface VanillaCloudFoundryService extends CloudFoundryEntity {

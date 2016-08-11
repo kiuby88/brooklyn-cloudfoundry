@@ -24,6 +24,9 @@ import org.apache.brooklyn.cloudfoundry.entity.EntityPaasCloudFoundryDriver;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 
+import com.google.common.annotations.Beta;
+
+@Beta
 public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundryDriver
         implements VanillaPaasServiceDriver {
 

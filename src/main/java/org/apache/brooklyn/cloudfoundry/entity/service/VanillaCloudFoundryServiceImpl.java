@@ -26,6 +26,9 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
+import com.google.common.annotations.Beta;
+
+@Beta
 public class VanillaCloudFoundryServiceImpl extends CloudFoundryEntityImpl implements VanillaCloudFoundryService {
 
     private static final String DEFAULT_SERVICE_PREFIX = "cf-serv-";

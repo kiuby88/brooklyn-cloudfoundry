@@ -36,6 +36,7 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.v2.CloudFoundryException;
@@ -127,10 +128,14 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
     private void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
                                                        CloudFoundryPaasLocation location) {
         entity.start(ImmutableList.of(location));
-        assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-        assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
-                Lifecycle.RUNNING);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
+                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+                assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
+                        Lifecycle.RUNNING);
+            }
+        });
     }
 
     private VanillaCloudFoundryService addDefaultServiceToApp() {
