@@ -21,7 +21,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 import static org.mockito.Mockito.spy;
 
 import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.operations.CloudFoundryOperations;
 
 public class StubbedCloudFoundryPaasClientRegistry implements CloudFoundryClientRegistry {
 

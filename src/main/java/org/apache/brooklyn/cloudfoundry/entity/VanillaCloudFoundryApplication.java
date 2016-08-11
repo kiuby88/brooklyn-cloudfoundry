@@ -37,15 +37,17 @@ import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
 public interface VanillaCloudFoundryApplication extends Entity, Startable, DriverDependentEntity {
 
-    @SetFromFlag("name")
-    ConfigKey<String> APPLICATION_NAME = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.application.name", "Name of the application");
+    @SetFromFlag("nameApp")
+    BasicAttributeSensorAndConfigKey<String> APPLICATION_NAME =
+            new BasicAttributeSensorAndConfigKey<String>(String.class,
+                    "cloudFoundry.application.name", "Name of the application");
 
     @SetFromFlag("path")
     ConfigKey<String> ARTIFACT_PATH = ConfigKeys.newStringConfigKey(
@@ -63,11 +65,12 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
 
     @SetFromFlag("domain")
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.application.domain", "Domain for the application");
+            "cloudFoundry.application.domain", "Domain for the application", Strings.EMPTY);
 
     @SetFromFlag("host")
     ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.application.host", "Host or sub-domain for the application");
+            "cloudFoundry.application.host", "Host or sub-domain for the application, if " +
+                    "this value is empty the application name will be used like the host");
 
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(
@@ -77,7 +80,7 @@ public interface VanillaCloudFoundryApplication extends Entity, Startable, Drive
     ConfigKey<Integer> REQUIRED_MEMORY = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.memory", "Memory allocated for the application (MB)", 512);
 
-    @SetFromFlag("disk")
+    @SetFromFlag("disk_quota")
     ConfigKey<Integer> REQUIRED_DISK = ConfigKeys.newIntegerConfigKey(
             "cloudfoundry.profile.disk", "Disk size allocated for the application (MB)", 1024);
 

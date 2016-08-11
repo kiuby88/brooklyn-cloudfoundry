@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import java.time.Duration;
+
 import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
@@ -34,4 +36,6 @@ public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
             CloudFoundryClientRegistry.class, "cloudFoundryPaasClientRegistry",
             "Registry/Factory for creating cloudfoundry client; default is almost always fine, " +
                     "except where tests want to customize behaviour", CloudFoundryClientRegistryImpl.INSTANCE);
+    ConfigKey<Duration> OPERATIONS_TIMEOUT = ConfigKeys.newConfigKey(Duration.class,
+            "operations.timeout", "Timeout for cloudfoundry operations", Duration.ofMinutes(5));
 }

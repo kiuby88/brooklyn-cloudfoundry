@@ -18,6 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -92,6 +93,7 @@ public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implement
         if (Strings.isBlank(applicationName)) {
             applicationName = DEFAULT_APP_PREFIX + Identifiers.makeRandomId(8);
         }
+        this.sensors().set(APPLICATION_NAME, applicationName);
     }
 
     @Override
@@ -347,7 +349,7 @@ public class VanillaCloudFoundryApplicationImpl extends AbstractEntity implement
         if (driver != null) {
             if ((driver instanceof VanillaPaasApplicationCloudFoundryDriver)
                     && location.equals((driver).getLocation())) {
-                return driver; //just reuse
+                return driver;
             } else {
                 log.warn("driver/location change is untested for {} at {}; changing driver and continuing", this, location);
                 return newDriver(location);

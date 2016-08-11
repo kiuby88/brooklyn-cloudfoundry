@@ -80,26 +80,25 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     private String deploy() {
         Map<String, Object> params = MutableMap.copyOf(entity.config().getBag().getAllConfig());
         params.put(VanillaCloudFoundryApplication.APPLICATION_NAME.getName(), applicationName);
-
-
-        if (!Strings.isBlank(entity.getConfig(VanillaCloudFoundryApplication.ARTIFACT_PATH))) {
+        if (!Strings.isBlank(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName())) {
             params.put(VanillaCloudFoundryApplication.ARTIFACT_PATH.getName(), getLocalPath());
         }
+
         applicationUrl = location.deploy(params);
         return applicationUrl;
     }
 
     private String getLocalPath() {
-        DownloadResolver downlodResolver = getDownloadResolver();
+        DownloadResolver downloadResolver = getDownloadResolver();
         try {
             File war;
             war = LocalResourcesDownloader
-                    .downloadResourceInLocalDir(downlodResolver.getFilename(),
-                            downlodResolver.getTargets());
+                    .downloadResourceInLocalDir(downloadResolver.getFilename(),
+                            downloadResolver.getTargets());
             return war.getCanonicalPath();
         } catch (IOException e) {
             log.error("Error obtaining local path in {} for artifact {}",
-                    this, downlodResolver.getTargets());
+                    this, downloadResolver.getTargets());
             throw Exceptions.propagate(e);
         }
     }
@@ -184,8 +183,8 @@ public class VanillaPaasApplicationCloudFoundryDriver implements VanillaPaasAppl
     }
 
     @Override
-    public void setInstancesNumber(int instancesNumber) {
-        location.setInstancesNumber(applicationName, instancesNumber);
+    public void setInstancesNumber(int instances) {
+        location.setInstancesNumber(applicationName, instances);
         updateInstancesSensor(location.getInstancesNumber(applicationName));
     }
 

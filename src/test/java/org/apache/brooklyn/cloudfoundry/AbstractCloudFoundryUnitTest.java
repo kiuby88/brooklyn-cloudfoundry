@@ -19,6 +19,7 @@
 package org.apache.brooklyn.cloudfoundry;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 import java.util.Map;
 import java.util.UUID;
@@ -26,9 +27,11 @@ import java.util.UUID;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocationTest;
 import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryPaasClientRegistry;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.BeforeMethod;
 
@@ -37,14 +40,13 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
 
     protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
 
-    protected static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
+    public static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
 
     protected static final String DEFAULT_APPLICATION_BROOKLYN_DOMAIN
             = APPLICATION_NAME + "." + BROOKLYN_DOMAIN;
     protected static final String DEFAULT_APPLICATION_ADDRESS
             = "https://" + DEFAULT_APPLICATION_BROOKLYN_DOMAIN;
     protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
-    protected static final String MOCK_HOST = "mockedhost";
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
 
@@ -91,6 +93,20 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+    }
+
+    public String inferApplicationUrl(ConfigBag params) {
+        String host = params.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
+        if (Strings.isBlank(host)) {
+            host = params.get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
+        }
+        String domain = params.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        if (Strings.isBlank(domain)) {
+            domain = CloudFoundryPaasLocationTest.BROOKLYN_DOMAIN;
+        }
+        assertNotNull(host);
+        assertNotNull(domain);
+        return "https://" + host + "." + domain;
     }
 
 }
