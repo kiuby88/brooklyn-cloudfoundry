@@ -249,7 +249,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testDeleteNonExistentService(){
+    public void testDeleteNonExistentService() {
         deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
 

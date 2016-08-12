@@ -18,6 +18,7 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.catalog.Catalog;
@@ -29,9 +30,12 @@ import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.text.Strings;
+
+import com.google.common.reflect.TypeToken;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
@@ -64,6 +68,10 @@ public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
     ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(
             "cloudFoundry.application.host", "Host or sub-domain for the application, if " +
                     "this value is empty the application name will be used like the host");
+
+    @SetFromFlag("services")
+    ConfigKey<List<String>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<String>>() {},
+            "cloudFoundry.application.services", "Services to be bound", MutableList.<String>of());
 
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(

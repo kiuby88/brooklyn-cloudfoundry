@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
@@ -103,7 +104,19 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
     }
 
     protected void preLaunch() {
+        bindServices();
         configureEnv();
+    }
+
+    private void bindServices() {
+        List<String> services = getEntity().getConfig(VanillaCloudFoundryApplication.SERVICES);
+        for (String serviceInstanceId : services) {
+            bindService(serviceInstanceId);
+        }
+    }
+
+    private void bindService(String serviceInstanceId) {
+        getLocation().bindServiceToApplication(serviceInstanceId, applicationName);
     }
 
     protected void configureEnv() {

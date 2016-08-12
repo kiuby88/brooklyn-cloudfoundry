@@ -88,7 +88,7 @@ public class FakeApplications implements Applications {
         return Mono.empty();
     }
 
-    boolean containsApplication(String applicationName){
+    boolean containsApplication(String applicationName) {
         return applications.containsKey(applicationName);
     }
 

@@ -319,7 +319,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
-    public void testDeleteNonExistentService(){
+    public void testDeleteNonExistentService() {
         deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
 
@@ -374,24 +374,5 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         Map<String, String> returnedEnv = cloudFoundryPaasLocation.getEnv(APPLICATION_NAME);
         assertEquals(returnedEnv, joinedEnv);
     }
-
-    private ConfigBag getDefaultServiceConfig() {
-        ConfigBag params = ConfigBag.newInstance();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
-        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
-        return params;
-    }
-
-    private void createServiceAndCheck(Map<String, Object> params) {
-        cloudFoundryPaasLocation.createServiceInstance(params);
-        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
-    }
-
-    private void deleteServiceAndCheck(String serviceInstanceName) {
-        cloudFoundryPaasLocation.deleteServiceInstance(serviceInstanceName);
-        assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
-    }
-
 
 }
