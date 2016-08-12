@@ -37,6 +37,7 @@ import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.v2.CloudFoundryException;
@@ -55,7 +56,7 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);
-        location = spy(cloudFoundryPaasLocation);
+        location = spy(createCloudFoundryPaasLocation());
     }
 
     @Test
@@ -107,6 +108,7 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
     @Test
     public void testStopService() throws IOException {
         doNothing().when(location).createServiceInstance(anyMap());
+        doReturn(MutableList.of()).when(location).getBoundApplications(anyString());
         doReturn(true).when(location).serviceInstanceExist(anyString());
         doNothing().when(location).deleteServiceInstance(anyString());
 

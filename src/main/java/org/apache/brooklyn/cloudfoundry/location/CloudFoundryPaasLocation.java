@@ -23,6 +23,7 @@ import static com.google.api.client.util.Preconditions.checkNotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
@@ -462,19 +463,19 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    public void bindServiceToApplication(String serviceName, String applicationName) {
+    public void bindServiceToApplication(String serviceInstanceName, String applicationName) {
         try {
             getClient().services()
                     .bind(BindServiceInstanceRequest.builder()
                             .applicationName(applicationName)
-                            .serviceInstanceName(serviceName)
+                            .serviceInstanceName(serviceInstanceName)
                             .build())
                     .doOnSuccess(v -> log.info("Bound service instance {} to application {}",
-                            serviceName, applicationName))
+                            serviceInstanceName, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error binding the service {} to the application {}, the error was {}",
-                    new Object[]{serviceName, applicationName, e});
+                    new Object[]{serviceInstanceName, applicationName, e});
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -498,6 +499,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public boolean isServiceBoundTo(String serviceName, String applicationName) {
         return getServiceInstance(serviceName).getApplications().contains(applicationName);
+    }
+
+    public List<String> getBoundApplications(String serviceInstanceName) {
+        return getServiceInstance(serviceInstanceName).getApplications();
     }
 
 }

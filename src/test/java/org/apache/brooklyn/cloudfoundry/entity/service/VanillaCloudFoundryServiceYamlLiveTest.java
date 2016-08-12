@@ -22,31 +22,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import org.apache.brooklyn.api.entity.Application;
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.core.entity.trait.Startable;
-import org.apache.brooklyn.launcher.SimpleYamlLauncherForTests;
-import org.apache.brooklyn.launcher.camp.SimpleYamlLauncher;
-import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.cloudfoundry.VanillaCloudFoundryYamlLiveTest;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class VanillaCloudFoundryServiceYamlLiveTest {
-
-    private static final String DEFAULT_ID = "my-service";
-    private static final String MY_CLEARDB_INSTANCE = "my-cleardb-instance";
-
-
-    private SimpleYamlLauncher launcher;
-
-    @BeforeMethod
-    public void setUp() {
-        launcher = new SimpleYamlLauncherForTests();
-        launcher.setShutdownAppsOnExit(true);
-    }
+public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryYamlLiveTest {
 
     @AfterMethod
     public void tearDown() {
@@ -60,7 +41,7 @@ public class VanillaCloudFoundryServiceYamlLiveTest {
                 .getApplication();
 
         VanillaCloudFoundryService service = (VanillaCloudFoundryService)
-                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+                findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
         assertTrue(Strings
                 .isNonBlank(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID)));
@@ -73,31 +54,10 @@ public class VanillaCloudFoundryServiceYamlLiveTest {
                 .getApplication();
 
         VanillaCloudFoundryService service = (VanillaCloudFoundryService)
-                findChildEntitySpecByPlanId(app, DEFAULT_ID);
+                findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
         assertEquals(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID),
                 MY_CLEARDB_INSTANCE);
-    }
-
-    private void testRunningSensors(final VanillaCloudFoundryService entity) {
-        Asserts.succeedsEventually(
-                new Runnable() {
-                    public void run() {
-                        assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                                .SERVICE_PROCESS_IS_RUNNING));
-                    }
-                });
-    }
-
-    private Entity findChildEntitySpecByPlanId(Application app, String planId) {
-        for (Entity child : app.getChildren()) {
-            String childPlanId = child.getConfig(BrooklynCampConstants.PLAN_ID);
-            if ((childPlanId != null) && (childPlanId.equals(planId))) {
-                return child;
-            }
-        }
-        return null;
     }
 
 }

@@ -18,11 +18,13 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.EntityPaasCloudFoundryDriver;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 
 import com.google.common.annotations.Beta;
 
@@ -78,6 +80,28 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
 
     @Override
     public void delete() {
+        unbindServiceOfApplications();
         getLocation().deleteServiceInstance(serviceInstanceId);
+    }
+
+    private void unbindServiceOfApplications() {
+        List<String> boundApplications = getLocation().getBoundApplications(serviceInstanceId);
+        if (boundApplications != null) {
+            for (String boundApplication : boundApplications) {
+                unbindServiceOfApplication(boundApplication);
+            }
+        }
+    }
+
+    private void unbindServiceOfApplication(String boundApplication) {
+        try {
+            getLocation().unbindService(serviceInstanceId, boundApplication);
+        } catch (PropagatedRuntimeException e) {
+            if (getLocation().isServiceBoundTo(serviceInstanceId, boundApplication)) {
+                throw new PropagatedRuntimeException(e.getCause());
+            }
+            log.debug("Application is {} already unbound of {}",
+                    boundApplication, serviceInstanceId);
+        }
     }
 }
