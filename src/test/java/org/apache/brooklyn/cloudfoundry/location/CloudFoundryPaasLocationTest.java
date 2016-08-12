@@ -291,7 +291,6 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 
-
     @Test
     public void testBindServiceToApplication() {
         deployApplicationAndCheck(getDefaultApplicationConfiguration());
@@ -300,7 +299,6 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
         assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
     }
-
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testBindNonExistentServiceToApplication() {
@@ -312,6 +310,28 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     public void testBindServiceToNonExistentApplication() {
         createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
         cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+    }
+
+    @Test
+    public void testDeleteService() {
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeleteNonExistentService(){
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeleteABoundService() {
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
+        cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
     }
 
     private ConfigBag getDefaultApplicationConfiguration() {
@@ -367,5 +387,11 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.createServiceInstance(params);
         assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
     }
+
+    private void deleteServiceAndCheck(String serviceInstanceName) {
+        cloudFoundryPaasLocation.deleteServiceInstance(serviceInstanceName);
+        assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+    }
+
 
 }

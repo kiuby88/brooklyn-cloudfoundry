@@ -51,6 +51,7 @@ import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
 import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
 import org.cloudfoundry.operations.services.GetServiceInstanceRequest;
 import org.cloudfoundry.operations.services.ServiceInstance;
+import org.cloudfoundry.operations.services.UnbindServiceInstanceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -457,6 +458,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error deleting service {}, the error was {}", serviceInstanceId, e);
+            throw new PropagatedRuntimeException(e);
         }
     }
 
@@ -472,6 +474,23 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error binding the service {} to the application {}, the error was {}",
+                    new Object[]{serviceName, applicationName, e});
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public void unbindService(String serviceName, String applicationName) {
+        try {
+            getClient().services()
+                    .unbind(UnbindServiceInstanceRequest.builder()
+                            .applicationName(applicationName)
+                            .serviceInstanceName(serviceName)
+                            .build())
+                    .doOnSuccess(v -> log.info("Unbound service instance {} to application {}",
+                            serviceName, applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error unbinding service {} to application {} the error was {}",
                     new Object[]{serviceName, applicationName, e});
             throw new PropagatedRuntimeException(e);
         }

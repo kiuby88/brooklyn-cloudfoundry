@@ -71,7 +71,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testWebApplicationManagemenNoNameNoHostt() {
+    public void testWebApplicationManagementNoNameNoHost() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
@@ -216,7 +216,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
         assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
         deleteApplicatin(applicationName);
-        cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
@@ -238,6 +238,33 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
             assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
             cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
         } finally {
+            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+        }
+    }
+
+    @Test(groups = {"Live"})
+    public void testDeleteService() {
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeleteNonExistentService(){
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testDeleteABoundService() {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        createApplicationStartAndCheck(params.getAllConfig());
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        try {
+            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+        } finally {
+            deleteApplicatin(applicationName);
             cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
         }
     }
@@ -324,24 +351,6 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     private Map<String, Object> getDefaultClearDbServiceConfigMap() {
         return getDefaultClearDbServiceConfig().getAllConfig();
-    }
-
-    private ConfigBag getDefaultClearDbServiceConfig() {
-        ConfigBag params = ConfigBag.newInstance();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
-        params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
-        return params;
-    }
-
-    private void createServiceAndCheck(Map<String, Object> params) {
-        cloudFoundryPaasLocation.createServiceInstance(params);
-        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
-    }
-
-    private void deleteServiceAndCheck(String serviceName) {
-        cloudFoundryPaasLocation.deleteServiceInstance(serviceName);
-        assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(serviceName));
     }
 
     @SuppressWarnings("all")

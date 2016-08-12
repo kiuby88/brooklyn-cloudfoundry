@@ -72,10 +72,10 @@ public class FakeServices implements Services {
         String applicationName = bindServiceInstanceRequest.getApplicationName();
 
         if (!services.containsKey(instanceName)) {
-            throwNonExistentService(instanceName);
+            throw createNonExistentService(instanceName);
         }
         if (!applications.containsApplication(applicationName)) {
-            throwNonExistentApplication(applicationName);
+            throw createNonExistentApplication(applicationName);
         }
 
         ServiceInstance service = services.get(instanceName);
@@ -108,23 +108,23 @@ public class FakeServices implements Services {
 
     private void checkServiceAndPlan(String service, String plan) {
         if (!availableServices.containsKey(service)) {
-            throwNonExistentService(service);
+            throw createNonExistentService(service);
         }
         if (!availableServices.get(service).contains(plan)) {
-            throwNonExistentPlan(plan);
+            throw createNonExistentPlan(plan);
         }
     }
 
-    private void throwNonExistentService(String serviceName) {
-        throw new IllegalArgumentException("Service " + serviceName + " does not exist");
+    private IllegalArgumentException createNonExistentService(String serviceName) {
+        return new IllegalArgumentException("Service " + serviceName + " does not exist");
     }
 
-    private void throwNonExistentPlan(String plan) {
-        throw new IllegalArgumentException("Service plan " + plan + " does not exist");
+    private IllegalArgumentException createNonExistentPlan(String plan) {
+        return new IllegalArgumentException("Service plan " + plan + " does not exist");
     }
 
-    private void throwNonExistentApplication(String applicationName) {
-        throw new IllegalArgumentException("Application " + applicationName + "does not exist");
+    private IllegalArgumentException createNonExistentApplication(String applicationName) {
+        return new IllegalArgumentException("Application " + applicationName + "does not exist");
     }
 
     @Override
@@ -133,13 +133,34 @@ public class FakeServices implements Services {
     }
 
     @Override
-    public Mono<Void> createUserProvidedInstance(CreateUserProvidedServiceInstanceRequest createUserProvidedServiceInstanceRequest) {
+    public Mono<Void> createUserProvidedInstance(
+            CreateUserProvidedServiceInstanceRequest createUserProvidedServiceInstanceRequest) {
         return null;
     }
 
     @Override
     public Mono<Void> deleteInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest) {
-        return null;
+        String instanceName = deleteServiceInstanceRequest.getName();
+        if (services.containsKey(instanceName)) {
+            deleteService(instanceName);
+            return Mono.empty();
+        }
+        throw createNonExistentService(instanceName);
+    }
+
+    private void deleteService(String instanceName) {
+        ServiceInstance service = services.get(instanceName);
+        if (isNotBoundToAnApplication(service)) {
+            services.remove(instanceName);
+        } else {
+            throw new CloudFoundryException(10006,
+                    "Please delete the service_bindings, service_keys, and routes associations " +
+                            "for your service_instances.", "CF-AssociationNotEmpty");
+        }
+    }
+
+    private boolean isNotBoundToAnApplication(ServiceInstance service) {
+        return service.getApplications().isEmpty();
     }
 
     @Override
