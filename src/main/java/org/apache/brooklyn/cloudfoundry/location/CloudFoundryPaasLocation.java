@@ -46,6 +46,7 @@ import org.cloudfoundry.operations.applications.ScaleApplicationRequest;
 import org.cloudfoundry.operations.applications.SetEnvironmentVariableApplicationRequest;
 import org.cloudfoundry.operations.applications.StartApplicationRequest;
 import org.cloudfoundry.operations.applications.StopApplicationRequest;
+import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
 import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
 import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
 import org.cloudfoundry.operations.services.GetServiceInstanceRequest;
@@ -177,7 +178,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return baseUrl;
     }
 
-    private ApplicationDetail getApplication(final String applicationName) {
+    protected ApplicationDetail getApplication(final String applicationName) {
         try {
             return getClient().applications()
                     .get(GetApplicationRequest.builder()
@@ -433,7 +434,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return result;
     }
 
-    public ServiceInstance getServiceInstance(String serviceInstanceName) {
+    protected ServiceInstance getServiceInstance(String serviceInstanceName) {
         try {
             return getClient().services()
                     .getInstance(GetServiceInstanceRequest.builder()
@@ -457,6 +458,27 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         } catch (Exception e) {
             log.error("Error deleting service {}, the error was {}", serviceInstanceId, e);
         }
+    }
+
+    public void bindServiceToApplication(String serviceName, String applicationName) {
+        try {
+            getClient().services()
+                    .bind(BindServiceInstanceRequest.builder()
+                            .applicationName(applicationName)
+                            .serviceInstanceName(serviceName)
+                            .build())
+                    .doOnSuccess(v -> log.info("Bound service instance {} to application {}",
+                            serviceName, applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error binding the service {} to the application {}, the error was {}",
+                    new Object[]{serviceName, applicationName, e});
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public boolean isServiceBoundTo(String serviceName, String applicationName) {
+        return getServiceInstance(serviceName).getApplications().contains(applicationName);
     }
 
 }

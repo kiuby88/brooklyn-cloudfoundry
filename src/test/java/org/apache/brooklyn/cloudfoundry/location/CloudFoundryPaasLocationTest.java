@@ -33,7 +33,6 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -50,28 +49,28 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
     @Test
     public void testDeployApplication() {
-        deployApplicationandCheck(getDefaultApplicationConfiguration());
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
     }
 
     @Test
     public void testDeployApplicationWithHost() {
         ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, BROOKLYN_HOST);
-        deployApplicationandCheck(params);
+        deployApplicationAndCheck(params);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testDeployApplicationNoNameNoHost() {
         ConfigBag params = getDefaultResourcesProfile();
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, APPLICATION_LOCAL_PATH);
-        deployApplicationandCheck(params);
+        deployApplicationAndCheck(params);
     }
 
     @Test
     public void testDeployApplicationWithDomain() {
         ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, BROOKLYN_DOMAIN);
-        deployApplicationandCheck(params);
+        deployApplicationAndCheck(params);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
@@ -79,7 +78,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         ConfigBag params = getDefaultResourcesProfile();
         String nonExistentDomain = Strings.makeRandomId(8);
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, nonExistentDomain);
-        deployApplicationandCheck(params);
+        deployApplicationAndCheck(params);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -269,14 +268,12 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
 
     @Test
     public void testCreateService() {
-        cloudFoundryPaasLocation.createServiceInstance(getDefaultServiceConfig().getAllConfig());
-        cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME);
-        Assert.assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testRepeatInstanceNameService() {
-        testCreateService();
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
         cloudFoundryPaasLocation.createServiceInstance(getDefaultServiceConfig().getAllConfig());
     }
 
@@ -285,7 +282,6 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         ConfigBag params = getDefaultServiceConfig();
         params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
-        Assert.assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
@@ -293,6 +289,29 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         ConfigBag params = getDefaultServiceConfig();
         params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
+    }
+
+
+    @Test
+    public void testBindServiceToApplication() {
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
+    }
+
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testBindNonExistentServiceToApplication() {
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testBindServiceToNonExistentApplication() {
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
     }
 
     private ConfigBag getDefaultApplicationConfiguration() {
@@ -311,7 +330,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         return params;
     }
 
-    private void deployApplicationandCheck(ConfigBag params) {
+    private void deployApplicationAndCheck(ConfigBag params) {
         String applicationUrl = deployApplication(params);
         assertEquals(applicationUrl, inferApplicationUrl(params));
         assertFalse(Strings.isBlank(applicationUrl));
@@ -342,6 +361,11 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
         params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
         return params;
+    }
+
+    private void createServiceAndCheck(Map<String, Object> params) {
+        cloudFoundryPaasLocation.createServiceInstance(params);
+        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
     }
 
 }

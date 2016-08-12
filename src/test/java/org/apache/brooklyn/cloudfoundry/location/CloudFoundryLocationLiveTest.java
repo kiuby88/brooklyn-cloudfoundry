@@ -58,20 +58,13 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testWebApplicationManagement() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
+        ConfigBag params = getDefaultApplicationConfiguration();
         applicationLifecycleManagement(applicationName, params.getAllConfig());
     }
 
     @Test(groups = {"Live"})
     public void testWebApplicationManagementWithHost() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, BROOKLYN_HOST);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
@@ -88,10 +81,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testWebApplicationManagementWithDomain() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
 
         applicationLifecycleManagement(applicationName, params.getAllConfig());
@@ -108,11 +98,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testAddEnvToApplication() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
+        ConfigBag params = getDefaultApplicationConfiguration();
         String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         startApplication(applicationName, applicationUrl);
 
@@ -127,11 +113,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testAddNullEnvToApplication() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
+        ConfigBag params = getDefaultApplicationConfiguration();
         String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         startApplication(applicationName, applicationUrl);
 
@@ -146,10 +128,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testModifyResourcesForApplication() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
+        ConfigBag params = getDefaultApplicationConfiguration();
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
 
         String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
@@ -187,10 +166,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testRestartApplication() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        ConfigBag params = getDefaultApplicationConfiguration();
 
         String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
         assertFalse(Strings.isBlank(applicationUrl));
@@ -203,23 +179,18 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testCreateService() {
-        cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
-        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
         deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
 
-    @Test(groups = {"Live"})
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testRepeatInstanceNameService() {
-        cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
-        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
-        boolean errorCreating = false;
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
         try {
             cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
-        } catch (PropagatedRuntimeException e) {
-            errorCreating = true;
+        } finally {
+            deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
         }
-        assertTrue(errorCreating);
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
@@ -236,12 +207,52 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 
+    @Test(groups = {"Live"})
+    public void testBindServiceToApplication() {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        createApplicationStartAndCheck(params.getAllConfig());
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        deleteApplicatin(applicationName);
+        cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testBindNonExistentServiceToApplication() {
+        try {
+            ConfigBag params = getDefaultApplicationConfiguration();
+            createApplicationStartAndCheck(params.getAllConfig());
+            cloudFoundryPaasLocation
+                    .bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
+        } finally {
+            deleteApplicatin(applicationName);
+        }
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testBindServiceToNonExistentApplication() {
+        try {
+            createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+            assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+            cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
+        } finally {
+            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+        }
+    }
+
     private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
+        String applicationUrl = createApplicationStartAndCheck(params);
+        destroyApplication(applicationName, applicationUrl);
+    }
+
+    private String createApplicationStartAndCheck(Map<String, Object> params) {
         String applicationUrl = cloudFoundryPaasLocation.deploy(params);
         assertEquals(applicationUrl, inferApplicationUrl(params));
         assertFalse(Strings.isBlank(applicationUrl));
         startApplication(applicationName, applicationUrl);
-        destroyApplication(applicationName, applicationUrl);
+        return applicationUrl;
     }
 
     private void startApplication(String applicationName, String applicationUrl) {
@@ -303,6 +314,14 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         return params;
     }
 
+    private ConfigBag getDefaultApplicationConfiguration() {
+        ConfigBag params = getDefaultResourcesProfile();
+        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
+        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
+        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
+        return params;
+    }
+
     private Map<String, Object> getDefaultClearDbServiceConfigMap() {
         return getDefaultClearDbServiceConfig().getAllConfig();
     }
@@ -313,6 +332,11 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
         params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
         return params;
+    }
+
+    private void createServiceAndCheck(Map<String, Object> params) {
+        cloudFoundryPaasLocation.createServiceInstance(params);
+        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
     }
 
     private void deleteServiceAndCheck(String serviceName) {

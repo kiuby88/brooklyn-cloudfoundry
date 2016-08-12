@@ -53,10 +53,12 @@ import reactor.core.publisher.Mono;
 
 public class FakeServices implements Services {
 
+    FakeApplications applications;
     Map<String, List<String>> availableServices;
     Map<String, ServiceInstance> services;
 
-    public FakeServices() {
+    public FakeServices(FakeApplications applications) {
+        this.applications = applications;
         services = MutableMap.of();
         availableServices = MutableMap.of();
         availableServices
@@ -66,7 +68,22 @@ public class FakeServices implements Services {
 
     @Override
     public Mono<Void> bind(BindServiceInstanceRequest bindServiceInstanceRequest) {
-        return null;
+        String instanceName = bindServiceInstanceRequest.getServiceInstanceName();
+        String applicationName = bindServiceInstanceRequest.getApplicationName();
+
+        if (!services.containsKey(instanceName)) {
+            throwNonExistentService(instanceName);
+        }
+        if (!applications.containsApplication(applicationName)) {
+            throwNonExistentApplication(applicationName);
+        }
+
+        ServiceInstance service = services.get(instanceName);
+        services.put(instanceName, ServiceInstance.builder()
+                .from(service)
+                .application(applicationName)
+                .build());
+        return Mono.empty();
     }
 
     @Override
@@ -91,11 +108,23 @@ public class FakeServices implements Services {
 
     private void checkServiceAndPlan(String service, String plan) {
         if (!availableServices.containsKey(service)) {
-            throw new IllegalArgumentException("Service " + service + " does not exist");
+            throwNonExistentService(service);
         }
         if (!availableServices.get(service).contains(plan)) {
-            throw new IllegalArgumentException("Service plan " + plan + " does not exist");
+            throwNonExistentPlan(plan);
         }
+    }
+
+    private void throwNonExistentService(String serviceName) {
+        throw new IllegalArgumentException("Service " + serviceName + " does not exist");
+    }
+
+    private void throwNonExistentPlan(String plan) {
+        throw new IllegalArgumentException("Service plan " + plan + " does not exist");
+    }
+
+    private void throwNonExistentApplication(String applicationName) {
+        throw new IllegalArgumentException("Application " + applicationName + "does not exist");
     }
 
     @Override

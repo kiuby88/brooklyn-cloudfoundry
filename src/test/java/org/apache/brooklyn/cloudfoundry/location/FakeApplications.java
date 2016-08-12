@@ -68,8 +68,8 @@ public class FakeApplications implements Applications {
     private static final String STOPPED = "STOPPED";
     private static final int ID_SIZE = 36;
 
-    private Map<String, ApplicationDetail> applications;
-    private Map<String, Map<String, String>> applicationEnv;
+    Map<String, ApplicationDetail> applications;
+    Map<String, Map<String, String>> applicationEnv;
 
     public FakeApplications() {
         applications = MutableMap.of();
@@ -86,6 +86,10 @@ public class FakeApplications implements Applications {
             updateApplication(request);
         }
         return Mono.empty();
+    }
+
+    boolean containsApplication(String applicationName){
+        return applications.containsKey(applicationName);
     }
 
     private void checkApplicationPath(PushApplicationRequest request) {

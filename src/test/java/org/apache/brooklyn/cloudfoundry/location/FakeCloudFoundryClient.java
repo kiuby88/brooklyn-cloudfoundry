@@ -39,7 +39,7 @@ public class FakeCloudFoundryClient implements CloudFoundryOperations {
 
     public FakeCloudFoundryClient() {
         applications = new FakeApplications();
-        services = new FakeServices();
+        services = new FakeServices((FakeApplications) applications);
     }
 
     @Override
