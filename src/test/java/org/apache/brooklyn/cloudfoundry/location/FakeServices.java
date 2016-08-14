@@ -83,6 +83,7 @@ public class FakeServices implements Services {
                 .from(service)
                 .application(applicationName)
                 .build());
+        applications.bindServiceToApplication(service.getService(), instanceName, applicationName);
         return Mono.empty();
     }
 

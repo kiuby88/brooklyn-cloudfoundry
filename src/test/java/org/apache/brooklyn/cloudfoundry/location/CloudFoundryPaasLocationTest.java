@@ -20,6 +20,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.IOException;
@@ -332,6 +333,26 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
         assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, APPLICATION_NAME));
         cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test
+    public void testGetCredentials() {
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+        Map<String, String> credentials = cloudFoundryPaasLocation
+                .getCredentialsServiceForApplication(APPLICATION_NAME, SERVICE_INSTANCE_NAME);
+        assertNotNull(credentials);
+        assertFalse(credentials.isEmpty());
+    }
+
+    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    public void testGetCredentialsForNotBoundService() {
+        deployApplicationAndCheck(getDefaultApplicationConfiguration());
+        createServiceAndCheck(getDefaultServiceConfig().getAllConfig());
+        Map<String, String> credentials = cloudFoundryPaasLocation
+                .getCredentialsServiceForApplication(APPLICATION_NAME, SERVICE_INSTANCE_NAME);
+        assertNotNull(credentials);
     }
 
     private ConfigBag getDefaultApplicationConfiguration() {

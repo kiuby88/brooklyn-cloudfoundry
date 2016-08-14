@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -40,6 +41,8 @@ import java.util.Map;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
+import org.apache.brooklyn.cloudfoundry.entity.service.ServiceOperation;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
@@ -264,6 +267,28 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
     }
 
+    @Test
+    public void testBindServiceWithOperationToEntity() {
+        doNothing().when(cloudFoundryPaasLocation).startApplication(anyString());
+        doReturn(serverAddress).when(cloudFoundryPaasLocation).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
+        doNothing().when(cloudFoundryPaasLocation)
+                .bindServiceToApplication(anyString(), anyString());
+        ServiceOperation serviceEntity = mock(ServiceOperation.class);
+        doNothing().when(serviceEntity).operationAfterBindingTo(anyString());
+        doReturn(true).when(serviceEntity).getAttribute(Startable.SERVICE_UP);
+        doReturn(SERVICE_INSTANCE_NAME)
+                .when(serviceEntity)
+                .getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
+
+        VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
+                cloudFoundryPaasLocation, MutableList.of(serviceEntity));
+
+        startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
+        verify(cloudFoundryPaasLocation, times(1))
+                .bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+    }
+
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
             CloudFoundryPaasLocation location) {
         return addDefaultVanillaToAppAndMockProfileMethods(location, null, null);
@@ -275,12 +300,12 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
-            CloudFoundryPaasLocation location, List<String> services) {
+            CloudFoundryPaasLocation location, List<Object> services) {
         return addDefaultVanillaToAppAndMockProfileMethods(location, null, services);
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
-            CloudFoundryPaasLocation location, Map<String, String> env, List<String> services) {
+            CloudFoundryPaasLocation location, Map<String, String> env, List<Object> services) {
         VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp(env, services);
         mockLocationProfileUsingEntityConfig(location, entity);
         return entity;
@@ -291,7 +316,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaEntityChildToApp(
-            Map<String, String> env, List<String> services) {
+            Map<String, String> env, List<Object> services) {
         EntitySpec<VanillaCloudFoundryApplication> vanilla = EntitySpec
                 .create(VanillaCloudFoundryApplication.class)
                 .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME)

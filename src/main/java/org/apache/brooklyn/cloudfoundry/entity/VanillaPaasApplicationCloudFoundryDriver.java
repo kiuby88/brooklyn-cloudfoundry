@@ -27,10 +27,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
+import org.apache.brooklyn.cloudfoundry.entity.service.ServiceOperation;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.utils.FileNameResolver;
 import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.drivers.downloads.BasicDownloadResolver;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -109,9 +112,25 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
     }
 
     private void bindServices() {
-        List<String> services = getEntity().getConfig(VanillaCloudFoundryApplication.SERVICES);
-        for (String serviceInstanceId : services) {
-            bindService(serviceInstanceId);
+        List<Object> services = getEntity().getConfig(VanillaCloudFoundryApplication.SERVICES);
+        for (Object serviceInstance : services) {
+            if (serviceInstance instanceof String) {
+                bindService((String) serviceInstance);
+            } else if (serviceInstance instanceof VanillaCloudFoundryService) {
+                bindService((VanillaCloudFoundryService) serviceInstance);
+            }
+        }
+    }
+
+    private void bindService(VanillaCloudFoundryService serviceInstance) {
+        if (!serviceInstance.getAttribute(VanillaCloudFoundryService.SERVICE_UP)) {
+            Entities.waitForServiceUp(serviceInstance);
+        }
+        String serviceInstanceName =
+                serviceInstance.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
+        bindService(serviceInstanceName);
+        if (serviceInstance instanceof ServiceOperation) {
+            ((ServiceOperation) serviceInstance).operationAfterBindingTo(applicationName);
         }
     }
 

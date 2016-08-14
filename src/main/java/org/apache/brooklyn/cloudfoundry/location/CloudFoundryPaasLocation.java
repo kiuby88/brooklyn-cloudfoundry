@@ -33,6 +33,7 @@ import org.apache.brooklyn.location.paas.PaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
+import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.operations.CloudFoundryOperations;
@@ -57,11 +58,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
+import com.google.common.reflect.TypeToken;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
+    private static final String VCAP_SERVICES = "VCAP_SERVICES";
+    private static final String SERVICE_NAME_PROPERTY = "name";
 
     private CloudFoundryOperations client;
 
@@ -505,4 +509,68 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return getServiceInstance(serviceInstanceName).getApplications();
     }
 
+    public Map<String, String> getCredentialsServiceForApplication(String applicationName, String serviceInstanceName) {
+        return TypeCoercions.coerce(
+                getProvidedServiceEnvForApplication(applicationName, serviceInstanceName)
+                        .get("credentials"), new TypeToken<Map<String, String>>() {
+                });
+    }
+
+    private Map<String, Object> getProvidedServiceEnvForApplication(String applicationName, String serviceInstanceName) {
+        Map<String, Object> systemProvidedEnv = getSystemProvidedEnv(applicationName);
+        if (systemProvidedEnv == null) {
+            log.error("Error getting System provided env application for application {}, " +
+                    "null was found", applicationName);
+            throw new IllegalStateException("System provided env  not is null for application "
+                    + applicationName);
+        }
+        Map<String, Object> vcapsEnv = TypeCoercions.coerce(systemProvidedEnv.get(VCAP_SERVICES),
+                new TypeToken<Map<String, Object>>() {
+                });
+        return getProvidedServiceEnvForApplication(serviceInstanceName, vcapsEnv);
+    }
+
+    private Map<String, Object> getSystemProvidedEnv(String applicationName) {
+        try {
+            return getClient().applications()
+                    .getEnvironments(GetApplicationEnvironmentsRequest.builder()
+                            .name(applicationName)
+                            .build())
+                    .doOnSuccess(v -> log.info("Getting System Provided env for application {}",
+                            applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT))
+                    .getSystemProvided();
+        } catch (Exception e) {
+            log.error("Error getting System Provided env for application {} the error was ",
+                    applicationName, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    private Map<String, Object> getProvidedServiceEnvForApplication(String serviceInstanceName,
+                                                                    Map<String, Object> vcapEnvs) {
+        ServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        try {
+            List<Map<String, Object>> providedEnvFromServices = TypeCoercions
+                    .coerce(vcapEnvs.get(serviceInstance.getService()),
+                            new TypeToken<List<Map<String, Object>>>() {
+                            });
+            return envFromService(providedEnvFromServices, serviceInstanceName);
+        } catch (Exception e) {
+            log.error("Error getting instance provided env for service {} with service type {} in {}",
+                    new Object[]{serviceInstanceName, serviceInstance.getService(), VCAP_SERVICES});
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    private Map<String, Object> envFromService(List<Map<String, Object>> providedEnvFromServices,
+                                               String serviceInstanceName) {
+        for (Map<String, Object> providedEnv : providedEnvFromServices) {
+            String obtainedServiceName = (String) providedEnv.get(SERVICE_NAME_PROPERTY);
+            if (serviceInstanceName.equals(obtainedServiceName)) {
+                return providedEnv;
+            }
+        }
+        return null;
+    }
 }

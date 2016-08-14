@@ -32,7 +32,7 @@ import com.google.common.annotations.Beta;
 public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundryDriver
         implements VanillaPaasServiceDriver {
 
-    private String serviceInstanceId;
+    protected String serviceInstanceId;
 
     public VanillaPaasServiceCloudFoundryDriver(VanillaCloudFoundryServiceImpl entity,
                                                 CloudFoundryPaasLocation location) {

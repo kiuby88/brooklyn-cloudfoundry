@@ -38,6 +38,7 @@ import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.v2.CloudFoundryException;
@@ -127,8 +128,8 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
     }
 
-    private void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
-                                                       CloudFoundryPaasLocation location) {
+    protected void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
+                                                         CloudFoundryPaasLocation location) {
         entity.start(ImmutableList.of(location));
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
@@ -140,20 +141,31 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         });
     }
 
-    private VanillaCloudFoundryService addDefaultServiceToApp() {
+    protected VanillaCloudFoundryService addDefaultServiceToApp() {
         return addDefaultServiceToApp(Strings.EMPTY);
     }
 
     private VanillaCloudFoundryService addDefaultServiceToApp(String serviceInstanceName) {
+        return app.createAndManageChild(getServiceSpec(serviceInstanceName));
+    }
+
+    protected EntitySpec<VanillaCloudFoundryService> getServiceSpec(String serviceInstanceName) {
+        ConfigBag serviceConfiguration = getServiceConfiguration(serviceInstanceName);
         EntitySpec<VanillaCloudFoundryService> vanilla = EntitySpec
                 .create(VanillaCloudFoundryService.class)
-                .configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X)
-                .configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
-        if (Strings.isNonBlank(serviceInstanceName)) {
-            vanilla.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME,
+                .configure(serviceConfiguration.getAllConfigAsConfigKeyMap());
+        return vanilla;
+    }
+
+    protected ConfigBag getServiceConfiguration(String serviceInstanceName) {
+        ConfigBag configBag = ConfigBag.newInstance();
+        configBag.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
+        configBag.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
+        if (Strings.isNonBlank((serviceInstanceName))) {
+            configBag.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME,
                     serviceInstanceName);
         }
-        return app.createAndManageChild(vanilla);
+        return configBag;
     }
 
     private static CloudFoundryException repeatedServiceException(String instanceName) {
