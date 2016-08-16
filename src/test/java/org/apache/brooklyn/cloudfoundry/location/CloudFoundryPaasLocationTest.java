@@ -346,7 +346,7 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
         assertFalse(credentials.isEmpty());
     }
 
-    @Test(expectedExceptions = PropagatedRuntimeException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testGetCredentialsForNotBoundService() {
         deployApplicationAndCheck(getDefaultApplicationConfiguration());
         createServiceAndCheck(getDefaultServiceConfig().getAllConfig());

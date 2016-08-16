@@ -30,6 +30,7 @@ import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
@@ -57,6 +58,7 @@ import org.cloudfoundry.operations.services.UnbindServiceInstanceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
 
@@ -510,13 +512,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public Map<String, String> getCredentialsServiceForApplication(String applicationName, String serviceInstanceName) {
-        return TypeCoercions.coerce(
-                getProvidedServiceEnvForApplication(applicationName, serviceInstanceName)
-                        .get("credentials"), new TypeToken<Map<String, String>>() {
-                });
+        return getVcaps(applicationName).getCredentials(serviceInstanceName);
     }
 
-    private Map<String, Object> getProvidedServiceEnvForApplication(String applicationName, String serviceInstanceName) {
+    private VcapServices getVcaps(String applicationName) {
         Map<String, Object> systemProvidedEnv = getSystemProvidedEnv(applicationName);
         if (systemProvidedEnv == null) {
             log.error("Error getting System provided env application for application {}, " +
@@ -527,7 +526,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         Map<String, Object> vcapsEnv = TypeCoercions.coerce(systemProvidedEnv.get(VCAP_SERVICES),
                 new TypeToken<Map<String, Object>>() {
                 });
-        return getProvidedServiceEnvForApplication(serviceInstanceName, vcapsEnv);
+        return new VcapServices(vcapsEnv);
     }
 
     private Map<String, Object> getSystemProvidedEnv(String applicationName) {
@@ -547,30 +546,95 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
     }
 
-    private Map<String, Object> getProvidedServiceEnvForApplication(String serviceInstanceName,
-                                                                    Map<String, Object> vcapEnvs) {
-        ServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
-        try {
-            List<Map<String, Object>> providedEnvFromServices = TypeCoercions
-                    .coerce(vcapEnvs.get(serviceInstance.getService()),
-                            new TypeToken<List<Map<String, Object>>>() {
-                            });
-            return envFromService(providedEnvFromServices, serviceInstanceName);
-        } catch (Exception e) {
-            log.error("Error getting instance provided env for service {} with service type {} in {}",
-                    new Object[]{serviceInstanceName, serviceInstance.getService(), VCAP_SERVICES});
-            throw new PropagatedRuntimeException(e);
-        }
-    }
+    public static class VcapServices {
 
-    private Map<String, Object> envFromService(List<Map<String, Object>> providedEnvFromServices,
-                                               String serviceInstanceName) {
-        for (Map<String, Object> providedEnv : providedEnvFromServices) {
-            String obtainedServiceName = (String) providedEnv.get(SERVICE_NAME_PROPERTY);
-            if (serviceInstanceName.equals(obtainedServiceName)) {
-                return providedEnv;
+        Map<String, List<VcapDescription>> vcapServices;
+
+        public VcapServices(Map<String, Object> params) {
+            vcapServices = MutableMap.of();
+            if (params != null) {
+                init(params);
             }
         }
-        return null;
+
+        private void init(Map<String, Object> params) {
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                String service = entry.getKey();
+                List<VcapDescription> vcapDescriptions = getVcapDescriptions(TypeCoercions
+                        .coerce(entry.getValue(), new TypeToken<List<Map<?, ?>>>() {
+                        }));
+                vcapServices.put(service, vcapDescriptions);
+            }
+        }
+
+        private List<VcapDescription> getVcapDescriptions(List<Map<?, ?>> serviceDescriptions) {
+            List<VcapDescription> result = MutableList.of();
+            for (Map<?, ?> serviceDescription : serviceDescriptions) {
+                result.add(new VcapDescription(serviceDescription));
+            }
+            return result;
+        }
+
+        private Map<String, String> getCredentials(String instanceName) {
+            Optional<VcapDescription> optional = findVcapDescription(instanceName);
+            if (optional.isPresent()) {
+                return optional.get().getCredentials();
+            }
+            throw new IllegalArgumentException("Service instance " + instanceName
+                    + " was found in VCAP_SERVICES");
+        }
+
+        private Optional<VcapDescription> findVcapDescription(String instanceName) {
+            for (Map.Entry<String, List<VcapDescription>> entry : vcapServices.entrySet()) {
+                Optional<VcapDescription> optional = findVcapDescription(instanceName, entry.getValue());
+                if (optional.isPresent()) {
+                    return optional;
+                }
+            }
+            return Optional.absent();
+        }
+
+        private Optional<VcapDescription> findVcapDescription(String instanceName, List<VcapDescription> vcapDescriptions) {
+            for (VcapDescription vcap : vcapDescriptions) {
+                if (instanceName.equals(vcap.getInstanceName())) {
+                    return Optional.fromNullable(vcap);
+                }
+            }
+            return Optional.absent();
+        }
+
+    }
+
+    public static class VcapDescription {
+
+        public static final String NAME = "name";
+        public static final String CREDENTIALS = "name";
+
+        String instanceName;
+        Map<String, String> credentials;
+
+        public VcapDescription(Map<?, ?> serviceDescription) {
+            checkNotNull(serviceDescription, "serviceDescription can not be null");
+            checkNotNull((serviceDescription.get(NAME)), "Name can not be null in serviceDescription");
+            instanceName = (String) serviceDescription.get(NAME);
+            initCredentials(serviceDescription);
+        }
+
+        private void initCredentials(Map<?, ?> serviceDescription) {
+            if (serviceDescription.containsKey(CREDENTIALS)) {
+                credentials = TypeCoercions.coerce(
+                        serviceDescription.get(CREDENTIALS),
+                        new TypeToken<Map<String, String>>() {
+                        });
+            }
+        }
+
+        public String getInstanceName() {
+            return instanceName;
+        }
+
+        public Map<String, String> getCredentials() {
+            return credentials;
+        }
     }
 }

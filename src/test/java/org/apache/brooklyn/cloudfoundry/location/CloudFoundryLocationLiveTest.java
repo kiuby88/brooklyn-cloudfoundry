@@ -20,6 +20,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.net.HttpURLConnection;
@@ -209,12 +210,7 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testBindServiceToApplication() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        createApplicationStartAndCheck(params.getAllConfig());
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
-        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        createApplicationServiceBindAndCheck();
         deleteApplicatin(applicationName);
         deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
     }
@@ -266,6 +262,33 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         } finally {
             deleteApplicatin(applicationName);
             cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
+        }
+    }
+
+    @Test(groups = {"Live"})
+    public void testGetCredentials() {
+        createApplicationServiceBindAndCheck();
+        Map<String, String> credentials = cloudFoundryPaasLocation
+                .getCredentialsServiceForApplication(applicationName, SERVICE_INSTANCE_NAME);
+        assertNotNull(credentials);
+        assertFalse(credentials.isEmpty());
+        deleteApplicatin(applicationName);
+        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = IllegalArgumentException.class)
+    public void testGetCredentialsForNotBoundService() {
+        try {
+            ConfigBag params = getDefaultApplicationConfiguration();
+            createApplicationStartAndCheck(params.getAllConfig());
+            createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+
+            Map<String, String> credentials = cloudFoundryPaasLocation
+                    .getCredentialsServiceForApplication(applicationName, SERVICE_INSTANCE_NAME);
+            assertNotNull(credentials);
+        } finally {
+            deleteApplicatin(applicationName);
+            deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
         }
     }
 
@@ -347,6 +370,15 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
         params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
         return params;
+    }
+
+    private void createApplicationServiceBindAndCheck() {
+        ConfigBag params = getDefaultApplicationConfiguration();
+        createApplicationStartAndCheck(params.getAllConfig());
+        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
     }
 
     private Map<String, Object> getDefaultClearDbServiceConfigMap() {
