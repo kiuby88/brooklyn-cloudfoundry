@@ -26,7 +26,7 @@ import com.google.common.annotations.Beta;
 @Beta
 public interface PaasMySqlServiceDriver extends VanillaPaasServiceDriver {
 
-    public static final String JDBC_URL_PROPERTY = "jdbcUrl";
+    public static final String DB_URI = "uri";
 
     public void operationAfterBindingTo(String applicationName);
 

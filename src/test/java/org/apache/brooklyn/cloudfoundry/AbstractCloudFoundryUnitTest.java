@@ -45,7 +45,8 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
 
     public static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
     protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
-    public static final String MOCK_JDBC_ADDRESS = "jdbc:mysql://host.net/ad?user=b0e8f";
+    public static final String MOCK_DB_URI_ADDRESS = "mysql://host.net/ad?user=b0e8f";
+    public static final String MOCK_JDBC_ADDRESS = "jdbc:"+MOCK_DB_URI_ADDRESS;
 
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;

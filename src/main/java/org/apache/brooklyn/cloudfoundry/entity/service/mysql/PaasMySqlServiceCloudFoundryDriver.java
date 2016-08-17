@@ -18,6 +18,8 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -33,7 +35,7 @@ import com.google.common.annotations.Beta;
 public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudFoundryDriver
         implements PaasMySqlServiceDriver {
 
-    private String serviceInstanceId;
+    private static final String JDBC_PREFIX = "jdbc:";
 
     public PaasMySqlServiceCloudFoundryDriver(CloudFoundryMySqlServiceImpl entity, CloudFoundryPaasLocation location) {
         super(entity, location);
@@ -46,7 +48,7 @@ public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudF
     @Override
     public void operationAfterBindingTo(String applicationName) {
         Map<String, String> credentials = getCredentials(applicationName);
-        String jdbcAddress = credentials.get(JDBC_URL_PROPERTY);
+        String jdbcAddress = jdbcAddress(credentials.get(DB_URI));
         initDatabase(jdbcAddress);
     }
 
@@ -57,6 +59,11 @@ public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudF
     private void initDatabase(String jdbcAddress) {
         //initDatabaseWithScript(jdbcAddress);
         getEntity().sensors().set(CloudFoundryMySqlService.JDBC_ADDRESS, jdbcAddress);
+    }
+
+    private String jdbcAddress(String dbUri) {
+        checkNotNull(dbUri, "DB uri can not be null");
+        return JDBC_PREFIX + dbUri;
     }
 
     //TODO: use this method

@@ -73,6 +73,7 @@ public class FakeApplications implements Applications {
     private static final int ID_SIZE = 36;
     private static final String VCAP_SERVICES = "VCAP_SERVICES";
     private static final String JDBC_ADDRESS = AbstractCloudFoundryUnitTest.MOCK_JDBC_ADDRESS;
+    private static final String DB_URI= AbstractCloudFoundryUnitTest.MOCK_DB_URI_ADDRESS;
 
     Map<String, ApplicationDetail> applications;
     Map<String, Map<String, String>> applicationEnv;
@@ -217,7 +218,7 @@ public class FakeApplications implements Applications {
                                          String applicationName) {
         Map<String, String> credentials = ImmutableMap.<String, String>builder()
                 .put("jdbcUrl", JDBC_ADDRESS)
-                .put("uri", "mysql://host.net/ad?user=b0e8f")
+                .put("uri", DB_URI)
                 .put("name", "ad")
                 .put("hostname", "host.net")
                 .put("port", "3306")
