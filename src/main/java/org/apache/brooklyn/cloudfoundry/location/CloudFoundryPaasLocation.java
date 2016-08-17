@@ -59,7 +59,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.reflect.TypeToken;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
@@ -548,10 +550,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public static class VcapServices {
 
-        Map<String, List<VcapDescription>> vcapServices;
+        ListMultimap<String, VcapDescription> vcapServices;
 
         public VcapServices(Map<String, Object> params) {
-            vcapServices = MutableMap.of();
+            vcapServices = ArrayListMultimap.create();
             if (params != null) {
                 init(params);
             }
@@ -563,7 +565,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                 List<VcapDescription> vcapDescriptions = getVcapDescriptions(TypeCoercions
                         .coerce(entry.getValue(), new TypeToken<List<Map<?, ?>>>() {
                         }));
-                vcapServices.put(service, vcapDescriptions);
+                vcapServices.putAll(service, vcapDescriptions);
             }
         }
 
@@ -585,24 +587,13 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
 
         private Optional<VcapDescription> findVcapDescription(String instanceName) {
-            for (Map.Entry<String, List<VcapDescription>> entry : vcapServices.entrySet()) {
-                Optional<VcapDescription> optional = findVcapDescription(instanceName, entry.getValue());
-                if (optional.isPresent()) {
-                    return optional;
+            for (Map.Entry<String, VcapDescription> entry : vcapServices.entries()) {
+                if (instanceName.equals(entry.getValue().getInstanceName())) {
+                    return Optional.of(entry.getValue());
                 }
             }
             return Optional.absent();
         }
-
-        private Optional<VcapDescription> findVcapDescription(String instanceName, List<VcapDescription> vcapDescriptions) {
-            for (VcapDescription vcap : vcapDescriptions) {
-                if (instanceName.equals(vcap.getInstanceName())) {
-                    return Optional.fromNullable(vcap);
-                }
-            }
-            return Optional.absent();
-        }
-
     }
 
     public static class VcapDescription {
