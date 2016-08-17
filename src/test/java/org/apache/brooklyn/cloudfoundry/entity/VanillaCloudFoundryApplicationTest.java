@@ -25,7 +25,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -41,8 +40,8 @@ import java.util.Map;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
@@ -50,6 +49,7 @@ import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.apache.brooklyn.util.text.Strings;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.AfterMethod;
@@ -239,8 +239,9 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         verify(cloudFoundryPaasLocation, times(1)).restartApplication(APPLICATION_NAME);
     }
 
+
     @Test
-    public void testBindServiceToEntity() {
+    public void testBindServiceFromStringToApplication() {
         doNothing().when(cloudFoundryPaasLocation).startApplication(anyString());
         doReturn(serverAddress).when(cloudFoundryPaasLocation).deploy(anyMap());
         doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
@@ -253,6 +254,29 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         verify(cloudFoundryPaasLocation, times(1))
                 .bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+    }
+
+    @Test
+    public void testBindServiceFromEntityToApplication() {
+        doNothing().when(cloudFoundryPaasLocation).startApplication(anyString());
+        doReturn(serverAddress).when(cloudFoundryPaasLocation).deploy(anyMap());
+        doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
+        doNothing().when(cloudFoundryPaasLocation)
+                .bindServiceToApplication(anyString(), anyString());
+
+        doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
+
+        VanillaCloudFoundryService serviceEntity =
+                addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
+        VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
+                cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
+        app.start(ImmutableList.of(cloudFoundryPaasLocation));
+        checkEntityDefaultSensors(entity);
+        checkEntityDefaultSensors(serviceEntity);
+        verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
+                serviceEntity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+                APPLICATION_NAME);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
@@ -267,26 +291,35 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
     }
 
+    //TODO REFACTOR THIS METHOD MySQL SERVICE will be generalized
     @Test
-    public void testBindServiceWithOperationToEntity() {
+    public void testBindServiceEntityWithOperationToEntity() {
         doNothing().when(cloudFoundryPaasLocation).startApplication(anyString());
         doReturn(serverAddress).when(cloudFoundryPaasLocation).deploy(anyMap());
         doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
         doNothing().when(cloudFoundryPaasLocation)
                 .bindServiceToApplication(anyString(), anyString());
-        AfterBindingOperations serviceEntity = mock(AfterBindingOperations.class);
-        doNothing().when(serviceEntity).operationAfterBindingTo(anyString());
-        doReturn(true).when(serviceEntity).getAttribute(Startable.SERVICE_UP);
-        doReturn(SERVICE_INSTANCE_NAME)
-                .when(serviceEntity)
-                .getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
 
+        doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
+
+        doReturn(getMockCredentials()).when(cloudFoundryPaasLocation)
+                .getCredentialsServiceForApplication(anyString(), anyString());
+
+        VanillaCloudFoundryService serviceEntity =
+                addServiceWithOperationToApp(SERVICE_INSTANCE_NAME);
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
-                cloudFoundryPaasLocation, MutableList.of(serviceEntity));
+                cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
 
-        startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
+        app.start(ImmutableList.of(cloudFoundryPaasLocation));
+        checkEntityDefaultSensors(entity);
+        checkEntityDefaultSensors(serviceEntity);
+        verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
+                serviceEntity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+                APPLICATION_NAME);
         verify(cloudFoundryPaasLocation, times(1))
-                .bindServiceToApplication(SERVICE_INSTANCE_NAME, APPLICATION_NAME);
+                .getCredentialsServiceForApplication(APPLICATION_NAME, SERVICE_INSTANCE_NAME);
+        assertTrue(Strings.isNonBlank(serviceEntity.getAttribute(CloudFoundryMySqlService.JDBC_ADDRESS)));
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
@@ -300,12 +333,12 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
-            CloudFoundryPaasLocation location, List<Object> services) {
+            CloudFoundryPaasLocation location, List<String> services) {
         return addDefaultVanillaToAppAndMockProfileMethods(location, null, services);
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(
-            CloudFoundryPaasLocation location, Map<String, String> env, List<Object> services) {
+            CloudFoundryPaasLocation location, Map<String, String> env, List<String> services) {
         VanillaCloudFoundryApplication entity = addDefaultVanillaEntityChildToApp(env, services);
         mockLocationProfileUsingEntityConfig(location, entity);
         return entity;
@@ -316,7 +349,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaEntityChildToApp(
-            Map<String, String> env, List<Object> services) {
+            Map<String, String> env, List<String> services) {
         EntitySpec<VanillaCloudFoundryApplication> vanilla = EntitySpec
                 .create(VanillaCloudFoundryApplication.class)
                 .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, APPLICATION_NAME)
@@ -351,13 +384,11 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     private void startEntityInLocationAndCheckSensors(final VanillaCloudFoundryApplication entity,
                                                       CloudFoundryPaasLocation location) {
         entity.start(ImmutableList.of(location));
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                        .SERVICE_PROCESS_IS_RUNNING));
-            }
-        });
+        checkApplicationSensors(entity);
+    }
+
+    protected void checkApplicationSensors(VanillaCloudFoundryApplication entity) {
+        checkEntityDefaultSensors(entity);
         assertEquals(entity.getAttribute(Attributes.MAIN_URI).toString(), serverAddress);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL), serverAddress);
     }

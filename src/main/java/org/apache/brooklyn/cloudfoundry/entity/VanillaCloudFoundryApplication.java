@@ -70,9 +70,9 @@ public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
                     "this value is empty the application name will be used like the host");
 
     @SetFromFlag("services")
-    ConfigKey<List<Object>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<Object>>() {
+    ConfigKey<List<String>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<String>>() {
                                                                },
-            "cloudFoundry.application.services", "Services to be bound", MutableList.<Object>of());
+            "cloudFoundry.application.services", "Services to be bound", MutableList.<String>of());
 
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(

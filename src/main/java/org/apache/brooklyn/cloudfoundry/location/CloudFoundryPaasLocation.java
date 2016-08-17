@@ -413,7 +413,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         String serviceName = serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME);
         checkArgument(Strings.isNonBlank(serviceName), "Service Name can not be blank");
         String instanceName =
-                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
+                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey());
         checkArgument(Strings.isNonBlank(instanceName), "Service Instance Name can not be blank");
         String plan = serviceSetUp.get(VanillaCloudFoundryService.PLAN);
         checkArgument(Strings.isNonBlank(plan), "Plan can not be blank");
@@ -452,7 +452,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .build())
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
-            log.error("Error gettin the service {} the error was {}", serviceInstanceName, e);
+            log.error("Error getting the service {} the error was {}", serviceInstanceName, e);
             throw new PropagatedRuntimeException(e);
         }
     }

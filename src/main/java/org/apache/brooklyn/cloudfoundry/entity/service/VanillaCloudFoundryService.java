@@ -21,11 +21,10 @@ package org.apache.brooklyn.cloudfoundry.entity.service;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
-import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.cloudfoundry.entity.CloudFoundryEntity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import com.google.common.annotations.Beta;
@@ -36,8 +35,9 @@ import com.google.common.annotations.Beta;
 public interface VanillaCloudFoundryService extends CloudFoundryEntity {
 
     @SetFromFlag("instanceName")
-    ConfigKey<String> SERVICE_INSTANCE_NAME = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.service.instance.name", "Given name for the service instance");
+    BasicAttributeSensorAndConfigKey<String> SERVICE_INSTANCE_NAME =
+            new BasicAttributeSensorAndConfigKey<String>(String.class,
+                    "cloudFoundry.service.instance.name", "Given name for the service instance");
 
     @SetFromFlag("serviceName")
     ConfigKey<String> SERVICE_NAME = ConfigKeys.newStringConfigKey(
@@ -46,8 +46,4 @@ public interface VanillaCloudFoundryService extends CloudFoundryEntity {
     @SetFromFlag("plan")
     ConfigKey<String> PLAN = ConfigKeys.newStringConfigKey(
             "cloudFoundry.service.plan", "Selected plan for the service");
-
-    AttributeSensor<String> SERVICE_INSTANCE_ID = Sensors.newStringSensor(
-            "cloudfoundry.service.instance.id",
-            "Instance id can be used to bind and find the service in the platform");
 }

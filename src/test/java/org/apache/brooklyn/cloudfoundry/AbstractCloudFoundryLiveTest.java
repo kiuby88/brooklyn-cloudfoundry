@@ -99,7 +99,8 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
     protected ConfigBag getDefaultClearDbServiceConfig() {
         ConfigBag params = ConfigBag.newInstance();
         params.configure(VanillaCloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+                SERVICE_INSTANCE_NAME);
         params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
         return params;
     }

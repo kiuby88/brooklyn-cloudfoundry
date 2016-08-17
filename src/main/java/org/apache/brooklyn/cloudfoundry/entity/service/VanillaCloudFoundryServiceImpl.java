@@ -56,10 +56,11 @@ public class VanillaCloudFoundryServiceImpl extends CloudFoundryEntityImpl imple
     }
 
     private void initServiceInstanceName() {
-        serviceInstanceName = getConfig(SERVICE_INSTANCE_NAME);
+        serviceInstanceName = getConfig(SERVICE_INSTANCE_NAME.getConfigKey());
         if (Strings.isBlank(serviceInstanceName)) {
             serviceInstanceName = DEFAULT_SERVICE_PREFIX + Identifiers.makeRandomId(8);
         }
+        sensors().set(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, serviceInstanceName);
     }
 
     @Override
@@ -74,7 +75,6 @@ public class VanillaCloudFoundryServiceImpl extends CloudFoundryEntityImpl imple
 
     protected void connectSensors() {
         super.connectSensors();
-        sensors().set(SERVICE_INSTANCE_ID, serviceInstanceName);
     }
 
     public String getServiceInstanceName() {

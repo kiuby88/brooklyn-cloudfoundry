@@ -131,7 +131,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends VanillaCloudFoun
         String applicationName =
                 vanillaApp.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
         String serviceInstanceName =
-                vanillaService.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
+                vanillaService.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
         assertTrue(getLocation(vanillaService)
                 .isServiceBoundTo(serviceInstanceName, applicationName));
     }

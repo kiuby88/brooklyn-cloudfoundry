@@ -26,17 +26,25 @@ import static org.testng.AssertJUnit.assertTrue;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocationTest;
 import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryPaasClientRegistry;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.BeforeMethod;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         implements CloudFoundryTestFixtures {
@@ -117,7 +125,8 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected ConfigBag getDefaultServiceConfig() {
         ConfigBag params = ConfigBag.newInstance();
         params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+                SERVICE_INSTANCE_NAME);
         params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
         return params;
     }
@@ -134,5 +143,63 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
 
     protected static IllegalArgumentException nonExistentServiceException(String serviceName) {
         return new IllegalArgumentException("Service " + serviceName + " does not exist");
+    }
+
+    protected VanillaCloudFoundryService addDefaultServiceToApp() {
+        return addDefaultServiceToApp(Strings.EMPTY);
+    }
+
+    protected void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
+                                                         CloudFoundryPaasLocation location) {
+        entity.start(ImmutableList.of(location));
+        checkEntityDefaultSensors(entity);
+    }
+
+    protected ConfigBag getServiceConfiguration(String serviceInstanceName) {
+        ConfigBag configBag = ConfigBag.newInstance()
+                .configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X)
+                .configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
+        if (Strings.isNonBlank(serviceInstanceName)) {
+            configBag.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+                    serviceInstanceName);
+        }
+        return configBag;
+    }
+
+    protected CloudFoundryMySqlService addServiceWithOperationToApp(String serviceInstanceName) {
+        return app.createAndManageChild(EntitySpec
+                .create(CloudFoundryMySqlService.class)
+                .configure(getServiceConfiguration(serviceInstanceName)
+                        .getAllConfigAsConfigKeyMap()));
+    }
+
+    protected VanillaCloudFoundryService addDefaultServiceToApp(String serviceInstanceName) {
+        return app.createAndManageChild(EntitySpec
+                .create(VanillaCloudFoundryService.class)
+                .configure(getServiceConfiguration(serviceInstanceName)
+                        .getAllConfigAsConfigKeyMap()));
+    }
+
+    protected void checkEntityDefaultSensors(Entity entity) {
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
+                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+                assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
+                        Lifecycle.RUNNING);
+            }
+        });
+    }
+
+    public static ImmutableMap<String, String> getMockCredentials() {
+        return ImmutableMap.<String, String>builder()
+                .put("jdbcUrl", MOCK_JDBC_ADDRESS)
+                .put("uri", MOCK_DB_URI_ADDRESS)
+                .put("name", "ad")
+                .put("hostname", "host.net")
+                .put("port", "3306")
+                .put("username", "b0e8f")
+                .put("password", "2876cd9e")
+                .build();
     }
 }

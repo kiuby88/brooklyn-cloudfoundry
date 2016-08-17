@@ -216,17 +216,9 @@ public class FakeApplications implements Applications {
     public void bindServiceToApplication(String service,
                                          String serviceInstanceName,
                                          String applicationName) {
-        Map<String, String> credentials = ImmutableMap.<String, String>builder()
-                .put("jdbcUrl", JDBC_ADDRESS)
-                .put("uri", DB_URI)
-                .put("name", "ad")
-                .put("hostname", "host.net")
-                .put("port", "3306")
-                .put("username", "b0e8f")
-                .put("password", "2876cd9e")
-                .build();
+
         Map<String, Object> serviceDescription = ImmutableMap.of(
-                "credentials", credentials,
+                "credentials", AbstractCloudFoundryUnitTest.getMockCredentials(),
                 "name", serviceInstanceName);
         addServiceVcapToApp(service, serviceDescription, applicationName);
     }

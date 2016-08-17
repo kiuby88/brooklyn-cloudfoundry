@@ -44,7 +44,7 @@ public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryY
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
         assertTrue(Strings
-                .isNonBlank(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID)));
+                .isNonBlank(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test(groups = {"Live"})
@@ -56,7 +56,7 @@ public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryY
         VanillaCloudFoundryService service = (VanillaCloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
-        assertEquals(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID),
+        assertEquals(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
                 MY_CLEARDB_INSTANCE);
     }
 

@@ -30,8 +30,8 @@ import static org.testng.Assert.assertTrue;
 import java.io.IOException;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryServiceTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.text.Strings;
@@ -41,7 +41,7 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-public class CloudFoundryMySqlServiceTest extends VanillaCloudFoundryServiceTest {
+public class CloudFoundryMySqlServiceTest extends AbstractCloudFoundryUnitTest {
 
     private CloudFoundryPaasLocation location;
     private static final String INIT_SCRIPT = "classpath://chat-database.sql";
@@ -57,20 +57,20 @@ public class CloudFoundryMySqlServiceTest extends VanillaCloudFoundryServiceTest
     public void testCreateService() throws IOException {
         doNothing().when(location).createServiceInstance(anyMap());
         doReturn(true).when(location).serviceInstanceExist(anyString());
-        doReturn(getDefaultCredentials())
+        doReturn(getDefaultServiceCredentials())
                 .when(location).getCredentialsServiceForApplication(anyString(), anyString());
 
         CloudFoundryMySqlService entity = addDefaultServiceToApp(INIT_SCRIPT);
         startServiceInLocationAndCheckSensors(entity, location);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID)));
+                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
 
         doNothing().when(location).bindServiceToApplication(anyString(), anyString());
         entity.operationAfterBindingTo(APPLICATION_NAME);
         assertEquals(entity.getAttribute(CloudFoundryMySqlService.JDBC_ADDRESS), MOCK_JDBC_ADDRESS);
     }
 
-    private ImmutableMap<String, String> getDefaultCredentials() {
+    private ImmutableMap<String, String> getDefaultServiceCredentials() {
         return ImmutableMap.<String, String>builder()
                 .put("jdbcUrl", MOCK_JDBC_ADDRESS)
                 .put("uri", "mysql://host.net/ad?user=b0e8f")
@@ -99,10 +99,9 @@ public class CloudFoundryMySqlServiceTest extends VanillaCloudFoundryServiceTest
         ConfigBag config = getServiceConfiguration(serviceInstanceName);
         config.configure(CloudFoundryMySqlService.CREATION_SCRIPT_TEMPLATE, sqlScript);
 
-        EntitySpec<CloudFoundryMySqlService> vanilla = EntitySpec
+        return EntitySpec
                 .create(CloudFoundryMySqlService.class)
                 .configure(config.getAllConfigAsConfigKeyMap());
-        return vanilla;
     }
 
 }

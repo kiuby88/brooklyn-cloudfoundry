@@ -25,7 +25,7 @@ services:
     path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
     services:
-    - $brooklyn:component("my-service").attributeWhenReady("cloudfoundry.service.instance.id")
+    - $brooklyn:component("my-service").attributeWhenReady("cloudFoundry.service.instance.name")
 
 - type: org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService
   id: my-service

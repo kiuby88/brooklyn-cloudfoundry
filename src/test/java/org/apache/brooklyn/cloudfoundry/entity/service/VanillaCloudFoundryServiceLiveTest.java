@@ -44,7 +44,7 @@ public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLive
         VanillaCloudFoundryService entity = addClearDbServiceToApp();
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID)));
+                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test(groups = {"Live"})
@@ -52,7 +52,7 @@ public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLive
         VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
-        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID),
+        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
                 SERVICE_INSTANCE_NAME);
     }
     

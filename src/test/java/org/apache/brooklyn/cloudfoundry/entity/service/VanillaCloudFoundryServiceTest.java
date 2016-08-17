@@ -32,13 +32,8 @@ import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 
-import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
-import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
-import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.client.v2.CloudFoundryException;
@@ -46,80 +41,75 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-
 public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest {
-
-
-    private CloudFoundryPaasLocation location;
 
     @BeforeMethod
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);
-        location = spy(createCloudFoundryPaasLocation());
+        cloudFoundryPaasLocation = spy(createCloudFoundryPaasLocation());
     }
 
     @Test
     public void testCreateService() throws IOException {
-        doNothing().when(location).createServiceInstance(anyMap());
-        doReturn(true).when(location).serviceInstanceExist(anyString());
+        doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
 
         VanillaCloudFoundryService entity = addDefaultServiceToApp();
-        startServiceInLocationAndCheckSensors(entity, location);
+        startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID)));
+                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test
     public void testCreateServiceWithName() throws IOException {
-        doNothing().when(location).createServiceInstance(anyMap());
-        doReturn(true).when(location).serviceInstanceExist(anyString());
+        doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
 
         VanillaCloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
-        startServiceInLocationAndCheckSensors(entity, location);
+        startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
-        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID),
+        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
                 SERVICE_INSTANCE_NAME);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateRepeatedService() throws IOException {
         doThrow(repeatedServiceException(SERVICE_INSTANCE_NAME))
-                .when(location).createServiceInstance(anyMap());
+                .when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
 
         VanillaCloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
-        startServiceInLocationAndCheckSensors(entity, location);
+        startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInvalidService() throws IOException {
         doThrow(invalidServiceException(SERVICE_INSTANCE_NAME))
-                .when(location).createServiceInstance(anyMap());
-        startServiceInLocationAndCheckSensors(addDefaultServiceToApp(), location);
+                .when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        startServiceInLocationAndCheckSensors(addDefaultServiceToApp(), cloudFoundryPaasLocation);
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInvalidPlan() throws IOException {
         doThrow(invalidPlanException(SERVICE_X_PLAN))
-                .when(location).createServiceInstance(anyMap());
-        startServiceInLocationAndCheckSensors(addDefaultServiceToApp(), location);
+                .when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        startServiceInLocationAndCheckSensors(addDefaultServiceToApp(), cloudFoundryPaasLocation);
     }
 
     @Test
     public void testStopService() throws IOException {
-        doNothing().when(location).createServiceInstance(anyMap());
-        doReturn(MutableList.of()).when(location).getBoundApplications(anyString());
-        doReturn(true).when(location).serviceInstanceExist(anyString());
-        doNothing().when(location).deleteServiceInstance(anyString());
+        doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
+        doReturn(MutableList.of()).when(cloudFoundryPaasLocation).getBoundApplications(anyString());
+        doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
+        doNothing().when(cloudFoundryPaasLocation).deleteServiceInstance(anyString());
 
         VanillaCloudFoundryService entity = addDefaultServiceToApp();
-        startServiceInLocationAndCheckSensors(entity, location);
+        startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
         String serviceInstanceId =
-                entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
+                entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
         stopServiceAndCheckSensors(entity);
-        verify(location, times(1)).deleteServiceInstance(serviceInstanceId);
+        verify(cloudFoundryPaasLocation, times(1)).deleteServiceInstance(serviceInstanceId);
     }
 
     private void stopServiceAndCheckSensors(VanillaCloudFoundryService service) {
@@ -128,44 +118,8 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
     }
 
-    protected void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
-                                                         CloudFoundryPaasLocation location) {
-        entity.start(ImmutableList.of(location));
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-                assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
-                        Lifecycle.RUNNING);
-            }
-        });
-    }
-
     protected VanillaCloudFoundryService addDefaultServiceToApp() {
         return addDefaultServiceToApp(Strings.EMPTY);
-    }
-
-    private VanillaCloudFoundryService addDefaultServiceToApp(String serviceInstanceName) {
-        return app.createAndManageChild(getServiceSpec(serviceInstanceName));
-    }
-
-    protected EntitySpec<VanillaCloudFoundryService> getServiceSpec(String serviceInstanceName) {
-        ConfigBag serviceConfiguration = getServiceConfiguration(serviceInstanceName);
-        EntitySpec<VanillaCloudFoundryService> vanilla = EntitySpec
-                .create(VanillaCloudFoundryService.class)
-                .configure(serviceConfiguration.getAllConfigAsConfigKeyMap());
-        return vanilla;
-    }
-
-    protected ConfigBag getServiceConfiguration(String serviceInstanceName) {
-        ConfigBag configBag = ConfigBag.newInstance();
-        configBag.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
-        configBag.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
-        if (Strings.isNonBlank((serviceInstanceName))) {
-            configBag.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME,
-                    serviceInstanceName);
-        }
-        return configBag;
     }
 
     private static CloudFoundryException repeatedServiceException(String instanceName) {

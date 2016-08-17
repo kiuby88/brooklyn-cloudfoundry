@@ -26,6 +26,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
+import org.apache.brooklyn.api.entity.Application;
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
 import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
@@ -36,13 +40,18 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.drivers.downloads.BasicDownloadResolver;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.http.HttpTool;
 import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFoundryDriver
         implements VanillaPaasApplicationDriver {
@@ -112,30 +121,59 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
     }
 
     private void bindServices() {
-        List<Object> services = getEntity().getConfig(VanillaCloudFoundryApplication.SERVICES);
-        for (Object serviceInstance : services) {
-            if (serviceInstance instanceof String) {
-                bindService((String) serviceInstance);
-            } else if (serviceInstance instanceof VanillaCloudFoundryService) {
-                bindService((VanillaCloudFoundryService) serviceInstance);
-            }
-        }
-    }
-
-    private void bindService(VanillaCloudFoundryService serviceInstance) {
-        if (!serviceInstance.getAttribute(VanillaCloudFoundryService.SERVICE_UP)) {
-            Entities.waitForServiceUp(serviceInstance);
-        }
-        String serviceInstanceName =
-                serviceInstance.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
-        bindService(serviceInstanceName);
-        if (serviceInstance instanceof AfterBindingOperations) {
-            ((AfterBindingOperations) serviceInstance).operationAfterBindingTo(applicationName);
+        List<String> services = getEntity().getConfig(VanillaCloudFoundryApplication.SERVICES);
+        for (String serviceInstanceId : services) {
+            bindService(serviceInstanceId);
         }
     }
 
     private void bindService(String serviceInstanceId) {
+        Optional<VanillaCloudFoundryService> optinalService =
+                findServiceEntitiesByInstanceName(serviceInstanceId);
+        if (optinalService.isPresent()) {
+            bindServiceFromEntity(optinalService.get());
+        } else {
+            bindServiceFromId(serviceInstanceId);
+        }
+    }
+
+    private void bindServiceFromEntity(VanillaCloudFoundryService serviceEntity) {
+        Entities.waitForServiceUp(serviceEntity);
+        bindServiceFromId(serviceEntity
+                .getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME));
+        if (serviceEntity instanceof AfterBindingOperations) {
+            ((AfterBindingOperations) serviceEntity).operationAfterBindingTo(applicationName);
+        }
+    }
+
+    private void bindServiceFromId(String serviceInstanceId) {
         getLocation().bindServiceToApplication(serviceInstanceId, applicationName);
+    }
+
+    private Optional<VanillaCloudFoundryService> findServiceEntitiesByInstanceName(String serviceInstanceName) {
+        Application root = getEntity().getApplication().getApplication();
+        Optional<Entity> optional = Iterables
+                .tryFind(Entities.descendantsWithoutSelf(root), new Predicate<Entity>() {
+                    @Override
+                    public boolean apply(@Nullable Entity input) {
+                        Maybe<VanillaCloudFoundryService> maybe =
+                                TypeCoercions.tryCoerce(input, VanillaCloudFoundryService.class);
+                        return maybe.isPresent()
+                                && instanceName(maybe.get(), serviceInstanceName);
+                    }
+                });
+
+        if (optional.isPresent()) {
+            VanillaCloudFoundryService service =
+                    TypeCoercions.coerce(optional.get(), VanillaCloudFoundryService.class);
+            return Optional.of(service);
+        }
+        return Optional.absent();
+    }
+
+    private boolean instanceName(VanillaCloudFoundryService service, String instanceName) {
+        return service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)
+                .equals(instanceName);
     }
 
     protected void configureEnv() {
