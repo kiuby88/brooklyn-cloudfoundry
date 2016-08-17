@@ -35,8 +35,7 @@ public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudF
 
     private String serviceInstanceId;
 
-    public PaasMySqlServiceCloudFoundryDriver(CloudFoundryMySqlServiceImpl entity,
-                                              CloudFoundryPaasLocation location) {
+    public PaasMySqlServiceCloudFoundryDriver(CloudFoundryMySqlServiceImpl entity, CloudFoundryPaasLocation location) {
         super(entity, location);
     }
 
@@ -57,8 +56,7 @@ public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudF
 
     private void initDatabase(String jdbcAddress) {
         //initDatabaseWithScript(jdbcAddress);
-        getEntity().sensors()
-                .set(CloudFoundryMySqlService.JDBC_ADDRESS, jdbcAddress);
+        getEntity().sensors().set(CloudFoundryMySqlService.JDBC_ADDRESS, jdbcAddress);
     }
 
     //TODO: use this method

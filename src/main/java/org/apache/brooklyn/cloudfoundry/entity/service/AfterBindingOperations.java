@@ -22,7 +22,7 @@ package org.apache.brooklyn.cloudfoundry.entity.service;
  * This interface represent an operation that can be invoked once an service is bound to an
  * application in the platform.
  */
-public interface ServiceOperation extends VanillaCloudFoundryService {
+public interface AfterBindingOperations extends VanillaCloudFoundryService {
 
     public void operationAfterBindingTo(String applicationName);
 

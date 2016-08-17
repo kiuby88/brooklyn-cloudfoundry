@@ -41,7 +41,7 @@ import java.util.Map;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.entity.service.ServiceOperation;
+import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -274,7 +274,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
         doNothing().when(cloudFoundryPaasLocation)
                 .bindServiceToApplication(anyString(), anyString());
-        ServiceOperation serviceEntity = mock(ServiceOperation.class);
+        AfterBindingOperations serviceEntity = mock(AfterBindingOperations.class);
         doNothing().when(serviceEntity).operationAfterBindingTo(anyString());
         doReturn(true).when(serviceEntity).getAttribute(Startable.SERVICE_UP);
         doReturn(SERVICE_INSTANCE_NAME)

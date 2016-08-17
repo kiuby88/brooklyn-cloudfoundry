@@ -31,7 +31,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import com.google.common.annotations.Beta;
 
 @Beta
-@Catalog(name = "Vanilla CloudFoundry Service entity")
+@Catalog(name = "Vanilla CloudFoundry Service")
 @ImplementedBy(VanillaCloudFoundryServiceImpl.class)
 public interface VanillaCloudFoundryService extends CloudFoundryEntity {
 

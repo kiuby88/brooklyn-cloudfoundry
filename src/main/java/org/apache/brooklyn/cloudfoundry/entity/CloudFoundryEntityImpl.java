@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
 public abstract class CloudFoundryEntityImpl extends AbstractEntity implements CloudFoundryEntity {
@@ -86,9 +87,8 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
     @Override
     protected void initEnrichers() {
         super.initEnrichers();
-        ServiceStateLogic.ServiceNotUpLogic
-                .updateNotUpIndicator(this, SERVICE_PROCESS_IS_RUNNING,
-                        "No information yet on whether this service is running");
+        ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, SERVICE_PROCESS_IS_RUNNING,
+                "No information yet on whether this service is running");
     }
 
     @Override
@@ -131,8 +131,9 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
 
     protected void preStart(Location location) {
         this.addLocations(MutableList.of(location));
-        if (getLocationOrNull() != null) {
-            cfLocation = getLocationOrNull();
+        Optional<CloudFoundryPaasLocation> optional = tryLocation();
+        if (optional.isPresent()) {
+            cfLocation = optional.get();
         } else {
             throw new ExceptionInInitializerError("Location should not be null in " + this +
                     " the entity needs a initialized Location");
@@ -158,10 +159,9 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
         return Iterables.getOnlyElement(locations);
     }
 
-    //TODO: Probably it would be better an Optional object
-    private CloudFoundryPaasLocation getLocationOrNull() {
-        return Iterables.get(Iterables
-                .filter(getLocations(), CloudFoundryPaasLocation.class), 0, null);
+    private Optional<CloudFoundryPaasLocation> tryLocation() {
+        return Optional.fromNullable(Iterables.get(Iterables
+                .filter(getLocations(), CloudFoundryPaasLocation.class), 0, null));
     }
 
     protected void customStart() {
@@ -230,10 +230,9 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
      * {@link org.apache.brooklyn.util.core.task.DynamicTasks#queue(String, java.util.concurrent.Callable)}.
      */
     protected final void doStop() {
-        log.info("Stopping {} in {}", new Object[]{this, getLocationOrNull()});
+        log.info("Stopping {}", this);
 
-        if (getAttribute(SERVICE_STATE_ACTUAL)
-                .equals(Lifecycle.STOPPED)) {
+        if (getAttribute(SERVICE_STATE_ACTUAL).equals(Lifecycle.STOPPED)) {
             log.warn("The entity {} is already stopped", new Object[]{this});
             return;
         }
@@ -243,8 +242,7 @@ public abstract class CloudFoundryEntityImpl extends AbstractEntity implements C
             preStop();
             customStop();
             ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
-            log.info("The entity stop operation {} is completed without errors",
-                    new Object[]{this});
+            log.info("The entity stop operation {} is completed without errors", this);
         } catch (Throwable t) {
             ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
             throw Exceptions.propagate(t);

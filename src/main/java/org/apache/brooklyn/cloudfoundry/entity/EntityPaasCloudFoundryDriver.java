@@ -27,14 +27,12 @@ import org.slf4j.LoggerFactory;
 
 public abstract class EntityPaasCloudFoundryDriver implements EntityPaasDriver {
 
-    public static final Logger log = LoggerFactory
-            .getLogger(EntityPaasCloudFoundryDriver.class);
+    public static final Logger log = LoggerFactory.getLogger(EntityPaasCloudFoundryDriver.class);
 
     private final CloudFoundryPaasLocation location;
     private CloudFoundryEntityImpl entity;
 
-    public EntityPaasCloudFoundryDriver(CloudFoundryEntityImpl entity,
-                                        CloudFoundryPaasLocation location) {
+    public EntityPaasCloudFoundryDriver(CloudFoundryEntityImpl entity, CloudFoundryPaasLocation location) {
         this.entity = checkNotNull(entity, "entity");
         this.location = checkNotNull(location, "location");
     }

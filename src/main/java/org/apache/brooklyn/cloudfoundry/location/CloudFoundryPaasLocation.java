@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
@@ -69,7 +70,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
     private static final String VCAP_SERVICES = "VCAP_SERVICES";
-    private static final String SERVICE_NAME_PROPERTY = "name";
 
     private CloudFoundryOperations client;
 
@@ -506,7 +506,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public boolean isServiceBoundTo(String serviceName, String applicationName) {
-        return getServiceInstance(serviceName).getApplications().contains(applicationName);
+        return serviceInstanceExist(serviceName)
+                && getServiceInstance(serviceName).getApplications().contains(applicationName);
     }
 
     public List<String> getBoundApplications(String serviceInstanceName) {
@@ -514,10 +515,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public Map<String, String> getCredentialsServiceForApplication(String applicationName, String serviceInstanceName) {
-        return getVcaps(applicationName).getCredentials(serviceInstanceName);
+        return getVcapServices(applicationName).getCredentials(serviceInstanceName);
     }
 
-    private VcapServices getVcaps(String applicationName) {
+    private VcapServices getVcapServices(String applicationName) {
         Map<String, Object> systemProvidedEnv = getSystemProvidedEnv(applicationName);
         if (systemProvidedEnv == null) {
             log.error("Error getting System provided env application for application {}, " +
@@ -578,7 +579,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         }
 
         private Map<String, String> getCredentials(String instanceName) {
-            Optional<VcapDescription> optional = findVcapDescription(instanceName);
+            Optional<VcapDescription> optional = tryFindVcapDescription(instanceName);
             if (optional.isPresent()) {
                 return optional.get().getCredentials();
             }
@@ -586,13 +587,13 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                     + " was found in VCAP_SERVICES");
         }
 
-        private Optional<VcapDescription> findVcapDescription(String instanceName) {
-            for (Map.Entry<String, VcapDescription> entry : vcapServices.entries()) {
-                if (instanceName.equals(entry.getValue().getInstanceName())) {
-                    return Optional.of(entry.getValue());
+        private Optional<VcapDescription> tryFindVcapDescription(String instanceName) {
+            return Iterables.tryFind(vcapServices.values(), new Predicate<VcapDescription>() {
+                @Override
+                public boolean apply(VcapDescription input) {
+                    return instanceName.equals(input.getInstanceName());
                 }
-            }
-            return Optional.absent();
+            });
         }
     }
 

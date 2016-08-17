@@ -71,7 +71,7 @@ public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
 
     @SetFromFlag("services")
     ConfigKey<List<Object>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<Object>>() {
-    },
+                                                               },
             "cloudFoundry.application.services", "Services to be bound", MutableList.<Object>of());
 
     @SetFromFlag("instances")

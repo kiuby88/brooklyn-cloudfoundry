@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
-import org.apache.brooklyn.cloudfoundry.entity.service.ServiceOperation;
+import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.utils.FileNameResolver;
@@ -129,8 +129,8 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
         String serviceInstanceName =
                 serviceInstance.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID);
         bindService(serviceInstanceName);
-        if (serviceInstance instanceof ServiceOperation) {
-            ((ServiceOperation) serviceInstance).operationAfterBindingTo(applicationName);
+        if (serviceInstance instanceof AfterBindingOperations) {
+            ((AfterBindingOperations) serviceInstance).operationAfterBindingTo(applicationName);
         }
     }
 
