@@ -40,7 +40,7 @@ import com.google.common.collect.Iterables;
 public class VanillaCloudFoundryYamlLiveTest {
 
     protected static final String DEFAULT_APP_ID = "vanilla-app";
-    protected static final String DEFAULT_SERVICE_ID = "vanilla-service";
+    protected static final String DEFAULT_SERVICE_ID = "my-service";
     protected static final String DEFAULT_DOMAIN = "cfapps.io";
     protected static final String MY_CLEARDB_INSTANCE = "my-cleardb-instance";
 

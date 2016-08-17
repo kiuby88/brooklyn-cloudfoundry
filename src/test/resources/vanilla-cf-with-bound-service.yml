@@ -25,11 +25,10 @@ services:
     path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
     services:
-    - $brooklyn:component("vanilla-service").attributeWhenReady("cloudfoundry.service.instance.id")
+    - $brooklyn:component("my-service").attributeWhenReady("cloudfoundry.service.instance.id")
 
 - type: org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService
-  id: vanilla-service
+  id: my-service
   brooklyn.config:
     serviceName: cleardb
-    instanceName: my-cleardb-instance
     plan: spark

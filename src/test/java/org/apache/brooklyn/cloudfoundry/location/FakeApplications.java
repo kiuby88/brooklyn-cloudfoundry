@@ -70,10 +70,10 @@ public class FakeApplications implements Applications {
     private static final String DEFAULT_STACK = "cflinuxfs2";
     private static final String STARTED = "STARTED";
     private static final String STOPPED = "STOPPED";
-    private static final int ID_SIZE = 36;
     private static final String VCAP_SERVICES = "VCAP_SERVICES";
     private static final String JDBC_ADDRESS = AbstractCloudFoundryUnitTest.MOCK_JDBC_ADDRESS;
-    private static final String DB_URI= AbstractCloudFoundryUnitTest.MOCK_DB_URI_ADDRESS;
+    private static final String DB_URI = AbstractCloudFoundryUnitTest.MOCK_DB_URI_ADDRESS;
+    private static final int ID_SIZE = 36;
 
     Map<String, ApplicationDetail> applications;
     Map<String, Map<String, String>> applicationEnv;
@@ -225,8 +225,9 @@ public class FakeApplications implements Applications {
                 .put("username", "b0e8f")
                 .put("password", "2876cd9e")
                 .build();
-        Map<String, Object> serviceDescription =
-                ImmutableMap.of("credentials", credentials, "name", serviceInstanceName);
+        Map<String, Object> serviceDescription = ImmutableMap.of(
+                "credentials", credentials,
+                "name", serviceInstanceName);
         addServiceVcapToApp(service, serviceDescription, applicationName);
     }
 

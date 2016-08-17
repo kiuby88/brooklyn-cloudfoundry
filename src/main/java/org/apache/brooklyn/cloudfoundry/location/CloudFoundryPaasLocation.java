@@ -28,17 +28,17 @@ import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
 import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.location.domain.VcapServiceRegistry;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
-import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
+import org.cloudfoundry.operations.applications.ApplicationEnvironments;
 import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
 import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
 import org.cloudfoundry.operations.applications.GetApplicationEnvironmentsRequest;
@@ -58,12 +58,7 @@ import org.cloudfoundry.operations.services.UnbindServiceInstanceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
-import com.google.common.reflect.TypeToken;
 
 public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
@@ -307,18 +302,23 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public Map<String, String> getEnv(String applicationName) {
+        return mapOfStrings(getApplicationEnvironment(applicationName).getUserProvided());
+    }
+
+    public Map<String, Object> getSystemProvidedEnv(String applicationName) {
+        return getApplicationEnvironment(applicationName).getSystemProvided();
+    }
+
+    private ApplicationEnvironments getApplicationEnvironment(String applicationName) {
         try {
-            Map<String, Object>
-                    userProvided = getClient().applications()
+            return getClient().applications()
                     .getEnvironments(GetApplicationEnvironmentsRequest.builder()
                             .name(applicationName)
                             .build())
-                    .doOnSuccess(v -> log.info("Getting env for application {}", applicationName))
-                    .block(getConfig(OPERATIONS_TIMEOUT))
-                    .getUserProvided();
-            return mapOfStrings(userProvided);
+                    .doOnSuccess(v -> log.info("Getting environment for application {}", applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
-            log.error("Error getting env for application {} the error was ", applicationName, e);
+            log.error("Error getting environment for application {} the error was ", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -515,118 +515,13 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public Map<String, String> getCredentialsServiceForApplication(String applicationName, String serviceInstanceName) {
-        return getVcapServices(applicationName).getCredentials(serviceInstanceName);
+        return getVcapServiceRegistry(applicationName).getCredentials(serviceInstanceName);
     }
 
-    private VcapServices getVcapServices(String applicationName) {
+    private VcapServiceRegistry getVcapServiceRegistry(String applicationName) {
         Map<String, Object> systemProvidedEnv = getSystemProvidedEnv(applicationName);
-        if (systemProvidedEnv == null) {
-            log.error("Error getting System provided env application for application {}, " +
-                    "null was found", applicationName);
-            throw new IllegalStateException("System provided env  not is null for application "
-                    + applicationName);
-        }
-        Map<String, Object> vcapsEnv = TypeCoercions.coerce(systemProvidedEnv.get(VCAP_SERVICES),
-                new TypeToken<Map<String, Object>>() {
-                });
-        return new VcapServices(vcapsEnv);
+        return VcapServiceRegistry
+                .createRegistryFromMap((Map<?, ?>) systemProvidedEnv.get(VCAP_SERVICES));
     }
 
-    private Map<String, Object> getSystemProvidedEnv(String applicationName) {
-        try {
-            return getClient().applications()
-                    .getEnvironments(GetApplicationEnvironmentsRequest.builder()
-                            .name(applicationName)
-                            .build())
-                    .doOnSuccess(v -> log.info("Getting System Provided env for application {}",
-                            applicationName))
-                    .block(getConfig(OPERATIONS_TIMEOUT))
-                    .getSystemProvided();
-        } catch (Exception e) {
-            log.error("Error getting System Provided env for application {} the error was ",
-                    applicationName, e);
-            throw new PropagatedRuntimeException(e);
-        }
-    }
-
-    public static class VcapServices {
-
-        ListMultimap<String, VcapDescription> vcapServices;
-
-        public VcapServices(Map<String, Object> params) {
-            vcapServices = ArrayListMultimap.create();
-            if (params != null) {
-                init(params);
-            }
-        }
-
-        private void init(Map<String, Object> params) {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                String service = entry.getKey();
-                List<VcapDescription> vcapDescriptions = getVcapDescriptions(TypeCoercions
-                        .coerce(entry.getValue(), new TypeToken<List<Map<?, ?>>>() {
-                        }));
-                vcapServices.putAll(service, vcapDescriptions);
-            }
-        }
-
-        private List<VcapDescription> getVcapDescriptions(List<Map<?, ?>> serviceDescriptions) {
-            List<VcapDescription> result = MutableList.of();
-            for (Map<?, ?> serviceDescription : serviceDescriptions) {
-                result.add(new VcapDescription(serviceDescription));
-            }
-            return result;
-        }
-
-        private Map<String, String> getCredentials(String instanceName) {
-            Optional<VcapDescription> optional = tryFindVcapDescription(instanceName);
-            if (optional.isPresent()) {
-                return optional.get().getCredentials();
-            }
-            throw new IllegalArgumentException("Service instance " + instanceName
-                    + " was found in VCAP_SERVICES");
-        }
-
-        private Optional<VcapDescription> tryFindVcapDescription(String instanceName) {
-            return Iterables.tryFind(vcapServices.values(), new Predicate<VcapDescription>() {
-                @Override
-                public boolean apply(VcapDescription input) {
-                    return instanceName.equals(input.getInstanceName());
-                }
-            });
-        }
-    }
-
-    public static class VcapDescription {
-
-        public static final String NAME = "name";
-        public static final String CREDENTIALS = "name";
-
-        String instanceName;
-        Map<String, String> credentials;
-
-        public VcapDescription(Map<?, ?> serviceDescription) {
-            checkNotNull(serviceDescription, "serviceDescription can not be null");
-            checkNotNull((serviceDescription.get(NAME)), "Name can not be null in serviceDescription");
-            instanceName = (String) serviceDescription.get(NAME);
-            initCredentials(serviceDescription);
-        }
-
-        private void initCredentials(Map<?, ?> serviceDescription) {
-            if (serviceDescription.containsKey(CREDENTIALS)) {
-                credentials = TypeCoercions.coerce(
-                        serviceDescription.get(CREDENTIALS),
-                        new TypeToken<Map<String, String>>() {
-                        });
-            }
-        }
-
-        public String getInstanceName() {
-            return instanceName;
-        }
-
-        public Map<String, String> getCredentials() {
-            return credentials;
-        }
-    }
 }

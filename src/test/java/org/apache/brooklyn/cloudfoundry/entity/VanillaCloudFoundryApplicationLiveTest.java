@@ -177,7 +177,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
     }
 
     @Test(groups = {"Live"})
-    public void testBindServiceToEntity() {
+    public void testBindServiceFromStringToEntity() {
         createServiceAndCheck(getDefaultClearDbServiceConfig().getAllConfig());
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)

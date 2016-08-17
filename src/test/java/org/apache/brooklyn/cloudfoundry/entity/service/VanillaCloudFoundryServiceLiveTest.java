@@ -55,8 +55,7 @@ public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLive
         assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_ID),
                 SERVICE_INSTANCE_NAME);
     }
-
-
+    
     @Test(groups = {"Live"})
     public void testCreateRepeatedService() throws IOException {
         VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
