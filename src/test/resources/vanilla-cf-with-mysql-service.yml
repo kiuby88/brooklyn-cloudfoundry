@@ -25,12 +25,12 @@ services:
     path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
     services:
-    - $brooklyn:component("db")
+    - $brooklyn:component("my-service").attributeWhenReady("cloudFoundry.service.instance.name")
     env:
-      brooklyn.example.db.url: $brooklyn:component("db").attributeWhenReady("service.mysql.jdbc")
+      brooklyn.example.db.url: $brooklyn:component("my-service").attributeWhenReady("service.mysql.jdbc")
 
 - type: org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService
-  id: db
+  id: my-service
   brooklyn.config:
     serviceName: cleardb
     instanceName: my-cleardb-instance

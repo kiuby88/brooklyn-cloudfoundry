@@ -41,7 +41,6 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
-import org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
@@ -49,7 +48,6 @@ import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
-import org.apache.brooklyn.util.text.Strings;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.MockUtil;
 import org.testng.annotations.AfterMethod;
@@ -291,9 +289,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         startEntityInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
     }
 
-    //TODO REFACTOR THIS METHOD MySQL SERVICE will be generalized
     @Test
-    public void testBindServiceEntityWithOperationToEntity() {
+    public void testBindOperationalService() {
         doNothing().when(cloudFoundryPaasLocation).startApplication(anyString());
         doReturn(serverAddress).when(cloudFoundryPaasLocation).deploy(anyMap());
         doReturn(EMPTY_ENV).when(cloudFoundryPaasLocation).getEnv(anyString());
@@ -317,9 +314,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
                 serviceEntity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 APPLICATION_NAME);
-        verify(cloudFoundryPaasLocation, times(1))
-                .getCredentialsServiceForApplication(APPLICATION_NAME, SERVICE_INSTANCE_NAME);
-        assertTrue(Strings.isNonBlank(serviceEntity.getAttribute(CloudFoundryMySqlService.JDBC_ADDRESS)));
+        assertTrue(serviceEntity.getAttribute(MyOperationalService.OPERATIONAL_WATCHDOG));
     }
 
     private VanillaCloudFoundryApplication addDefaultVanillaToAppAndMockProfileMethods(

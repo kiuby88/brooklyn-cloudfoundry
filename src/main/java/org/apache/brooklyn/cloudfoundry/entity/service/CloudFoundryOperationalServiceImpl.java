@@ -16,44 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryOperationalServiceImpl;
 import org.apache.brooklyn.util.collections.MutableMap;
 
 import com.google.common.annotations.Beta;
 
 @Beta
-public class CloudFoundryMySqlServiceImpl extends CloudFoundryOperationalServiceImpl
-        implements CloudFoundryMySqlService {
+public abstract class CloudFoundryOperationalServiceImpl extends CloudFoundryServiceImpl
+        implements CloudFoundryOperationalService {
 
-    public CloudFoundryMySqlServiceImpl() {
+    public CloudFoundryOperationalServiceImpl() {
         super(MutableMap.of(), null);
     }
 
-    public CloudFoundryMySqlServiceImpl(Entity parent) {
+    public CloudFoundryOperationalServiceImpl(Entity parent) {
         this(MutableMap.of(), parent);
     }
 
-    public CloudFoundryMySqlServiceImpl(Map properties) {
+    public CloudFoundryOperationalServiceImpl(Map properties) {
         this(properties, null);
     }
 
-    public CloudFoundryMySqlServiceImpl(Map properties, Entity parent) {
+    public CloudFoundryOperationalServiceImpl(Map properties, Entity parent) {
         super(properties, parent);
     }
 
     @Override
-    public Class getDriverInterface() {
-        return PaasMySqlServiceDriver.class;
-    }
+    public abstract Class getDriverInterface();
 
     @Override
-    public PaasMySqlServiceDriver getDriver() {
-        return (PaasMySqlServiceDriver) super.getDriver();
+    public PaasOperationalServiceDriver getDriver() {
+        return (PaasOperationalServiceDriver) super.getDriver();
     }
 
     @Override
@@ -61,7 +58,4 @@ public class CloudFoundryMySqlServiceImpl extends CloudFoundryOperationalService
         getDriver().operationAfterBindingTo(applicationName);
     }
 
-    public String getCreationScriptUrl() {
-        return getConfig(CREATION_SCRIPT_TEMPLATE);
-    }
 }

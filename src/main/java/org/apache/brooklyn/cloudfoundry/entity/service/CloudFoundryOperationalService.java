@@ -16,18 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
-
-import org.apache.brooklyn.cloudfoundry.entity.service.PaasOperationalServiceDriver;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.ImplementedBy;
 
 import com.google.common.annotations.Beta;
 
 @Beta
-public interface PaasMySqlServiceDriver extends PaasOperationalServiceDriver {
+@Catalog(name = "CloudFoundry Operational Service")
+@ImplementedBy(CloudFoundryOperationalServiceImpl.class)
+public interface CloudFoundryOperationalService extends CloudFoundryService, AfterBindingOperations {
 
-    public static final String DB_URI = "uri";
-
-    public void operationAfterBindingTo(String applicationName);
 
 }

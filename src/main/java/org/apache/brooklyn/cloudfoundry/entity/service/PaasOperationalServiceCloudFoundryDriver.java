@@ -16,18 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
-
-import org.apache.brooklyn.cloudfoundry.entity.service.PaasOperationalServiceDriver;
+import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 
 import com.google.common.annotations.Beta;
 
 @Beta
-public interface PaasMySqlServiceDriver extends PaasOperationalServiceDriver {
+public abstract class PaasOperationalServiceCloudFoundryDriver extends PaasServiceCloudFoundryDriver
+        implements PaasOperationalServiceDriver {
 
-    public static final String DB_URI = "uri";
+    public PaasOperationalServiceCloudFoundryDriver(CloudFoundryOperationalServiceImpl entity, CloudFoundryPaasLocation location) {
+        super(entity, location);
+    }
 
-    public void operationAfterBindingTo(String applicationName);
+    public CloudFoundryOperationalServiceImpl getEntity() {
+        return (CloudFoundryOperationalServiceImpl) super.getEntity();
+    }
+
+    @Override
+    public abstract void operationAfterBindingTo(String applicationName);
 
 }

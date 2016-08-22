@@ -60,7 +60,7 @@ public class CloudFoundryMySqlServiceTest extends AbstractCloudFoundryUnitTest {
         doReturn(getDefaultServiceCredentials())
                 .when(location).getCredentialsServiceForApplication(anyString(), anyString());
 
-        CloudFoundryMySqlService entity = addDefaultServiceToApp(INIT_SCRIPT);
+        CloudFoundryMySqlService entity = addMySqlServiceToApp(INIT_SCRIPT);
         startServiceInLocationAndCheckSensors(entity, location);
         assertTrue(Strings
                 .isNonBlank(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
@@ -82,16 +82,16 @@ public class CloudFoundryMySqlServiceTest extends AbstractCloudFoundryUnitTest {
                 .build();
     }
 
-    protected CloudFoundryMySqlService addDefaultServiceToApp() {
-        return addDefaultServiceToApp(Strings.EMPTY, Strings.EMPTY);
+    protected CloudFoundryMySqlService addMySqlServiceToApp() {
+        return addMySqlServiceToApp(Strings.EMPTY, Strings.EMPTY);
     }
 
-    protected CloudFoundryMySqlService addDefaultServiceToApp(String serviceInstanceName,
-                                                              String sqlScript) {
+    protected CloudFoundryMySqlService addMySqlServiceToApp(String serviceInstanceName,
+                                                            String sqlScript) {
         return app.createAndManageChild(getServiceSpec(serviceInstanceName, sqlScript));
     }
 
-    protected CloudFoundryMySqlService addDefaultServiceToApp(String sqlScript) {
+    protected CloudFoundryMySqlService addMySqlServiceToApp(String sqlScript) {
         return app.createAndManageChild(getServiceSpec(Strings.EMPTY, sqlScript));
     }
 
