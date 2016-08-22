@@ -25,14 +25,14 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Map;
 
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaPaasServiceCloudFoundryDriver;
+import org.apache.brooklyn.cloudfoundry.entity.service.PaasServiceCloudFoundryDriver;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.util.core.ResourceUtils;
 
 import com.google.common.annotations.Beta;
 
 @Beta
-public class PaasMySqlServiceCloudFoundryDriver extends VanillaPaasServiceCloudFoundryDriver
+public class PaasMySqlServiceCloudFoundryDriver extends PaasServiceCloudFoundryDriver
         implements PaasMySqlServiceDriver {
 
     private static final String JDBC_PREFIX = "jdbc:";

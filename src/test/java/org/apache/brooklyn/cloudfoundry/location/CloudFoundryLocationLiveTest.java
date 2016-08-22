@@ -31,7 +31,7 @@ import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -197,14 +197,14 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInstanceOfNonExistentService() {
         ConfigBag params = getDefaultClearDbServiceConfig();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
+        params.configure(CloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInstanceOfNonSupportedPlan() {
         ConfigBag params = getDefaultClearDbServiceConfig();
-        params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
+        params.configure(CloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 

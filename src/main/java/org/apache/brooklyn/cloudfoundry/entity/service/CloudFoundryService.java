@@ -30,9 +30,9 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import com.google.common.annotations.Beta;
 
 @Beta
-@Catalog(name = "Vanilla CloudFoundry Service")
-@ImplementedBy(VanillaCloudFoundryServiceImpl.class)
-public interface VanillaCloudFoundryService extends CloudFoundryEntity {
+@Catalog(name = "CloudFoundry Service")
+@ImplementedBy(CloudFoundryServiceImpl.class)
+public interface CloudFoundryService extends CloudFoundryEntity {
 
     @SetFromFlag("instanceName")
     BasicAttributeSensorAndConfigKey<String> SERVICE_INSTANCE_NAME =

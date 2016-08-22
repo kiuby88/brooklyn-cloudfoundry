@@ -16,10 +16,10 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: Vanilla CloudFoundry service creating a cleardb instance
+name: CloudFoundry service creating a cleardb instance
 location: pivotal-ws
 services:
-- type: org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService
+- type: org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService
   id: my-service
   brooklyn.config:
     serviceName: cleardb

@@ -37,7 +37,7 @@ import org.testng.annotations.BeforeMethod;
 
 import com.google.common.collect.Iterables;
 
-public class VanillaCloudFoundryYamlLiveTest {
+public class AbstractCloudFoundryYamlLiveTest {
 
     protected static final String DEFAULT_APP_ID = "vanilla-app";
     protected static final String DEFAULT_SERVICE_ID = "my-service";

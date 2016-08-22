@@ -18,7 +18,6 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity.service;
 
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -37,32 +36,32 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
-public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
+public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testCreateService() throws IOException {
-        VanillaCloudFoundryService entity = addClearDbServiceToApp();
+        CloudFoundryService entity = addClearDbServiceToApp();
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
+                .isNonBlank(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test(groups = {"Live"})
     public void testCreateServiceWithName() throws IOException {
-        VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
-        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+        assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 SERVICE_INSTANCE_NAME);
     }
-    
+
     @Test(groups = {"Live"})
     public void testCreateRepeatedService() throws IOException {
-        VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         boolean errorCreating = false;
         try {
-            VanillaCloudFoundryService sameService = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+            CloudFoundryService sameService = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
             startServiceInLocationAndCheckSensors(sameService, cloudFoundryPaasLocation);
         } catch (PropagatedRuntimeException e) {
             errorCreating = true;
@@ -72,74 +71,74 @@ public class VanillaCloudFoundryServiceLiveTest extends AbstractCloudFoundryLive
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInvalidService() throws IOException {
-        VanillaCloudFoundryService invalidService = addInvalidServiceToApp();
+        CloudFoundryService invalidService = addInvalidServiceToApp();
         startServiceInLocationAndCheckSensors(invalidService, cloudFoundryPaasLocation);
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateUsingInvalidPlanService() throws IOException {
-        VanillaCloudFoundryService invalidService = addServiceToAppWithInvalidPlan();
+        CloudFoundryService invalidService = addServiceToAppWithInvalidPlan();
         startServiceInLocationAndCheckSensors(invalidService, cloudFoundryPaasLocation);
     }
 
     @Test(groups = {"Live"})
     public void testStopService() throws IOException {
-        VanillaCloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         stopServiceAndCheckSensors(entity);
         assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
     }
 
-    private void stopServiceAndCheckSensors(VanillaCloudFoundryService service) {
+    private void stopServiceAndCheckSensors(CloudFoundryService service) {
         service.stop();
-        assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-        assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+        assertNull(service.getAttribute(CloudFoundryService.SERVICE_UP));
+        assertNull(service.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
     }
 
-    private void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
+    private void startServiceInLocationAndCheckSensors(CloudFoundryService entity,
                                                        CloudFoundryPaasLocation location) {
         entity.start(ImmutableList.of(location));
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-                assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
+                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_UP));
+                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+                assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_STATE_ACTUAL),
                         Lifecycle.RUNNING);
             }
         });
     }
 
-    private VanillaCloudFoundryService addClearDbServiceToApp() {
+    private CloudFoundryService addClearDbServiceToApp() {
         return addClearDbServiceToApp(Strings.EMPTY);
     }
 
-    private VanillaCloudFoundryService addClearDbServiceToApp(String serviceInstanceName) {
-        EntitySpec<VanillaCloudFoundryService> spec =
+    private CloudFoundryService addClearDbServiceToApp(String serviceInstanceName) {
+        EntitySpec<CloudFoundryService> spec =
                 getServiceEntitySpec(CLEARDB_SERVICE, CLEARDB_SPARK_PLAN);
         if (Strings.isNonBlank(serviceInstanceName)) {
-            spec.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME,
+            spec.configure(CloudFoundryService.SERVICE_INSTANCE_NAME,
                     serviceInstanceName);
         }
         return app.createAndManageChild(spec);
     }
 
-    private VanillaCloudFoundryService addInvalidServiceToApp() {
-        EntitySpec<VanillaCloudFoundryService> spec =
+    private CloudFoundryService addInvalidServiceToApp() {
+        EntitySpec<CloudFoundryService> spec =
                 getServiceEntitySpec(NON_EXISTENT_SERVICE, CLEARDB_SPARK_PLAN);
         return app.createAndManageChild(spec);
     }
 
-    private VanillaCloudFoundryService addServiceToAppWithInvalidPlan() {
-        EntitySpec<VanillaCloudFoundryService> spec =
+    private CloudFoundryService addServiceToAppWithInvalidPlan() {
+        EntitySpec<CloudFoundryService> spec =
                 getServiceEntitySpec(NON_EXISTENT_SERVICE, CLEARDB_SPARK_PLAN);
         return app.createAndManageChild(spec);
     }
 
-    private EntitySpec<VanillaCloudFoundryService> getServiceEntitySpec(String name, String plan) {
+    private EntitySpec<CloudFoundryService> getServiceEntitySpec(String name, String plan) {
         return EntitySpec
-                .create(VanillaCloudFoundryService.class)
-                .configure(VanillaCloudFoundryService.SERVICE_NAME, name)
-                .configure(VanillaCloudFoundryService.PLAN, plan);
+                .create(CloudFoundryService.class)
+                .configure(CloudFoundryService.SERVICE_NAME, name)
+                .configure(CloudFoundryService.PLAN, plan);
     }
 
 }

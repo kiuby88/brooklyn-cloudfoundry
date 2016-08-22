@@ -31,7 +31,7 @@ import java.io.IOException;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.text.Strings;
@@ -63,7 +63,7 @@ public class CloudFoundryMySqlServiceTest extends AbstractCloudFoundryUnitTest {
         CloudFoundryMySqlService entity = addDefaultServiceToApp(INIT_SCRIPT);
         startServiceInLocationAndCheckSensors(entity, location);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
+                .isNonBlank(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
 
         doNothing().when(location).bindServiceToApplication(anyString(), anyString());
         entity.operationAfterBindingTo(APPLICATION_NAME);

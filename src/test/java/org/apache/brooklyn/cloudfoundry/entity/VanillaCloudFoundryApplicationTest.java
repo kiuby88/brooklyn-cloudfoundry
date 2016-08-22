@@ -40,7 +40,7 @@ import java.util.Map;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -267,7 +267,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
         doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
 
-        VanillaCloudFoundryService serviceEntity =
+        CloudFoundryService serviceEntity =
                 addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
                 cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
@@ -275,7 +275,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         checkEntityDefaultSensors(entity);
         checkEntityDefaultSensors(serviceEntity);
         verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
-                serviceEntity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+                serviceEntity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 APPLICATION_NAME);
     }
 
@@ -306,7 +306,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         doReturn(getMockCredentials()).when(cloudFoundryPaasLocation)
                 .getCredentialsServiceForApplication(anyString(), anyString());
 
-        VanillaCloudFoundryService serviceEntity =
+        CloudFoundryService serviceEntity =
                 addServiceWithOperationToApp(SERVICE_INSTANCE_NAME);
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
                 cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
@@ -315,7 +315,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         checkEntityDefaultSensors(entity);
         checkEntityDefaultSensors(serviceEntity);
         verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
-                serviceEntity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+                serviceEntity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 APPLICATION_NAME);
         verify(cloudFoundryPaasLocation, times(1))
                 .getCredentialsServiceForApplication(APPLICATION_NAME, SERVICE_INSTANCE_NAME);

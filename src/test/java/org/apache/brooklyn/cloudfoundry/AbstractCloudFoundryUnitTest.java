@@ -30,7 +30,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.entity.service.mysql.CloudFoundryMySqlService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocationTest;
@@ -124,10 +124,10 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
 
     protected ConfigBag getDefaultServiceConfig() {
         ConfigBag params = ConfigBag.newInstance();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+        params.configure(CloudFoundryService.SERVICE_NAME, SERVICE_X);
+        params.configure(CloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
                 SERVICE_INSTANCE_NAME);
-        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
+        params.configure(CloudFoundryService.PLAN, SERVICE_X_PLAN);
         return params;
     }
 
@@ -145,11 +145,11 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         return new IllegalArgumentException("Service " + serviceName + " does not exist");
     }
 
-    protected VanillaCloudFoundryService addDefaultServiceToApp() {
+    protected CloudFoundryService addDefaultServiceToApp() {
         return addDefaultServiceToApp(Strings.EMPTY);
     }
 
-    protected void startServiceInLocationAndCheckSensors(VanillaCloudFoundryService entity,
+    protected void startServiceInLocationAndCheckSensors(CloudFoundryService entity,
                                                          CloudFoundryPaasLocation location) {
         entity.start(ImmutableList.of(location));
         checkEntityDefaultSensors(entity);
@@ -157,10 +157,10 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
 
     protected ConfigBag getServiceConfiguration(String serviceInstanceName) {
         ConfigBag configBag = ConfigBag.newInstance()
-                .configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X)
-                .configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
+                .configure(CloudFoundryService.SERVICE_NAME, SERVICE_X)
+                .configure(CloudFoundryService.PLAN, SERVICE_X_PLAN);
         if (Strings.isNonBlank(serviceInstanceName)) {
-            configBag.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+            configBag.configure(CloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
                     serviceInstanceName);
         }
         return configBag;
@@ -173,9 +173,9 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
                         .getAllConfigAsConfigKeyMap()));
     }
 
-    protected VanillaCloudFoundryService addDefaultServiceToApp(String serviceInstanceName) {
+    protected CloudFoundryService addDefaultServiceToApp(String serviceInstanceName) {
         return app.createAndManageChild(EntitySpec
-                .create(VanillaCloudFoundryService.class)
+                .create(CloudFoundryService.class)
                 .configure(getServiceConfiguration(serviceInstanceName)
                         .getAllConfigAsConfigKeyMap()));
     }
@@ -183,9 +183,9 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected void checkEntityDefaultSensors(Entity entity) {
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-                assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_STATE_ACTUAL),
+                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_UP));
+                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+                assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_STATE_ACTUAL),
                         Lifecycle.RUNNING);
             }
         });

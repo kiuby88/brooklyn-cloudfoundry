@@ -22,7 +22,7 @@ package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
@@ -33,7 +33,7 @@ import com.google.common.annotations.Beta;
 @Beta
 @Catalog(name = "Vanilla CloudFoundry MySql Service")
 @ImplementedBy(CloudFoundryMySqlServiceImpl.class)
-public interface CloudFoundryMySqlService extends VanillaCloudFoundryService, AfterBindingOperations {
+public interface CloudFoundryMySqlService extends CloudFoundryService, AfterBindingOperations {
 
     @SetFromFlag("creationScriptTemplateUrl")
     public ConfigKey<String> CREATION_SCRIPT_TEMPLATE = ConfigKeys.newStringConfigKey(

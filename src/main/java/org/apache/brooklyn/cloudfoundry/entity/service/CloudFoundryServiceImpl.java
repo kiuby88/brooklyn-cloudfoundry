@@ -29,24 +29,24 @@ import org.apache.brooklyn.util.text.Strings;
 import com.google.common.annotations.Beta;
 
 @Beta
-public class VanillaCloudFoundryServiceImpl extends CloudFoundryEntityImpl implements VanillaCloudFoundryService {
+public class CloudFoundryServiceImpl extends CloudFoundryEntityImpl implements CloudFoundryService {
 
     private static final String DEFAULT_SERVICE_PREFIX = "cf-serv-";
     private String serviceInstanceName;
 
-    public VanillaCloudFoundryServiceImpl() {
+    public CloudFoundryServiceImpl() {
         super(MutableMap.of(), null);
     }
 
-    public VanillaCloudFoundryServiceImpl(Entity parent) {
+    public CloudFoundryServiceImpl(Entity parent) {
         this(MutableMap.of(), parent);
     }
 
-    public VanillaCloudFoundryServiceImpl(Map properties) {
+    public CloudFoundryServiceImpl(Map properties) {
         this(properties, null);
     }
 
-    public VanillaCloudFoundryServiceImpl(Map properties, Entity parent) {
+    public CloudFoundryServiceImpl(Map properties, Entity parent) {
         super(properties, parent);
     }
 
@@ -60,17 +60,17 @@ public class VanillaCloudFoundryServiceImpl extends CloudFoundryEntityImpl imple
         if (Strings.isBlank(serviceInstanceName)) {
             serviceInstanceName = DEFAULT_SERVICE_PREFIX + Identifiers.makeRandomId(8);
         }
-        sensors().set(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, serviceInstanceName);
+        sensors().set(CloudFoundryService.SERVICE_INSTANCE_NAME, serviceInstanceName);
     }
 
     @Override
     public Class getDriverInterface() {
-        return VanillaPaasServiceDriver.class;
+        return PaasServiceDriver.class;
     }
 
     @Override
-    public VanillaPaasServiceDriver getDriver() {
-        return (VanillaPaasServiceDriver) super.getDriver();
+    public PaasServiceDriver getDriver() {
+        return (PaasServiceDriver) super.getDriver();
     }
 
     protected void connectSensors() {

@@ -32,7 +32,7 @@ import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.drivers.downloads.DownloadResolver;
 import org.apache.brooklyn.cloudfoundry.entity.service.AfterBindingOperations;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.utils.FileNameResolver;
 import org.apache.brooklyn.cloudfoundry.utils.LocalResourcesDownloader;
@@ -128,7 +128,7 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
     }
 
     private void bindService(String serviceInstanceId) {
-        Optional<VanillaCloudFoundryService> optinalService =
+        Optional<CloudFoundryService> optinalService =
                 findServiceEntitiesByInstanceName(serviceInstanceId);
         if (optinalService.isPresent()) {
             bindServiceFromEntity(optinalService.get());
@@ -137,10 +137,10 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
         }
     }
 
-    private void bindServiceFromEntity(VanillaCloudFoundryService serviceEntity) {
+    private void bindServiceFromEntity(CloudFoundryService serviceEntity) {
         Entities.waitForServiceUp(serviceEntity);
         bindServiceFromId(serviceEntity
-                .getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME));
+                .getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME));
         if (serviceEntity instanceof AfterBindingOperations) {
             ((AfterBindingOperations) serviceEntity).operationAfterBindingTo(applicationName);
         }
@@ -150,29 +150,29 @@ public class VanillaPaasApplicationCloudFoundryDriver extends EntityPaasCloudFou
         getLocation().bindServiceToApplication(serviceInstanceId, applicationName);
     }
 
-    private Optional<VanillaCloudFoundryService> findServiceEntitiesByInstanceName(String serviceInstanceName) {
+    private Optional<CloudFoundryService> findServiceEntitiesByInstanceName(String serviceInstanceName) {
         Application root = getEntity().getApplication().getApplication();
         Optional<Entity> optional = Iterables
                 .tryFind(Entities.descendantsWithoutSelf(root), new Predicate<Entity>() {
                     @Override
                     public boolean apply(@Nullable Entity input) {
-                        Maybe<VanillaCloudFoundryService> maybe =
-                                TypeCoercions.tryCoerce(input, VanillaCloudFoundryService.class);
+                        Maybe<CloudFoundryService> maybe =
+                                TypeCoercions.tryCoerce(input, CloudFoundryService.class);
                         return maybe.isPresent()
                                 && instanceName(maybe.get(), serviceInstanceName);
                     }
                 });
 
         if (optional.isPresent()) {
-            VanillaCloudFoundryService service =
-                    TypeCoercions.coerce(optional.get(), VanillaCloudFoundryService.class);
+            CloudFoundryService service =
+                    TypeCoercions.coerce(optional.get(), CloudFoundryService.class);
             return Optional.of(service);
         }
         return Optional.absent();
     }
 
-    private boolean instanceName(VanillaCloudFoundryService service, String instanceName) {
-        return service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)
+    private boolean instanceName(CloudFoundryService service, String instanceName) {
+        return service.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)
                 .equals(instanceName);
     }
 

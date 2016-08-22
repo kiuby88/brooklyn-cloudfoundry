@@ -41,7 +41,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest {
+public class CloudFoundryServiceTest extends AbstractCloudFoundryUnitTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -55,10 +55,10 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
         doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
 
-        VanillaCloudFoundryService entity = addDefaultServiceToApp();
+        CloudFoundryService entity = addDefaultServiceToApp();
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         assertTrue(Strings
-                .isNonBlank(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
+                .isNonBlank(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test
@@ -66,10 +66,10 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         doNothing().when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
         doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
 
-        VanillaCloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
-        assertEquals(entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+        assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 SERVICE_INSTANCE_NAME);
     }
 
@@ -78,7 +78,7 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         doThrow(repeatedServiceException(SERVICE_INSTANCE_NAME))
                 .when(cloudFoundryPaasLocation).createServiceInstance(anyMap());
 
-        VanillaCloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addDefaultServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
     }
 
@@ -103,22 +103,22 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         doReturn(true).when(cloudFoundryPaasLocation).serviceInstanceExist(anyString());
         doNothing().when(cloudFoundryPaasLocation).deleteServiceInstance(anyString());
 
-        VanillaCloudFoundryService entity = addDefaultServiceToApp();
+        CloudFoundryService entity = addDefaultServiceToApp();
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
         String serviceInstanceId =
-                entity.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
+                entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME);
         stopServiceAndCheckSensors(entity);
         verify(cloudFoundryPaasLocation, times(1)).deleteServiceInstance(serviceInstanceId);
     }
 
-    private void stopServiceAndCheckSensors(VanillaCloudFoundryService service) {
+    private void stopServiceAndCheckSensors(CloudFoundryService service) {
         service.stop();
-        assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_UP));
-        assertNull(service.getAttribute(VanillaCloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+        assertNull(service.getAttribute(CloudFoundryService.SERVICE_UP));
+        assertNull(service.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
     }
 
-    protected VanillaCloudFoundryService addDefaultServiceToApp() {
+    protected CloudFoundryService addDefaultServiceToApp() {
         return addDefaultServiceToApp(Strings.EMPTY);
     }
 

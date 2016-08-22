@@ -19,12 +19,12 @@
 package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
 
 
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaPaasServiceDriver;
+import org.apache.brooklyn.cloudfoundry.entity.service.PaasServiceDriver;
 
 import com.google.common.annotations.Beta;
 
 @Beta
-public interface PaasMySqlServiceDriver extends VanillaPaasServiceDriver {
+public interface PaasMySqlServiceDriver extends PaasServiceDriver {
 
     public static final String DB_URI = "uri";
 

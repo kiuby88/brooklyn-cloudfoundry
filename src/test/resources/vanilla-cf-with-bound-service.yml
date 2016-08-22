@@ -27,7 +27,7 @@ services:
     services:
     - $brooklyn:component("my-service").attributeWhenReady("cloudFoundry.service.instance.name")
 
-- type: org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService
+- type: org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService
   id: my-service
   brooklyn.config:
     serviceName: cleardb

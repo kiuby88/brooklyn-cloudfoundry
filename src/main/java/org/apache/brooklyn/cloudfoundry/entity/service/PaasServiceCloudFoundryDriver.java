@@ -29,19 +29,19 @@ import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import com.google.common.annotations.Beta;
 
 @Beta
-public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundryDriver
-        implements VanillaPaasServiceDriver {
+public class PaasServiceCloudFoundryDriver extends EntityPaasCloudFoundryDriver
+        implements PaasServiceDriver {
 
     protected String serviceInstanceId;
 
-    public VanillaPaasServiceCloudFoundryDriver(VanillaCloudFoundryServiceImpl entity,
-                                                CloudFoundryPaasLocation location) {
+    public PaasServiceCloudFoundryDriver(CloudFoundryServiceImpl entity,
+                                         CloudFoundryPaasLocation location) {
         super(entity, location);
     }
 
     @Override
-    public VanillaCloudFoundryServiceImpl getEntity() {
-        return (VanillaCloudFoundryServiceImpl) super.getEntity();
+    public CloudFoundryServiceImpl getEntity() {
+        return (CloudFoundryServiceImpl) super.getEntity();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class VanillaPaasServiceCloudFoundryDriver extends EntityPaasCloudFoundry
     private void createService() {
         Map<String, Object> params =
                 MutableMap.copyOf(getEntity().config().getBag().getAllConfig());
-        params.put(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getName(),
+        params.put(CloudFoundryService.SERVICE_INSTANCE_NAME.getName(),
                 getEntity().getServiceInstanceName());
         serviceInstanceId = getEntity().getServiceInstanceName();
         getLocation().createServiceInstance(params);

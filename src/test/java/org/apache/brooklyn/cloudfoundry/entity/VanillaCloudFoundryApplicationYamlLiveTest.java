@@ -25,13 +25,13 @@ import static org.testng.Assert.assertTrue;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Application;
-import org.apache.brooklyn.cloudfoundry.VanillaCloudFoundryYamlLiveTest;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryYamlLiveTest;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
 
-public class VanillaCloudFoundryApplicationYamlLiveTest extends VanillaCloudFoundryYamlLiveTest {
+public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFoundryYamlLiveTest {
 
     @Test(groups = {"Live"})
     public void deploySimpleWebapp() {
@@ -123,7 +123,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends VanillaCloudFoun
 
         VanillaCloudFoundryApplication vanillaApp = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        VanillaCloudFoundryService vanillaService = (VanillaCloudFoundryService)
+        CloudFoundryService vanillaService = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
 
         testApplicationSensors(vanillaApp);
@@ -131,7 +131,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends VanillaCloudFoun
         String applicationName =
                 vanillaApp.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
         String serviceInstanceName =
-                vanillaService.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
+                vanillaService.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME);
         assertTrue(getLocation(vanillaService)
                 .isServiceBoundTo(serviceInstanceName, applicationName));
     }

@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation.AppState;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
@@ -281,14 +281,14 @@ public class CloudFoundryPaasLocationTest extends AbstractCloudFoundryUnitTest {
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInstanceOfNonExistentService() {
         ConfigBag params = getDefaultServiceConfig();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
+        params.configure(CloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 
     @Test(expectedExceptions = PropagatedRuntimeException.class)
     public void testCreateInstanceOfNonSupportedPlan() {
         ConfigBag params = getDefaultServiceConfig();
-        params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
+        params.configure(CloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
         cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
     }
 

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.domain.VcapServiceRegistry;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
@@ -410,12 +410,12 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public void createServiceInstance(Map<?, ?> params) {
         ConfigBag serviceSetUp = ConfigBag.newInstance(params);
-        String serviceName = serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME);
+        String serviceName = serviceSetUp.get(CloudFoundryService.SERVICE_NAME);
         checkArgument(Strings.isNonBlank(serviceName), "Service Name can not be blank");
         String instanceName =
-                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey());
+                serviceSetUp.get(CloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey());
         checkArgument(Strings.isNonBlank(instanceName), "Service Instance Name can not be blank");
-        String plan = serviceSetUp.get(VanillaCloudFoundryService.PLAN);
+        String plan = serviceSetUp.get(CloudFoundryService.PLAN);
         checkArgument(Strings.isNonBlank(plan), "Plan can not be blank");
 
         try {

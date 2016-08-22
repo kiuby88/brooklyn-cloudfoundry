@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.internal.BrooklynProperties;
@@ -98,10 +98,10 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
 
     protected ConfigBag getDefaultClearDbServiceConfig() {
         ConfigBag params = ConfigBag.newInstance();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
-        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
+        params.configure(CloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
+        params.configure(CloudFoundryService.SERVICE_INSTANCE_NAME.getConfigKey(),
                 SERVICE_INSTANCE_NAME);
-        params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
+        params.configure(CloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
         return params;
     }
 

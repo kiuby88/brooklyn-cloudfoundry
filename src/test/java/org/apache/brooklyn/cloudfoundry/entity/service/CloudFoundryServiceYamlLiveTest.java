@@ -22,12 +22,12 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import org.apache.brooklyn.api.entity.Application;
-import org.apache.brooklyn.cloudfoundry.VanillaCloudFoundryYamlLiveTest;
+import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryYamlLiveTest;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryYamlLiveTest {
+public class CloudFoundryServiceYamlLiveTest extends AbstractCloudFoundryYamlLiveTest {
 
     @AfterMethod
     public void tearDown() {
@@ -40,11 +40,11 @@ public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryY
                 .launchAppYaml("vanilla-cf-service-standalone.yml")
                 .getApplication();
 
-        VanillaCloudFoundryService service = (VanillaCloudFoundryService)
+        CloudFoundryService service = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
         assertTrue(Strings
-                .isNonBlank(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME)));
+                .isNonBlank(service.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
 
     @Test(groups = {"Live"})
@@ -53,10 +53,10 @@ public class VanillaCloudFoundryServiceYamlLiveTest extends VanillaCloudFoundryY
                 .launchAppYaml("vanilla-cf-service-with-name.yml")
                 .getApplication();
 
-        VanillaCloudFoundryService service = (VanillaCloudFoundryService)
+        CloudFoundryService service = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
         testRunningSensors(service);
-        assertEquals(service.getAttribute(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME),
+        assertEquals(service.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 MY_CLEARDB_INSTANCE);
     }
 
