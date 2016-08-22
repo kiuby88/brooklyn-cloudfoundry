@@ -40,7 +40,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
     }
 
     @Test(groups = {"Live"})
@@ -50,7 +50,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
         String name = entity.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL),
                 createApplicationUrl(name));
@@ -63,7 +63,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
 
         String domain = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
         assertFalse(Strings.isBlank(domain));
@@ -79,7 +79,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
 
         String domain = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
         String host = entity.getConfig(VanillaCloudFoundryApplication.APPLICATION_HOST);
@@ -97,7 +97,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
         Map<String, String> env = entity.getAttribute(VanillaCloudFoundryApplication.ENV);
         assertEquals(env, MutableMap.of("env1", "value1", "env2", "2", "env3", "value3"));
     }
@@ -109,7 +109,7 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
 
         VanillaCloudFoundryApplication entity = (VanillaCloudFoundryApplication)
                 findChildEntitySpecByPlanId(app, DEFAULT_APP_ID);
-        testApplicationSensors(entity);
+        testUrisApplicationSensors(entity);
 
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(), 1024);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(), 1);
@@ -126,8 +126,8 @@ public class VanillaCloudFoundryApplicationYamlLiveTest extends AbstractCloudFou
         CloudFoundryService vanillaService = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
 
-        testApplicationSensors(vanillaApp);
-        testRunningSensors(vanillaService);
+        testUrisApplicationSensors(vanillaApp);
+        checkRunningSensors(vanillaService);
         String applicationName =
                 vanillaApp.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
         String serviceInstanceName =

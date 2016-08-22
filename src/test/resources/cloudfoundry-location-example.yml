@@ -19,8 +19,8 @@
 name: CloudFoundryPaasLocation configuration example
 location:
   cloudfoundry:
-    user: user@mail.com
-    password: secret
+    identity: user@mail.com
+    credential: secret
     org: secret_organization
     endpoint: https://api.run.secret.io
     space: development

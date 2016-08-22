@@ -20,6 +20,14 @@ package org.apache.brooklyn.cloudfoundry;
 
 import java.util.Map;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryOperationalService;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryOperationalServiceImpl;
+import org.apache.brooklyn.cloudfoundry.entity.service.PaasOperationalServiceCloudFoundryDriver;
+import org.apache.brooklyn.cloudfoundry.entity.service.PaasOperationalServiceDriver;
+import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -40,5 +48,50 @@ public interface CloudFoundryTestFixtures {
 
     public static final String NON_EXISTENT_SERVICE = Strings.makeRandomId(8);
     public static final String NON_SUPPORTED_PLAN = Strings.makeRandomId(8);
+
+
+    @ImplementedBy(MyOperationalServiceImpl.class)
+    public static interface MyOperationalService extends CloudFoundryOperationalService {
+        public BasicAttributeSensor<Boolean> OPERATIONAL_WATCHDOG =
+                new BasicAttributeSensor<Boolean>(Boolean.class, "test.operational.watchdog");
+    }
+
+    public static class MyOperationalServiceImpl extends CloudFoundryOperationalServiceImpl
+            implements MyOperationalService {
+
+        public MyOperationalServiceImpl() {
+        }
+
+        public MyOperationalServiceImpl(Entity parent) {
+            super(parent);
+        }
+
+        @Override
+        public Class getDriverInterface() {
+            return MyOperationalServiceDriver.class;
+        }
+    }
+
+    public static interface MyOperationalServiceDriver extends PaasOperationalServiceDriver {
+
+    }
+
+    public static class MyOperationalServiceCloudFoundryDriver
+            extends PaasOperationalServiceCloudFoundryDriver {
+
+        public MyOperationalServiceCloudFoundryDriver(MyOperationalServiceImpl entity,
+                                                      CloudFoundryPaasLocation location) {
+            super(entity, location);
+        }
+
+        public MyOperationalServiceImpl getEntity() {
+            return (MyOperationalServiceImpl) super.getEntity();
+        }
+
+        @Override
+        public void operationAfterBindingTo(String applicationName) {
+            getEntity().sensors().set(MyOperationalService.OPERATIONAL_WATCHDOG, true);
+        }
+    }
 
 }

@@ -38,8 +38,8 @@ public class CloudFoundryMySqlServiceYamlLiveTest extends AbstractCloudFoundryYa
         CloudFoundryMySqlService service = (CloudFoundryMySqlService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
 
-        testApplicationSensors(vanillaApp);
-        testRunningSensors(service);
+        testUrisApplicationSensors(vanillaApp);
+        checkRunningSensors(service);
         String applicationName =
                 vanillaApp.getAttribute(VanillaCloudFoundryApplication.APPLICATION_NAME);
         String serviceInstanceName =

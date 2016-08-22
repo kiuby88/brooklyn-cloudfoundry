@@ -18,20 +18,22 @@
  */
 package org.apache.brooklyn.cloudfoundry;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.cloudfoundry.entity.CloudFoundryEntity;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.service.CloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.launcher.SimpleYamlLauncherForTests;
 import org.apache.brooklyn.launcher.camp.SimpleYamlLauncher;
 import org.apache.brooklyn.test.Asserts;
+import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -67,8 +69,8 @@ public class AbstractCloudFoundryYamlLiveTest {
         return null;
     }
 
-    protected void testApplicationSensors(final VanillaCloudFoundryApplication entity) {
-        testRunningSensors(entity);
+    protected void testUrisApplicationSensors(final VanillaCloudFoundryApplication entity) {
+        checkRunningSensors(entity);
         Asserts.succeedsEventually(
                 new Runnable() {
                     public void run() {
@@ -78,15 +80,15 @@ public class AbstractCloudFoundryYamlLiveTest {
                 });
     }
 
-    protected void testRunningSensors(final CloudFoundryEntity entity) {
-        Asserts.succeedsEventually(
-                new Runnable() {
-                    public void run() {
-                        assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                        assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                                .SERVICE_PROCESS_IS_RUNNING));
-                    }
-                });
+    protected void checkRunningSensors(Entity entity) {
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                AssertJUnit.assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_UP));
+                AssertJUnit.assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
+                assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_STATE_ACTUAL),
+                        Lifecycle.RUNNING);
+            }
+        });
     }
 
     protected CloudFoundryPaasLocation getLocation(CloudFoundryEntity entity) {

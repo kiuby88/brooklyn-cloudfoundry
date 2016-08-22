@@ -27,20 +27,15 @@ import java.io.IOException;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
-import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
-import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
-import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
-
-import com.google.common.collect.ImmutableList;
 
 public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testCreateService() throws IOException {
-        CloudFoundryService entity = addClearDbServiceToApp();
+        CloudFoundryService entity = addCloudFoundryServiceToApp();
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         assertTrue(Strings
                 .isNonBlank(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
@@ -48,7 +43,7 @@ public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testCreateServiceWithName() throws IOException {
-        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addCloudFoundryServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
 
         assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
@@ -57,11 +52,11 @@ public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testCreateRepeatedService() throws IOException {
-        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addCloudFoundryServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         boolean errorCreating = false;
         try {
-            CloudFoundryService sameService = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+            CloudFoundryService sameService = addCloudFoundryServiceToApp(SERVICE_INSTANCE_NAME);
             startServiceInLocationAndCheckSensors(sameService, cloudFoundryPaasLocation);
         } catch (PropagatedRuntimeException e) {
             errorCreating = true;
@@ -83,7 +78,7 @@ public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
 
     @Test(groups = {"Live"})
     public void testStopService() throws IOException {
-        CloudFoundryService entity = addClearDbServiceToApp(SERVICE_INSTANCE_NAME);
+        CloudFoundryService entity = addCloudFoundryServiceToApp(SERVICE_INSTANCE_NAME);
         startServiceInLocationAndCheckSensors(entity, cloudFoundryPaasLocation);
         stopServiceAndCheckSensors(entity);
         assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
@@ -93,33 +88,6 @@ public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
         service.stop();
         assertNull(service.getAttribute(CloudFoundryService.SERVICE_UP));
         assertNull(service.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-    }
-
-    private void startServiceInLocationAndCheckSensors(CloudFoundryService entity,
-                                                       CloudFoundryPaasLocation location) {
-        entity.start(ImmutableList.of(location));
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_UP));
-                assertTrue(entity.getAttribute(CloudFoundryService.SERVICE_PROCESS_IS_RUNNING));
-                assertEquals(entity.getAttribute(CloudFoundryService.SERVICE_STATE_ACTUAL),
-                        Lifecycle.RUNNING);
-            }
-        });
-    }
-
-    private CloudFoundryService addClearDbServiceToApp() {
-        return addClearDbServiceToApp(Strings.EMPTY);
-    }
-
-    private CloudFoundryService addClearDbServiceToApp(String serviceInstanceName) {
-        EntitySpec<CloudFoundryService> spec =
-                getServiceEntitySpec(CLEARDB_SERVICE, CLEARDB_SPARK_PLAN);
-        if (Strings.isNonBlank(serviceInstanceName)) {
-            spec.configure(CloudFoundryService.SERVICE_INSTANCE_NAME,
-                    serviceInstanceName);
-        }
-        return app.createAndManageChild(spec);
     }
 
     private CloudFoundryService addInvalidServiceToApp() {
@@ -132,13 +100,6 @@ public class CloudFoundryServiceLiveTest extends AbstractCloudFoundryLiveTest {
         EntitySpec<CloudFoundryService> spec =
                 getServiceEntitySpec(NON_EXISTENT_SERVICE, CLEARDB_SPARK_PLAN);
         return app.createAndManageChild(spec);
-    }
-
-    private EntitySpec<CloudFoundryService> getServiceEntitySpec(String name, String plan) {
-        return EntitySpec
-                .create(CloudFoundryService.class)
-                .configure(CloudFoundryService.SERVICE_NAME, name)
-                .configure(CloudFoundryService.PLAN, plan);
     }
 
 }

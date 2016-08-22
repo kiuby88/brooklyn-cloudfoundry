@@ -364,14 +364,6 @@ public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
         return params;
     }
 
-    private ConfigBag getDefaultApplicationConfiguration() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-        return params;
-    }
-
     private void createApplicationServiceBindAndCheck() {
         ConfigBag params = getDefaultApplicationConfiguration();
         createApplicationStartAndCheck(params.getAllConfig());

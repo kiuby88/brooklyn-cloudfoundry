@@ -29,13 +29,11 @@ import java.util.Map;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
-import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
-import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -50,7 +48,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
         assertTrue(entity.getAttribute(VanillaCloudFoundryApplication.ENV).isEmpty());
     }
 
@@ -105,7 +103,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setMemory(CUSTOM_MEMORY);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY).intValue(),
@@ -120,7 +118,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setDiskQuota(CUSTOM_DISK);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_DISK).intValue(),
@@ -135,7 +133,7 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.setInstancesNumber(CUSTOM_INSTANCES);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES).intValue(),
@@ -170,14 +168,14 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
 
         entity.restart();
-        checkEntityIsRunningAndAvailable(entity);
+        checkUrisApplicationSensors(entity);
     }
 
     @Test(groups = {"Live"})
-    public void testBindServiceFromStringToEntity() {
+    public void testBindServiceFromStringToApplication() {
         createServiceAndCheck(getDefaultClearDbServiceConfig().getAllConfig());
         final VanillaCloudFoundryApplication entity =
                 app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
@@ -185,9 +183,27 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK)
                         .configure(VanillaCloudFoundryApplication.SERVICES, MutableList.of(SERVICE_INSTANCE_NAME)));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
         assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
         unbindAndDeleteServiceAndCheck(SERVICE_INSTANCE_NAME, applicationName);
+    }
+
+    @Test(groups = {"Live"})
+    public void testBindOperationalServiceToApplication() {
+        final MyOperationalService operationalService =
+                app.createAndManageChild(EntitySpec.create(MyOperationalService.class)
+                        .configure(getDefaultClearDbServiceConfig().getAllConfigAsConfigKeyMap()));
+
+        final VanillaCloudFoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK)
+                        .configure(VanillaCloudFoundryApplication.SERVICES, MutableList.of(SERVICE_INSTANCE_NAME)));
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        checkRunningSensors(operationalService);
+        assertTrue(operationalService.getAttribute(MyOperationalService.OPERATIONAL_WATCHDOG));
     }
 
     @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
@@ -198,29 +214,11 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                         .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
                         .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK)
                         .configure(VanillaCloudFoundryApplication.SERVICES, MutableList.of(SERVICE_INSTANCE_NAME)));
-        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        startAppAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
     }
 
-    private void startAndCheckEntitySensors(VanillaCloudFoundryApplication entity,
-                                            CloudFoundryPaasLocation location) {
-        app.start(ImmutableList.of(location));
-        checkEntityIsRunningAndAvailable(entity);
-    }
-
-    private void checkEntityIsRunningAndAvailable(final VanillaCloudFoundryApplication entity) {
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertTrue(entity.getAttribute(Startable.SERVICE_UP));
-                assertTrue(entity.getAttribute(VanillaCloudFoundryApplication
-                        .SERVICE_PROCESS_IS_RUNNING));
-            }
-        });
-        assertFalse(Strings.isBlank(entity.getAttribute(Attributes.MAIN_URI).toString()));
-        assertFalse(Strings.isBlank(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL)));
-    }
-
-    private void startAndCheckEntitySensorsAndDefaultProfile(VanillaCloudFoundryApplication entity,
-                                                             CloudFoundryPaasLocation location) {
+    private void startAppAndCheckEntitySensorsAndDefaultProfile(VanillaCloudFoundryApplication entity,
+                                                                CloudFoundryPaasLocation location) {
         startAndCheckEntitySensors(entity, location);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ALLOCATED_MEMORY),
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_MEMORY));
@@ -228,6 +226,12 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+    }
+
+    private void startAndCheckEntitySensors(VanillaCloudFoundryApplication entity,
+                                            CloudFoundryPaasLocation location) {
+        app.start(ImmutableList.of(location));
+        checkUrisApplicationSensors(entity);
     }
 
     protected void unbindAndDeleteServiceAndCheck(String serviceName, String applicationName) {

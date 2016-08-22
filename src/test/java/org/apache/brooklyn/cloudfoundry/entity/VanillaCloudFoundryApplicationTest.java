@@ -270,8 +270,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
         VanillaCloudFoundryApplication entity = addDefaultVanillaToAppAndMockProfileMethods(
                 cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
         app.start(ImmutableList.of(cloudFoundryPaasLocation));
-        checkEntityDefaultSensors(entity);
-        checkEntityDefaultSensors(serviceEntity);
+        checkRunningSensors(entity);
+        checkRunningSensors(serviceEntity);
         verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
                 serviceEntity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 APPLICATION_NAME);
@@ -309,8 +309,8 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
                 cloudFoundryPaasLocation, MutableList.of(SERVICE_INSTANCE_NAME));
 
         app.start(ImmutableList.of(cloudFoundryPaasLocation));
-        checkEntityDefaultSensors(entity);
-        checkEntityDefaultSensors(serviceEntity);
+        checkRunningSensors(entity);
+        checkRunningSensors(serviceEntity);
         verify(cloudFoundryPaasLocation, times(1)).bindServiceToApplication(
                 serviceEntity.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 APPLICATION_NAME);
@@ -383,7 +383,7 @@ public class VanillaCloudFoundryApplicationTest extends AbstractCloudFoundryUnit
     }
 
     protected void checkApplicationSensors(VanillaCloudFoundryApplication entity) {
-        checkEntityDefaultSensors(entity);
+        checkRunningSensors(entity);
         assertEquals(entity.getAttribute(Attributes.MAIN_URI).toString(), serverAddress);
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.ROOT_URL), serverAddress);
     }

@@ -37,12 +37,12 @@ public class CloudFoundryServiceYamlLiveTest extends AbstractCloudFoundryYamlLiv
     @Test(groups = {"Live"})
     public void deploySimpleClearDbService() {
         Application app = launcher
-                .launchAppYaml("vanilla-cf-service-standalone.yml")
+                .launchAppYaml("cf-service-standalone.yml")
                 .getApplication();
 
         CloudFoundryService service = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
-        testRunningSensors(service);
+        checkRunningSensors(service);
         assertTrue(Strings
                 .isNonBlank(service.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME)));
     }
@@ -50,12 +50,12 @@ public class CloudFoundryServiceYamlLiveTest extends AbstractCloudFoundryYamlLiv
     @Test(groups = {"Live"})
     public void deploySimpleClearDbServiceWithInstanceName() {
         Application app = launcher
-                .launchAppYaml("vanilla-cf-service-with-name.yml")
+                .launchAppYaml("cf-service-with-name.yml")
                 .getApplication();
 
         CloudFoundryService service = (CloudFoundryService)
                 findChildEntitySpecByPlanId(app, DEFAULT_SERVICE_ID);
-        testRunningSensors(service);
+        checkRunningSensors(service);
         assertEquals(service.getAttribute(CloudFoundryService.SERVICE_INSTANCE_NAME),
                 MY_CLEARDB_INSTANCE);
     }
