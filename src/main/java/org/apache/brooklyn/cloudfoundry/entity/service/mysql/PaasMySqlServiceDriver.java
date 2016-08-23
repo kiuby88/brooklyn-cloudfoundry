@@ -16,17 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity;
+package org.apache.brooklyn.cloudfoundry.entity.service.mysql;
 
-import java.util.Map;
 
-public interface VanillaPaasApplicationDriver extends EntityPaasDriver {
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaPaasServiceDriver;
 
-    void setEnv(Map<String, String> env);
+import com.google.common.annotations.Beta;
 
-    void setInstancesNumber(int instancesNumber);
+@Beta
+public interface PaasMySqlServiceDriver extends VanillaPaasServiceDriver {
 
-    void setDiskQuota(int diskQuota);
+    public static final String DB_URI = "uri";
 
-    void setMemory(int memory);
+    public void operationAfterBindingTo(String applicationName);
+
 }

@@ -18,21 +18,27 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
+import static com.google.api.client.util.Preconditions.checkArgument;
 import static com.google.api.client.util.Preconditions.checkNotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
+import org.apache.brooklyn.cloudfoundry.location.domain.VcapServiceRegistry;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.location.paas.PaasLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
+import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
+import org.cloudfoundry.operations.applications.ApplicationEnvironments;
 import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
 import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
 import org.cloudfoundry.operations.applications.GetApplicationEnvironmentsRequest;
@@ -43,6 +49,12 @@ import org.cloudfoundry.operations.applications.ScaleApplicationRequest;
 import org.cloudfoundry.operations.applications.SetEnvironmentVariableApplicationRequest;
 import org.cloudfoundry.operations.applications.StartApplicationRequest;
 import org.cloudfoundry.operations.applications.StopApplicationRequest;
+import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
+import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
+import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
+import org.cloudfoundry.operations.services.GetServiceInstanceRequest;
+import org.cloudfoundry.operations.services.ServiceInstance;
+import org.cloudfoundry.operations.services.UnbindServiceInstanceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +64,10 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         implements PaasLocation, CloudFoundryPaasLocationConfig {
 
     public static final Logger log = LoggerFactory.getLogger(CloudFoundryPaasLocation.class);
+    private static final String VCAP_SERVICES = "VCAP_SERVICES";
 
     private CloudFoundryOperations client;
+
 
     public enum AppState {
 
@@ -169,7 +183,7 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         return baseUrl;
     }
 
-    private ApplicationDetail getApplication(final String applicationName) {
+    protected ApplicationDetail getApplication(final String applicationName) {
         try {
             return getClient().applications()
                     .get(GetApplicationRequest.builder()
@@ -180,7 +194,6 @@ public class CloudFoundryPaasLocation extends AbstractLocation
             log.error("Error getting application {}, error was {}", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
-
     }
 
     public void pushArtifact(String applicationName, String artifact) {
@@ -289,18 +302,23 @@ public class CloudFoundryPaasLocation extends AbstractLocation
     }
 
     public Map<String, String> getEnv(String applicationName) {
+        return mapOfStrings(getApplicationEnvironment(applicationName).getUserProvided());
+    }
+
+    public Map<String, Object> getSystemProvidedEnv(String applicationName) {
+        return getApplicationEnvironment(applicationName).getSystemProvided();
+    }
+
+    private ApplicationEnvironments getApplicationEnvironment(String applicationName) {
         try {
-            Map<String, Object>
-                    userProvided = getClient().applications()
+            return getClient().applications()
                     .getEnvironments(GetApplicationEnvironmentsRequest.builder()
                             .name(applicationName)
                             .build())
-                    .doOnSuccess(v -> log.info("Getting env for application {}", applicationName))
-                    .block(getConfig(OPERATIONS_TIMEOUT))
-                    .getUserProvided();
-            return mapOfStrings(userProvided);
+                    .doOnSuccess(v -> log.info("Getting environment for application {}", applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
-            log.error("Error getting env for application {} the error was ", applicationName, e);
+            log.error("Error getting environment for application {} the error was ", applicationName, e);
             throw new PropagatedRuntimeException(e);
         }
     }
@@ -334,7 +352,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .memoryLimit(memory)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting memory {} for application {}", memory, applicationName))
+                    .doOnSuccess(v -> log.info("Setting memory {} for application {}",
+                            memory, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting memory {} for application {} the error was {}",
@@ -350,7 +369,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .diskLimit(diskQuota)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting diskQouta {} for application {}", diskQuota, applicationName))
+                    .doOnSuccess(v -> log.info("Setting diskQouta {} for application {}",
+                            diskQuota, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting diskQuota {} for application {} the error was {}",
@@ -366,7 +386,8 @@ public class CloudFoundryPaasLocation extends AbstractLocation
                             .name(applicationName)
                             .instances(instances)
                             .build())
-                    .doOnSuccess(v -> log.info("Setting instances {} for application {}", instances, applicationName))
+                    .doOnSuccess(v -> log.info("Setting instances {} for application {}",
+                            instances, applicationName))
                     .block(getConfig(OPERATIONS_TIMEOUT));
         } catch (Exception e) {
             log.error("Error setting instances {} for application {} the error was {}",
@@ -385,6 +406,122 @@ public class CloudFoundryPaasLocation extends AbstractLocation
 
     public int getMemory(String applicationName) {
         return getApplication(applicationName).getMemoryLimit();
+    }
+
+    public void createServiceInstance(Map<?, ?> params) {
+        ConfigBag serviceSetUp = ConfigBag.newInstance(params);
+        String serviceName = serviceSetUp.get(VanillaCloudFoundryService.SERVICE_NAME);
+        checkArgument(Strings.isNonBlank(serviceName), "Service Name can not be blank");
+        String instanceName =
+                serviceSetUp.get(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME);
+        checkArgument(Strings.isNonBlank(instanceName), "Service Instance Name can not be blank");
+        String plan = serviceSetUp.get(VanillaCloudFoundryService.PLAN);
+        checkArgument(Strings.isNonBlank(plan), "Plan can not be blank");
+
+        try {
+            getClient().services()
+                    .createInstance(CreateServiceInstanceRequest.builder()
+                            .serviceName(serviceName)
+                            .serviceInstanceName(instanceName)
+                            .planName(plan)
+                            .build())
+                    .doOnSuccess(v ->
+                            log.info("Service {} was created correctly", instanceName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error creating the service {}, the error was {}", instanceName, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public boolean serviceInstanceExist(String serviceInstanceName) {
+        boolean result;
+        try {
+            result = getServiceInstance(serviceInstanceName) != null;
+        } catch (Exception e) {
+            result = false;
+        }
+        return result;
+    }
+
+    protected ServiceInstance getServiceInstance(String serviceInstanceName) {
+        try {
+            return getClient().services()
+                    .getInstance(GetServiceInstanceRequest.builder()
+                            .name(serviceInstanceName)
+                            .build())
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error gettin the service {} the error was {}", serviceInstanceName, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public void deleteServiceInstance(String serviceInstanceId) {
+        try {
+            getClient().services()
+                    .deleteInstance(DeleteServiceInstanceRequest.builder()
+                            .name(serviceInstanceId)
+                            .build())
+                    .doOnSuccess(v -> log.info("Deleted service instance {}", serviceInstanceId))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error deleting service {}, the error was {}", serviceInstanceId, e);
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public void bindServiceToApplication(String serviceInstanceName, String applicationName) {
+        try {
+            getClient().services()
+                    .bind(BindServiceInstanceRequest.builder()
+                            .applicationName(applicationName)
+                            .serviceInstanceName(serviceInstanceName)
+                            .build())
+                    .doOnSuccess(v -> log.info("Bound service instance {} to application {}",
+                            serviceInstanceName, applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error binding the service {} to the application {}, the error was {}",
+                    new Object[]{serviceInstanceName, applicationName, e});
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public void unbindService(String serviceName, String applicationName) {
+        try {
+            getClient().services()
+                    .unbind(UnbindServiceInstanceRequest.builder()
+                            .applicationName(applicationName)
+                            .serviceInstanceName(serviceName)
+                            .build())
+                    .doOnSuccess(v -> log.info("Unbound service instance {} to application {}",
+                            serviceName, applicationName))
+                    .block(getConfig(OPERATIONS_TIMEOUT));
+        } catch (Exception e) {
+            log.error("Error unbinding service {} to application {} the error was {}",
+                    new Object[]{serviceName, applicationName, e});
+            throw new PropagatedRuntimeException(e);
+        }
+    }
+
+    public boolean isServiceBoundTo(String serviceName, String applicationName) {
+        return serviceInstanceExist(serviceName)
+                && getServiceInstance(serviceName).getApplications().contains(applicationName);
+    }
+
+    public List<String> getBoundApplications(String serviceInstanceName) {
+        return getServiceInstance(serviceInstanceName).getApplications();
+    }
+
+    public Map<String, String> getCredentialsServiceForApplication(String applicationName, String serviceInstanceName) {
+        return getVcapServiceRegistry(applicationName).getCredentials(serviceInstanceName);
+    }
+
+    private VcapServiceRegistry getVcapServiceRegistry(String applicationName) {
+        Map<String, Object> systemProvidedEnv = getSystemProvidedEnv(applicationName);
+        return VcapServiceRegistry
+                .createRegistryFromMap((Map<?, ?>) systemProvidedEnv.get(VCAP_SERVICES));
     }
 
 }

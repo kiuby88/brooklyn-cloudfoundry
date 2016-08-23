@@ -21,6 +21,7 @@ package org.apache.brooklyn.cloudfoundry;
 import java.util.Map;
 
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.text.Strings;
 
 public interface CloudFoundryTestFixtures {
 
@@ -36,5 +37,8 @@ public interface CloudFoundryTestFixtures {
     public static final Map<String, String> EMPTY_ENV = MutableMap.of();
     public static final Map<String, String> SIMPLE_ENV = MutableMap.of("k1", "v1");
     public static final String BROOKLYN_HOST = "test-brooklyn-host";
+
+    public static final String NON_EXISTENT_SERVICE = Strings.makeRandomId(8);
+    public static final String NON_SUPPORTED_PLAN = Strings.makeRandomId(8);
 
 }

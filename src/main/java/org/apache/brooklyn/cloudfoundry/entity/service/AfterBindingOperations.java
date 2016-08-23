@@ -16,17 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.brooklyn.cloudfoundry.entity;
+package org.apache.brooklyn.cloudfoundry.entity.service;
 
-import java.util.Map;
+/**
+ * This interface represent an operation that can be invoked once an service is bound to an
+ * application in the platform.
+ */
+public interface AfterBindingOperations extends VanillaCloudFoundryService {
 
-public interface VanillaPaasApplicationDriver extends EntityPaasDriver {
+    public void operationAfterBindingTo(String applicationName);
 
-    void setEnv(Map<String, String> env);
-
-    void setInstancesNumber(int instancesNumber);
-
-    void setDiskQuota(int diskQuota);
-
-    void setMemory(int memory);
 }

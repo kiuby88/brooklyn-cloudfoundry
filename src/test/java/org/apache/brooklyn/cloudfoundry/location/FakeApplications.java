@@ -21,9 +21,11 @@ package org.apache.brooklyn.cloudfoundry.location;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
 import org.cloudfoundry.doppler.LogMessage;
@@ -57,6 +59,8 @@ import org.cloudfoundry.operations.applications.StartApplicationRequest;
 import org.cloudfoundry.operations.applications.StopApplicationRequest;
 import org.cloudfoundry.operations.applications.UnsetEnvironmentVariableApplicationRequest;
 
+import com.google.common.collect.ImmutableMap;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -66,14 +70,19 @@ public class FakeApplications implements Applications {
     private static final String DEFAULT_STACK = "cflinuxfs2";
     private static final String STARTED = "STARTED";
     private static final String STOPPED = "STOPPED";
+    private static final String VCAP_SERVICES = "VCAP_SERVICES";
+    private static final String JDBC_ADDRESS = AbstractCloudFoundryUnitTest.MOCK_JDBC_ADDRESS;
+    private static final String DB_URI = AbstractCloudFoundryUnitTest.MOCK_DB_URI_ADDRESS;
     private static final int ID_SIZE = 36;
 
-    private Map<String, ApplicationDetail> applications;
-    private Map<String, Map<String, String>> applicationEnv;
+    Map<String, ApplicationDetail> applications;
+    Map<String, Map<String, String>> applicationEnv;
+    Map<String, List<VcapDescription>> vcaps;
 
     public FakeApplications() {
         applications = MutableMap.of();
         applicationEnv = MutableMap.of();
+        vcaps = MutableMap.of();
     }
 
     @Override
@@ -86,6 +95,10 @@ public class FakeApplications implements Applications {
             updateApplication(request);
         }
         return Mono.empty();
+    }
+
+    boolean containsApplication(String applicationName) {
+        return applications.containsKey(applicationName);
     }
 
     private void checkApplicationPath(PushApplicationRequest request) {
@@ -144,7 +157,8 @@ public class FakeApplications implements Applications {
     }
 
     private void initEnv(PushApplicationRequest request) {
-        applicationEnv.put(request.getName(), MutableMap.<String, String>of());
+        applicationEnv.put(request.getName(), MutableMap.of());
+        vcaps.put(request.getName(), MutableList.of());
     }
 
     private void updateApplication(PushApplicationRequest request) {
@@ -199,6 +213,44 @@ public class FakeApplications implements Applications {
         return Mono.empty();
     }
 
+    public void bindServiceToApplication(String service,
+                                         String serviceInstanceName,
+                                         String applicationName) {
+        Map<String, String> credentials = ImmutableMap.<String, String>builder()
+                .put("jdbcUrl", JDBC_ADDRESS)
+                .put("uri", DB_URI)
+                .put("name", "ad")
+                .put("hostname", "host.net")
+                .put("port", "3306")
+                .put("username", "b0e8f")
+                .put("password", "2876cd9e")
+                .build();
+        Map<String, Object> serviceDescription = ImmutableMap.of(
+                "credentials", credentials,
+                "name", serviceInstanceName);
+        addServiceVcapToApp(service, serviceDescription, applicationName);
+    }
+
+    public void addServiceVcapToApp(String service,
+                                    Map<String, Object> serviceDescription,
+                                    String applicationName) {
+        VcapDescription vcap = getVcapDescptionsOfApplication(service, applicationName);
+        if (vcap == null) {
+            vcap = new VcapDescription(service);
+        }
+        vcap.addServiceDesciption(serviceDescription);
+        vcaps.get(applicationName).add(vcap);
+    }
+
+    private VcapDescription getVcapDescptionsOfApplication(String service, String applicationName) {
+        for (VcapDescription vcap : vcaps.get(applicationName)) {
+            if (vcap.serviceName.equals(service)) {
+                return vcap;
+            }
+        }
+        return null;
+    }
+
     @Override
     public Mono<Void> disableSsh(DisableApplicationSshRequest request) {
         return null;
@@ -223,8 +275,24 @@ public class FakeApplications implements Applications {
     public Mono<ApplicationEnvironments> getEnvironments(GetApplicationEnvironmentsRequest request) {
         ApplicationDetail application = getApplication(request.getName());
         Map<String, String> userEnv = applicationEnv.get(application.getName());
+
+        //adding envs for application
         return Mono.just(ApplicationEnvironments.builder()
-                .userProvided(userEnv).build());
+                .userProvided(userEnv)
+                .systemProvided(getSystemProvidedFor(application.getName()))
+                .build());
+    }
+
+    private Map<String, ? extends Object> getSystemProvidedFor(String applicationName) {
+        Map<String, Object> result = MutableMap.of();
+        if (!vcaps.get(applicationName).isEmpty()) {
+            MutableMap<String, Object> vcapsDescriptions = MutableMap.of();
+            for (VcapDescription vcap : vcaps.get(applicationName)) {
+                vcapsDescriptions.put(vcap.getServiceName(), vcap.descriptions());
+            }
+            result.put(VCAP_SERVICES, vcapsDescriptions);
+        }
+        return result;
     }
 
     @Override
@@ -342,5 +410,44 @@ public class FakeApplications implements Applications {
     @Override
     public Mono<Void> unsetEnvironmentVariable(UnsetEnvironmentVariableApplicationRequest request) {
         return null;
+    }
+
+    public static class VcapDescription {
+
+        private static final String NAME = "name";
+
+        public String serviceName;
+        public List<Map<String, Object>> vcaps;
+
+        public VcapDescription(String serviceName) {
+            this.serviceName = serviceName;
+            this.vcaps = MutableList.of();
+        }
+
+        public void addServiceDesciption(Map<String, Object> description) {
+            String serviceInstanceName = (String) description.get(NAME);
+            if (!serviceIsAlreadyConfigured(serviceInstanceName)) {
+                vcaps.add(description);
+            }
+        }
+
+        public boolean serviceIsAlreadyConfigured(String serviceInstanceName) {
+            for (Map<String, Object> vcap : vcaps) {
+                String vcapServiceNameInstance = ((String) vcap.get(NAME));
+                if (serviceInstanceName.equals(vcapServiceNameInstance)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public String getServiceName() {
+            return serviceName;
+        }
+
+        public List<Map<String, Object>> descriptions() {
+            return vcaps;
+        }
+
     }
 }

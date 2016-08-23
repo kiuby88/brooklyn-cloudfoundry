@@ -18,15 +18,21 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-import java.util.Map;
 
-public interface VanillaPaasApplicationDriver extends EntityPaasDriver {
+import org.apache.brooklyn.api.entity.drivers.EntityDriver;
 
-    void setEnv(Map<String, String> env);
+public interface EntityPaasDriver extends EntityDriver {
 
-    void setInstancesNumber(int instancesNumber);
+    boolean isRunning();
 
-    void setDiskQuota(int diskQuota);
+    void rebind();
 
-    void setMemory(int memory);
+    void start();
+
+    void restart();
+
+    void stop();
+
+    void delete();
+
 }

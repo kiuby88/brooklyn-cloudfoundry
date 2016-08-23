@@ -18,7 +18,6 @@
  */
 package org.apache.brooklyn.cloudfoundry.entity;
 
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -33,7 +32,9 @@ import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.Test;
 
@@ -175,6 +176,31 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
         checkEntityIsRunningAndAvailable(entity);
     }
 
+    @Test(groups = {"Live"})
+    public void testBindServiceFromStringToEntity() {
+        createServiceAndCheck(getDefaultClearDbServiceConfig().getAllConfig());
+        final VanillaCloudFoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK)
+                        .configure(VanillaCloudFoundryApplication.SERVICES, MutableList.of(SERVICE_INSTANCE_NAME)));
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
+        unbindAndDeleteServiceAndCheck(SERVICE_INSTANCE_NAME, applicationName);
+    }
+
+    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
+    public void testBindNonExistentServiceToEntity() {
+        final VanillaCloudFoundryApplication entity =
+                app.createAndManageChild(EntitySpec.create(VanillaCloudFoundryApplication.class)
+                        .configure(VanillaCloudFoundryApplication.APPLICATION_NAME, applicationName)
+                        .configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, ARTIFACT_URL)
+                        .configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK)
+                        .configure(VanillaCloudFoundryApplication.SERVICES, MutableList.of(SERVICE_INSTANCE_NAME)));
+        startAndCheckEntitySensorsAndDefaultProfile(entity, cloudFoundryPaasLocation);
+    }
+
     private void startAndCheckEntitySensors(VanillaCloudFoundryApplication entity,
                                             CloudFoundryPaasLocation location) {
         app.start(ImmutableList.of(location));
@@ -202,6 +228,12 @@ public class VanillaCloudFoundryApplicationLiveTest extends AbstractCloudFoundry
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_DISK));
         assertEquals(entity.getAttribute(VanillaCloudFoundryApplication.INSTANCES),
                 entity.getConfig(VanillaCloudFoundryApplication.REQUIRED_INSTANCES));
+    }
+
+    protected void unbindAndDeleteServiceAndCheck(String serviceName, String applicationName) {
+        cloudFoundryPaasLocation.unbindService(serviceName, applicationName);
+        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(serviceName, applicationName));
+        deleteServiceAndCheck(serviceName);
     }
 
 }
