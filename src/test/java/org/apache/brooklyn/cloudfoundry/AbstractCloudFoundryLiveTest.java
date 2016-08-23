@@ -18,18 +18,23 @@
  */
 package org.apache.brooklyn.cloudfoundry;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.internal.BrooklynProperties;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
 import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
 import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
+import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.text.Strings;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -41,6 +46,9 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
     protected static final String DEFAULT_DOMAIN = "cfapps.io";
     protected final String LOCATION_SPEC_NAME = "pivotal-ws";
     protected final String JAVA_BUILDPACK = "https://github.com/cloudfoundry/java-buildpack.git";
+    protected final String CLEARDB_SERVICE = "cleardb";
+    protected final String CLEARDB_SPARK_PLAN = "spark";
+    protected final String SERVICE_INSTANCE_NAME = "test-service";
 
 
     protected String applicationName;
@@ -86,6 +94,32 @@ public class AbstractCloudFoundryLiveTest extends BrooklynAppLiveTestSupport
         assertNotNull(host);
         assertNotNull(domain);
         return "https://" + host + "." + domain;
+    }
+
+    protected ConfigBag getDefaultClearDbServiceConfig() {
+        ConfigBag params = ConfigBag.newInstance();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, CLEARDB_SERVICE);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.PLAN, CLEARDB_SPARK_PLAN);
+        return params;
+    }
+
+    protected void createServiceAndCheck(Map<String, Object> params) {
+        cloudFoundryPaasLocation.createServiceInstance(params);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+            }
+        });
+    }
+
+    protected void deleteServiceAndCheck(String serviceName) {
+        cloudFoundryPaasLocation.deleteServiceInstance(serviceName);
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(serviceName));
+            }
+        });
     }
 
 }

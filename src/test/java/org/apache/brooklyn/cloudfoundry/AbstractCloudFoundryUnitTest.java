@@ -19,13 +19,16 @@
 package org.apache.brooklyn.cloudfoundry;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
+import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocation;
 import org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocationTest;
 import org.apache.brooklyn.cloudfoundry.location.StubbedCloudFoundryPaasClientRegistry;
@@ -41,14 +44,13 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
     protected static final String APPLICATION_NAME = UUID.randomUUID().toString().substring(0, 8);
 
     public static final String BROOKLYN_DOMAIN = "brooklyndomain.io";
-
-    protected static final String DEFAULT_APPLICATION_BROOKLYN_DOMAIN
-            = APPLICATION_NAME + "." + BROOKLYN_DOMAIN;
-    protected static final String DEFAULT_APPLICATION_ADDRESS
-            = "https://" + DEFAULT_APPLICATION_BROOKLYN_DOMAIN;
     protected static final String MOCK_BUILDPACK = Strings.makeRandomId(20);
 
     protected CloudFoundryPaasLocation cloudFoundryPaasLocation;
+
+    public static final String SERVICE_X = "service1";
+    public static final String SERVICE_X_PLAN = "planX";
+    public static final String SERVICE_INSTANCE_NAME = "serviceInstance";
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -56,7 +58,7 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         cloudFoundryPaasLocation = createCloudFoundryPaasLocation();
     }
 
-    private CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
+    protected CloudFoundryPaasLocation createCloudFoundryPaasLocation() {
         Map<String, String> m = MutableMap.of();
         m.put("user", "super_user");
         m.put("password", "super_secret");
@@ -109,4 +111,25 @@ public class AbstractCloudFoundryUnitTest extends BrooklynAppUnitTestSupport
         return "https://" + host + "." + domain;
     }
 
+    protected ConfigBag getDefaultServiceConfig() {
+        ConfigBag params = ConfigBag.newInstance();
+        params.configure(VanillaCloudFoundryService.SERVICE_NAME, SERVICE_X);
+        params.configure(VanillaCloudFoundryService.SERVICE_INSTANCE_NAME, SERVICE_INSTANCE_NAME);
+        params.configure(VanillaCloudFoundryService.PLAN, SERVICE_X_PLAN);
+        return params;
+    }
+
+    protected void createServiceAndCheck(Map<String, Object> params) {
+        cloudFoundryPaasLocation.createServiceInstance(params);
+        assertTrue(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+    }
+
+    protected void deleteServiceAndCheck(String serviceInstanceName) {
+        cloudFoundryPaasLocation.deleteServiceInstance(serviceInstanceName);
+        assertFalse(cloudFoundryPaasLocation.serviceInstanceExist(SERVICE_INSTANCE_NAME));
+    }
+
+    protected static IllegalArgumentException nonExistentServiceException(String serviceName) {
+        return new IllegalArgumentException("Service " + serviceName + " does not exist");
+    }
 }
