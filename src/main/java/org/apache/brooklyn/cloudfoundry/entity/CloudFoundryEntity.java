@@ -19,9 +19,7 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 
-import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.entity.drivers.DriverDependentEntity;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -33,8 +31,6 @@ import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
-@Catalog(name = "CloudFoundry entity")
-@ImplementedBy(CloudFoundryEntityImpl.class)
 public interface CloudFoundryEntity extends Entity, Startable, DriverDependentEntity {
 
     @SetFromFlag("startTimeout")

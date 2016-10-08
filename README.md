@@ -11,6 +11,12 @@ This project contains a Brooklyn plugin which allows Cloud Foundry-based platfor
 ##Usage
 This project provides different elements to manage the Cloud Foundry services.
 
+Building using maven
+```
+mvn clean install
+```
+Adding generated jar, `target/brooklyn-cloudfoundry-1.0-SNAPSHOT.jar`, to Brooklyn [dropins folder](https://brooklyn.apache.org/v/0.9.0/ops/externalized-configuration.html#writing-custom-external-configuration-suppliers).
+
 ###Location
 Cloud Foundry platforms can be described using an `Location`, concretely a `CloudFoundryPaasLocation` was developed in order to represent an Cloud Foundry instance. Here’s a very simple YAML blueprint plan, to explain the `CloudFoundryPaasLocation` configuration:
 ````
