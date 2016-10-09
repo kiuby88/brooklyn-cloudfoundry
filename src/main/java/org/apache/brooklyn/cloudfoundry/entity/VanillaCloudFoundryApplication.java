@@ -62,7 +62,7 @@ public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
 
     @SetFromFlag("domain")
     ConfigKey<String> APPLICATION_DOMAIN = ConfigKeys.newStringConfigKey(
-            "cloudFoundry.application.domain", "Domain for the application", Strings.EMPTY);
+            "cloudFoundry.application.domain", "Domain for the application");
 
     @SetFromFlag("host")
     ConfigKey<String> APPLICATION_HOST = ConfigKeys.newStringConfigKey(
