@@ -41,7 +41,7 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.v2.CloudFoundryException;
+import org.cloudfoundry.client.v2.ClientV2Exception;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -168,8 +168,8 @@ public class VanillaCloudFoundryServiceTest extends AbstractCloudFoundryUnitTest
         return configBag;
     }
 
-    private static CloudFoundryException repeatedServiceException(String instanceName) {
-        return new CloudFoundryException(60002, "The service instance name is taken: "
+    private static ClientV2Exception repeatedServiceException(String instanceName) {
+        return new ClientV2Exception(60002, 1, "The service instance name is taken: "
                 + instanceName, "CF-ServiceInstanceNameTaken");
     }
 

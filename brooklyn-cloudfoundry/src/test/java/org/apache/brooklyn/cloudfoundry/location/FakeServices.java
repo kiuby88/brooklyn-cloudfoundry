@@ -25,7 +25,8 @@ import java.util.Map;
 import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryUnitTest;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Strings;
-import org.cloudfoundry.client.v2.CloudFoundryException;
+import org.cloudfoundry.client.v2.ClientV2Exception;
+import org.cloudfoundry.operations.services.BindRouteServiceInstanceRequest;
 import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
 import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
 import org.cloudfoundry.operations.services.CreateServiceKeyRequest;
@@ -88,6 +89,12 @@ public class FakeServices implements Services {
     }
 
     @Override
+    public Mono<Void> bindRoute(BindRouteServiceInstanceRequest bindRouteServiceInstanceRequest) {
+        // TOOD
+        return null;
+    }
+
+    @Override
     public Mono<Void> createInstance(CreateServiceInstanceRequest createServiceInstanceRequest) {
         String instanceName = createServiceInstanceRequest.getServiceInstanceName();
         if (!services.containsKey(instanceName)) {
@@ -103,7 +110,7 @@ public class FakeServices implements Services {
             services.put(instanceName, service);
             return Mono.empty();
         }
-        throw new CloudFoundryException(60002, "The service instance name is taken: " + instanceName,
+        throw new ClientV2Exception(60002, 1, "The service instance name is taken: " + instanceName,
                 "CF-ServiceInstanceNameTaken");
     }
 
@@ -154,7 +161,7 @@ public class FakeServices implements Services {
         if (isNotBoundToAnApplication(service)) {
             services.remove(instanceName);
         } else {
-            throw new CloudFoundryException(10006,
+            throw new ClientV2Exception(10006, 1,
                     "Please delete the service_bindings, service_keys, and routes associations " +
                             "for your service_instances.", "CF-AssociationNotEmpty");
         }

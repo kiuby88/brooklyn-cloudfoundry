@@ -55,6 +55,7 @@ public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistr
 
         DefaultConnectionContext connectionContext = DefaultConnectionContext.builder()
                 .apiHost(apiHost)
+                .skipSslValidation(true) // TODO
                 .build();
         PasswordGrantTokenProvider token = PasswordGrantTokenProvider.builder()
                 .username(user)

@@ -34,12 +34,6 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-all</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-core</artifactId>
             <version>${brooklyn.version}</version>
             <exclusions>
@@ -114,7 +108,18 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-launcher</artifactId>
+            <version>${brooklyn.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-camp</artifactId>
+            <version>${brooklyn.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-core</artifactId>

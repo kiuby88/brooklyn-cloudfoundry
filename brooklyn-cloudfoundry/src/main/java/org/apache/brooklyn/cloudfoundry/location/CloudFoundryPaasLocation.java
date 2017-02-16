@@ -36,10 +36,11 @@ import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
 import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.apache.brooklyn.util.text.Strings;
+import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.applications.ApplicationDetail;
 import org.cloudfoundry.operations.applications.ApplicationEnvironments;
-import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
 import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
 import org.cloudfoundry.operations.applications.GetApplicationEnvironmentsRequest;
 import org.cloudfoundry.operations.applications.GetApplicationRequest;
@@ -55,6 +56,9 @@ import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
 import org.cloudfoundry.operations.services.GetServiceInstanceRequest;
 import org.cloudfoundry.operations.services.ServiceInstance;
 import org.cloudfoundry.operations.services.UnbindServiceInstanceRequest;
+import org.cloudfoundry.reactor.DefaultConnectionContext;
+import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
+import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,33 +136,78 @@ public class CloudFoundryPaasLocation extends AbstractLocation
         String name = appSetUp
                 .get(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey());
         String buildpack = appSetUp.get(VanillaCloudFoundryApplication.BUILDPACK);
-        Path artifactLocalPath =
-                Paths.get(artifact);
+        Path artifactLocalPath = Paths.get(artifact);
         String host = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_HOST);
 
-        String domain = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
+        String domainName = appSetUp.get(VanillaCloudFoundryApplication.APPLICATION_DOMAIN);
         int memory = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_MEMORY);
         int disk = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_DISK);
         int instances = appSetUp.get(VanillaCloudFoundryApplication.REQUIRED_INSTANCES);
 
         try {
+            
+            CloudFoundryClient cloudFoundryClient = ReactorCloudFoundryClient.builder()
+                    .connectionContext(DefaultConnectionContext.builder()
+                            .apiHost("api.local.pcfdev.io")
+                            .skipSslValidation(true)
+                            .build())
+                    .tokenProvider(PasswordGrantTokenProvider.builder()
+                            .password("admin")
+                            .username("admin")
+                            .build())
+                    .build();
+
+//            DefaultCloudFoundryOperations cloudFoundryOperations = DefaultCloudFoundryOperations.builder()
+//                    .cloudFoundryClient(cloudFoundryClient)
+//                    .organization("pcfdev-org")
+//                    .space("pcfdev-space")
+//                    .build();
+//
+//            Mono<CreateApplicationResponse> createAppResponse = cloudFoundryClient.applicationsV2()
+//                    .create(CreateApplicationRequest.builder()
+//                            .buildpack(buildpack)
+//                            .memory(memory)
+//                            .name("applicationName")
+//                            .spaceId("pcfdev-space")
+//                            .build());
+//
+//            // for Docker 
+//            PushApplicationRequest.builder()
+//                    .dockerImage("test-docker")
+//                    .name("test-name")
+//                    .build();
+
+            cloudFoundryClient.tasks().list(ListTasksRequest.builder().build());
+            
             getClient().applications()
                     .push(PushApplicationRequest.builder()
-                            .name(name)
+                            .application(artifactLocalPath) //new ClassPathResource("test-application.zip").getFile().toPath())
                             .buildpack(buildpack)
-                            .application(artifactLocalPath)
-                            .host(host)
-                            .noHostname(false)
-                            .domain(domain)
-                            .memory(memory)
+                            .domain(domainName)
                             .diskQuota(disk)
-                            .instances(instances)
-                            .healthCheckType(ApplicationHealthCheck.PORT)
-                            .noStart(true)
-                            .noRoute(false)
+                            .memory(memory)
+                            .name(name)
                             .build())
-                    .doOnSuccess(v -> log.info("Done uploading for {} in {}", name, this))
                     .block(getConfig(OPERATIONS_TIMEOUT));
+            
+//            getClient().applications()
+//                    .push(PushApplicationRequest.builder()
+//                            .name(name)
+//                            .buildpack(buildpack)
+//                            .application(artifactLocalPath)
+//                            .host(host)
+//                            .noHostname(false)
+//                            .domain(domainName)
+//                            .memory(memory)
+//                            .diskQuota(disk)
+//                            .instances(instances)
+//                            .healthCheckType(ApplicationHealthCheck.PORT)
+//                            .noStart(true)
+//                            .noRoute(false)
+//                            .build())
+//                    .doOnSuccess(v -> log.info("Done uploading for {} in {}", name, this))
+//                    .block(getConfig(OPERATIONS_TIMEOUT));
+            
             return getApplicationUrl(name);
         } catch (Exception e) {
             log.error("Error creating application {}, error was {}", name, e);

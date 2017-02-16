@@ -32,14 +32,13 @@
     <name>Brooklyn :: CloudFoundry :: Project</name>
 
     <properties>
-        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version>
+        <brooklyn.version>0.10.0</brooklyn.version>
         <java.version>1.8</java.version>
-        <cloudfoundry.client.version>2.0.0.BUILD-SNAPSHOT</cloudfoundry.client.version>
-        <reactor.core.version>3.0.0.RC1</reactor.core.version>
-        <reactor.netty.version>0.5.0.BUILD-SNAPSHOT</reactor.netty.version>
+        <cloudfoundry.client.version>2.3.0.RELEASE</cloudfoundry.client.version>
+        <reactor.core.version>3.0.4.RELEASE</reactor.core.version>
+        <reactor.netty.version>0.6.0.RELEASE</reactor.netty.version>
         <mockito.version>1.10.19</mockito.version>
         <mockwebserver.version>2.7.0</mockwebserver.version>
-
 
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <maven.buildhelper.plugin.version>1.10</maven.buildhelper.plugin.version>
@@ -48,8 +47,8 @@
         <maven.surefire.plugin.version>2.19.1</maven.surefire.plugin.version>
         <maven.scr.plugin.version>1.22.0</maven.scr.plugin.version>
 
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         
         <osgi.import>
             !android.util*,
