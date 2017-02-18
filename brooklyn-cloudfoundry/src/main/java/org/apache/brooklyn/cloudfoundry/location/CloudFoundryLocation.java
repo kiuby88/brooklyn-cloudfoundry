@@ -50,6 +50,8 @@ import org.cloudfoundry.operations.applications.GetApplicationRequest;
 import org.cloudfoundry.operations.applications.PushApplicationRequest;
 import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
 import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
+import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
+import org.cloudfoundry.operations.services.ServiceInstanceSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.UrlResource;
@@ -169,7 +171,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
                             .block();
 
                 } catch (Exception e) {
-                    LOG.error("Error creating the service {}, the error was {}", "serviceInstanceName", e);
+                    LOG.error("Error creating the service {}, the error was {}", serviceInstanceName, e);
                     throw new PropagatedRuntimeException(e);
                 }
             }
@@ -246,13 +248,30 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
     @Override
     public void release(MachineLocation machine) {
         String applicationName = machine.config().get(CloudFoundryLocationConfig.APPLICATION_NAME);
-        // TODO delete serviceInstance
-//        getCloudFoundryOperations().services().deleteInstance(DeleteServiceInstanceRequest.builder().name().build()).block();
+
+        List<ServiceInstanceSummary> serviceInstanceSummaries = getCloudFoundryOperations().services().listInstances().collectList().block();
+        List<String> instancesToBeDeleted = Lists.newArrayList();
+
+        for (ServiceInstanceSummary serviceInstanceSummary : serviceInstanceSummaries) {
+            for (String appName : serviceInstanceSummary.getApplications()) {
+                if (applicationName.equalsIgnoreCase(appName)) {
+                    instancesToBeDeleted.add(serviceInstanceSummary.getName());
+                }
+            }
+        }
+
         getCloudFoundryOperations().applications().delete(DeleteApplicationRequest.builder()
                 .name(applicationName)
                 .deleteRoutes(true)
                 .build()
         ).block();
+        // delete service instances bound to the application
+        for (String name : instancesToBeDeleted) {
+            getCloudFoundryOperations().services().deleteInstance(
+                    DeleteServiceInstanceRequest.builder()
+                            .name(name).build())
+                    .block();
+        }
     }
 
     @Override
