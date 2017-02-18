@@ -18,24 +18,48 @@
  */
 package org.apache.brooklyn.cloudfoundry.location;
 
-import java.time.Duration;
-
-import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.time.Duration;
 
-public interface CloudFoundryPaasLocationConfig extends PaasLocationConfig {
+import com.google.common.base.Predicates;
 
+public interface CloudFoundryLocationConfig extends CloudLocationConfig {
+
+    @SetFromFlag("provider")
+    ConfigKey<String> CLOUD_PROVIDER = LocationConfigKeys.CLOUD_PROVIDER;
+
+    @SetFromFlag("identity")
+    ConfigKey<String> ACCESS_IDENTITY = LocationConfigKeys.ACCESS_IDENTITY;
+
+    @SetFromFlag("credential")
+    ConfigKey<String> ACCESS_CREDENTIAL = LocationConfigKeys.ACCESS_CREDENTIAL;
+
+    @SetFromFlag("endpoint")
+    ConfigKey<String> CLOUD_ENDPOINT = LocationConfigKeys.CLOUD_ENDPOINT;
+
+    ConfigKey<String> APPLICATION_NAME = ConfigKeys.builder(String.class)
+            .name("application name")
+            .description("CloudFoundry application name")
+            .constraint(Predicates.<String>notNull())
+            .build();
+    
     ConfigKey<String> CF_ORG = ConfigKeys.newStringConfigKey("org",
-            "Organization where paas resources will live.");
+            "CloudFoundry Organization.");
 
     ConfigKey<String> CF_SPACE = ConfigKeys.newStringConfigKey("space",
-            "Space from the CloudFoundry services will be managed.");
+            "CloudFoundry Space");
 
     ConfigKey<CloudFoundryClientRegistry> CF_CLIENT_REGISTRY = ConfigKeys.newConfigKey(
-            CloudFoundryClientRegistry.class, "cloudFoundryPaasClientRegistry",
+            CloudFoundryClientRegistry.class, "cloudFoundryClientRegistry",
             "Registry/Factory for creating cloudfoundry client; default is almost always fine, " +
                     "except where tests want to customize behaviour", CloudFoundryClientRegistryImpl.INSTANCE);
+    
     ConfigKey<Duration> OPERATIONS_TIMEOUT = ConfigKeys.newConfigKey(Duration.class,
-            "operations.timeout", "Timeout for cloudfoundry operations", Duration.ofMinutes(5));
+            "operations.timeout", "Timeout for cloudfoundry operations", Duration.minutes(5));
+
+
 }

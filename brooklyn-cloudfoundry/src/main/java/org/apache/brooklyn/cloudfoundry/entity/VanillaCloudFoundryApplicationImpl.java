@@ -19,42 +19,23 @@
 package org.apache.brooklyn.cloudfoundry.entity;
 
 
-import java.util.Map;
-
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.entity.software.base.EmptySoftwareProcessImpl;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VanillaCloudFoundryApplicationImpl extends CloudFoundryEntityImpl
-        implements VanillaCloudFoundryApplication {
+public class VanillaCloudFoundryApplicationImpl extends EmptySoftwareProcessImpl implements VanillaCloudFoundryApplication {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaCloudFoundryApplicationImpl.class);
     private static final String DEFAULT_APP_PREFIX = "cf-app-";
 
     private String applicationName;
 
-    public VanillaCloudFoundryApplicationImpl() {
-        super(MutableMap.of(), null);
-    }
-
-    public VanillaCloudFoundryApplicationImpl(Entity parent) {
-        this(MutableMap.of(), parent);
-    }
-
-    public VanillaCloudFoundryApplicationImpl(Map properties) {
-        this(properties, null);
-    }
-
-    public VanillaCloudFoundryApplicationImpl(Map properties, Entity parent) {
-        super(properties, parent);
-    }
-
     public void init() {
         super.init();
-        initApplicationName();
+        //initApplicationName();
     }
 
     private void initApplicationName() {
@@ -66,37 +47,21 @@ public class VanillaCloudFoundryApplicationImpl extends CloudFoundryEntityImpl
     }
 
     @Override
-    public Class getDriverInterface() {
-        return VanillaPaasApplicationDriver.class;
+    protected void disconnectSensors() {
+        if(isSshMonitoringEnabled()) {
+            disconnectServiceUpIsRunning();
+        }
+        super.disconnectSensors();
     }
 
     @Override
-    public VanillaPaasApplicationDriver getDriver() {
-        return (VanillaPaasApplicationDriver) super.getDriver();
-    }
-
-    public String getApplicationName() {
-        return applicationName;
-    }
-
-    @Override
-    public void setEnv(String name, String value) {
-        getDriver().setEnv(MutableMap.of(name, value));
-    }
-
-    @Override
-    public void setInstancesNumber(int instancesNumber) {
-        getDriver().setInstancesNumber(instancesNumber);
-    }
-
-    @Override
-    public void setDiskQuota(int diskQuota) {
-        getDriver().setDiskQuota(diskQuota);
-    }
-
-    @Override
-    public void setMemory(int memory) {
-        getDriver().setMemory(memory);
+    protected void connectSensors() {
+        super.connectSensors();
+        if (isSshMonitoringEnabled()) {
+            connectServiceUpIsRunning();
+        } else {
+            sensors().set(Attributes.SERVICE_UP, true);
+        }
     }
 
 }

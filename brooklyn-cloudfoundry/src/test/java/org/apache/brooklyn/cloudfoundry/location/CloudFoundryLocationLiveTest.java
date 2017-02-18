@@ -1,397 +1,222 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 package org.apache.brooklyn.cloudfoundry.location;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.Assert.assertTrue;
 
-import java.net.HttpURLConnection;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.apache.brooklyn.cloudfoundry.AbstractCloudFoundryLiveTest;
-import org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication;
-import org.apache.brooklyn.cloudfoundry.entity.service.VanillaCloudFoundryService;
-import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
-import org.apache.brooklyn.util.http.HttpTool;
-import org.apache.brooklyn.util.text.Strings;
-import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.api.location.MachineDetails;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.OsDetails;
+import org.apache.brooklyn.core.location.BasicMachineDetails;
+import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
+import org.apache.brooklyn.core.location.access.PortForwardManagerLocationResolver;
+import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
 
-public class CloudFoundryLocationLiveTest extends AbstractCloudFoundryLiveTest {
+/**
+/**
+ * Live tests for deploying simple containers. Particularly useful during dev, but not so useful
+ * after that (because assumes the existence of a cloudfoundry endpoint). It needs configured with 
+ * something like:
+ * 
+ *   {@code -Dtest.amp.cloudfoundry.endpoint=http://10.104.2.206:8080}).
+ * 
+ * The QA Framework is more important for that - hence these tests (trying to be) kept simple 
+ * and focused.
+ */
+public class CloudFoundryLocationLiveTest extends BrooklynAppLiveTestSupport {
 
-    private String applicationName;
-    private String artifactLocalPath;
+    private static final Logger LOG = LoggerFactory.getLogger(CloudFoundryLocationLiveTest.class);
+    
+    public static final String CLOUDFOUNDRY_ENDPOINT = System.getProperty("test.amp.cloudfoundry.endpoint", "");
+    public static final String IDENTITY = System.getProperty("test.amp.cloudfoundry.identity", "");
+    public static final String CREDENTIAL = System.getProperty("test.amp.cloudfoundry.credential", "");
 
-    @BeforeMethod
+    protected CloudFoundryLocation loc;
+    protected List<MachineLocation> machines;
+
+    @BeforeMethod(alwaysRun=true)
+    @Override
     public void setUp() throws Exception {
         super.setUp();
-        applicationName = APPLICATION_NAME_PREFIX + UUID.randomUUID()
-                .toString().substring(0, 8);
-        artifactLocalPath = getLocalPath(APPLICATION_ARTIFACT);
+        machines = Lists.newCopyOnWriteArrayList();
     }
 
-    @Test(groups = {"Live"})
-    public void testWebApplicationManagement() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        applicationLifecycleManagement(applicationName, params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"})
-    public void testWebApplicationManagementWithHost() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_HOST, BROOKLYN_HOST);
-
-        applicationLifecycleManagement(applicationName, params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testWebApplicationManagementNoNameNoHost() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
-        applicationLifecycleManagement(applicationName, params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"})
-    public void testWebApplicationManagementWithDomain() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_DOMAIN, DEFAULT_DOMAIN);
-
-        applicationLifecycleManagement(applicationName, params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = NullPointerException.class)
-    public void testWebApplicationManagementNoArtifact() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
-        applicationLifecycleManagement(applicationName, params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"})
-    public void testAddEnvToApplication() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
-        startApplication(applicationName, applicationUrl);
-
-        Map<String, String> env = cloudFoundryPaasLocation.getEnv(applicationName);
-        assertTrue(env.isEmpty());
-
-        cloudFoundryPaasLocation.setEnv(applicationName, SIMPLE_ENV);
-        env = cloudFoundryPaasLocation.getEnv(applicationName);
-        assertEquals(env, SIMPLE_ENV);
-        destroyApplication(applicationName, applicationUrl);
-    }
-
-    @Test(groups = {"Live"})
-    public void testAddNullEnvToApplication() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
-        startApplication(applicationName, applicationUrl);
-
-        Map<String, String> env = cloudFoundryPaasLocation.getEnv(applicationName);
-        assertTrue(env.isEmpty());
-
-        cloudFoundryPaasLocation.setEnv(applicationName, null);
-        env = cloudFoundryPaasLocation.getEnv(applicationName);
-        assertTrue(env.isEmpty());
-        destroyApplication(applicationName, applicationUrl);
-    }
-
-    @Test(groups = {"Live"})
-    public void testModifyResourcesForApplication() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-
-        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
-        assertFalse(Strings.isBlank(applicationUrl));
-
-        startApplication(applicationName, applicationUrl);
-        assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), MEMORY);
-        assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), DISK);
-        assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), INSTANCES);
-
-        cloudFoundryPaasLocation.setMemory(applicationName, CUSTOM_MEMORY);
-        cloudFoundryPaasLocation.setDiskQuota(applicationName, CUSTOM_DISK);
-        cloudFoundryPaasLocation.setInstancesNumber(applicationName, CUSTOM_INSTANCES);
-
-        assertEquals(cloudFoundryPaasLocation.getMemory(applicationName), CUSTOM_MEMORY);
-        assertEquals(cloudFoundryPaasLocation.getDiskQuota(applicationName), CUSTOM_DISK);
-        assertEquals(cloudFoundryPaasLocation.getInstancesNumber(applicationName), CUSTOM_INSTANCES);
-        destroyApplication(applicationName, applicationUrl);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testSetMemoryNonExistentApplication() {
-        cloudFoundryPaasLocation.setMemory(applicationName, MEMORY);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testSetDiskQuotaNonExistentApplication() {
-        cloudFoundryPaasLocation.setDiskQuota(applicationName, DISK);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testSetInstancesNonExistentApplication() {
-        cloudFoundryPaasLocation.setInstancesNumber(applicationName, INSTANCES);
-    }
-
-    @Test(groups = {"Live"})
-    public void testRestartApplication() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-
-        String applicationUrl = cloudFoundryPaasLocation.deploy(params.getAllConfig());
-        assertFalse(Strings.isBlank(applicationUrl));
-        startApplication(applicationName, applicationUrl);
-
-        cloudFoundryPaasLocation.restartApplication(applicationName);
-        checkDeployedApplicationAvailability(applicationName, applicationUrl);
-        destroyApplication(applicationName, applicationUrl);
-    }
-
-    @Test(groups = {"Live"})
-    public void testCreateService() {
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testRepeatInstanceNameService() {
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        try {
-            cloudFoundryPaasLocation.createServiceInstance(getDefaultClearDbServiceConfigMap());
-        } finally {
-            deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-        }
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testCreateInstanceOfNonExistentService() {
-        ConfigBag params = getDefaultClearDbServiceConfig();
-        params.configure(VanillaCloudFoundryService.SERVICE_NAME, NON_EXISTENT_SERVICE);
-        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testCreateInstanceOfNonSupportedPlan() {
-        ConfigBag params = getDefaultClearDbServiceConfig();
-        params.configure(VanillaCloudFoundryService.PLAN, NON_SUPPORTED_PLAN);
-        cloudFoundryPaasLocation.createServiceInstance(params.getAllConfig());
-    }
-
-    @Test(groups = {"Live"})
-    public void testBindServiceToApplication() {
-        createApplicationServiceBindAndCheck();
-        deleteApplicatin(applicationName);
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testBindNonExistentServiceToApplication() {
-        try {
-            ConfigBag params = getDefaultApplicationConfiguration();
-            createApplicationStartAndCheck(params.getAllConfig());
-            cloudFoundryPaasLocation
-                    .bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
-        } finally {
-            deleteApplicatin(applicationName);
-        }
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testBindServiceToNonExistentApplication() {
-        try {
-            createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-            assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-            cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
-        } finally {
-            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
-        }
-    }
-
-    @Test(groups = {"Live"})
-    public void testDeleteService() {
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testDeleteNonExistentService() {
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = PropagatedRuntimeException.class)
-    public void testDeleteABoundService() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        createApplicationStartAndCheck(params.getAllConfig());
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
-        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-        try {
-            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
-        } finally {
-            deleteApplicatin(applicationName);
-            cloudFoundryPaasLocation.deleteServiceInstance(SERVICE_INSTANCE_NAME);
-        }
-    }
-
-    @Test(groups = {"Live"})
-    public void testGetCredentials() {
-        createApplicationServiceBindAndCheck();
-        Map<String, String> credentials = cloudFoundryPaasLocation
-                .getCredentialsServiceForApplication(applicationName, SERVICE_INSTANCE_NAME);
-        assertNotNull(credentials);
-        assertFalse(credentials.isEmpty());
-        deleteApplicatin(applicationName);
-        deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-    }
-
-    @Test(groups = {"Live"}, expectedExceptions = IllegalArgumentException.class)
-    public void testGetCredentialsForNotBoundService() {
-        try {
-            ConfigBag params = getDefaultApplicationConfiguration();
-            createApplicationStartAndCheck(params.getAllConfig());
-            createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-
-            Map<String, String> credentials = cloudFoundryPaasLocation
-                    .getCredentialsServiceForApplication(applicationName, SERVICE_INSTANCE_NAME);
-            assertNotNull(credentials);
-        } finally {
-            deleteApplicatin(applicationName);
-            deleteServiceAndCheck(SERVICE_INSTANCE_NAME);
-        }
-    }
-
-    private void applicationLifecycleManagement(String applicationName, Map<String, Object> params) {
-        String applicationUrl = createApplicationStartAndCheck(params);
-        destroyApplication(applicationName, applicationUrl);
-    }
-
-    private String createApplicationStartAndCheck(Map<String, Object> params) {
-        String applicationUrl = cloudFoundryPaasLocation.deploy(params);
-        assertEquals(applicationUrl, inferApplicationUrl(params));
-        assertFalse(Strings.isBlank(applicationUrl));
-        startApplication(applicationName, applicationUrl);
-        return applicationUrl;
-    }
-
-    private void startApplication(String applicationName, String applicationUrl) {
-        cloudFoundryPaasLocation.startApplication(applicationName);
-        checkDeployedApplicationAvailability(applicationName, applicationUrl);
-    }
-
-    private void checkDeployedApplicationAvailability(final String applicationName,
-                                                      final String applicationUrl) {
-        Map<String, ?> flags = ImmutableMap.of("timeout", Duration.TWO_MINUTES);
-        Asserts.succeedsEventually(flags, new Runnable() {
-            public void run() {
-                try {
-                    assertEquals(HttpTool.getHttpStatusCode(applicationUrl), HttpURLConnection.HTTP_OK);
-                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
-                            CloudFoundryPaasLocation.AppState.STARTED);
-                } catch (Exception e) {
-                    throw Exceptions.propagate(e);
-                }
+    // FIXME: Clear up properly: Test leaves deployment, replicas and pods behind if obtain fails.
+    @AfterMethod(alwaysRun=true)
+    @Override
+    public void tearDown() throws Exception {
+        for (MachineLocation machine : machines) {
+            try {
+                loc.release(machine);
+            } catch (Exception e) {
+                LOG.error("Error releasing machine "+machine+" in location "+loc, e);
             }
-        });
+        }
+        super.tearDown();
+    }
+    
+    protected CloudFoundryLocation newCloudFoundryLocation(Map<String, ?> flags) throws Exception {
+        Map<String,?> allFlags = MutableMap.<String,Object>builder()
+                .put("identity", IDENTITY)
+                .put("credential", CREDENTIAL)
+                .put("endpoint", CLOUDFOUNDRY_ENDPOINT)
+                .putAll(flags)
+                .build();
+        return (CloudFoundryLocation) mgmt.getLocationRegistry().getLocationManaged("cloudfoundry", allFlags);
     }
 
-    private void destroyApplication(String applicationName, String applicationUrl) {
-        stopApplication(applicationName, applicationUrl);
-        deleteApplicatin(applicationName);
+    @Test(groups={"Live"})
+    public void testDefault() throws Exception {
+        // Default is "cloudsoft/centos:7"
+        runImage(ImmutableMap.<String, Object>of(), "centos", "7");
     }
 
-    private void stopApplication(final String applicationName, final String applicationDomain) {
-        cloudFoundryPaasLocation.stopApplication(applicationName);
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                try {
-                    assertEquals(HttpTool.getHttpStatusCode(applicationDomain),
-                            HttpURLConnection.HTTP_NOT_FOUND);
-                    assertEquals(cloudFoundryPaasLocation.getApplicationStatus(applicationName),
-                            CloudFoundryPaasLocation.AppState.STOPPED);
-                } catch (Exception e) {
-                    throw Exceptions.propagate(e);
-                }
-            }
-        });
+//    @Test(groups={"Live"})
+//    public void testMatchesCentos() throws Exception {
+//        runImage(ImmutableMap.<String, Object>of(CloudFoundryLocationConfig.OS_FAMILY.getName(), "centos"), "centos", "7");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testMatchesCentos7() throws Exception {
+//        ImmutableMap<String, Object> conf = ImmutableMap.<String, Object>of(
+//                CloudFoundryLocationConfig.OS_FAMILY.getName(), "centos",
+//                CloudFoundryLocationConfig.OS_VERSION_REGEX.getName(), "7.*");
+//        runImage(conf, "centos", "7");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testMatchesUbuntu() throws Exception {
+//        runImage(ImmutableMap.<String, Object>of(CloudFoundryLocationConfig.OS_FAMILY.getName(), "ubuntu"), "ubuntu", "14.04");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testMatchesUbuntu16() throws Exception {
+//        ImmutableMap<String, Object> conf = ImmutableMap.<String, Object>of(
+//                CloudFoundryLocationConfig.OS_FAMILY.getName(), "ubuntu",
+//                CloudFoundryLocationConfig.OS_VERSION_REGEX.getName(), "16.*");
+//        runImage(conf, "ubuntu", "16.04");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testCloudsoftCentos7() throws Exception {
+//        runImage(ImmutableMap.of(CloudFoundryLocationConfig.IMAGE.getName(), "cloudsoft/centos:7"), "centos", "7");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testCloudsoftUbuntu14() throws Exception {
+//        runImage(ImmutableMap.of(CloudFoundryLocationConfig.IMAGE.getName(), "cloudsoft/ubuntu:14.04"), "ubuntu", "14.04");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testCloudsoftUbuntu16() throws Exception {
+//        runImage(ImmutableMap.of(CloudFoundryLocationConfig.IMAGE.getName(), "cloudsoft/ubuntu:16.04"), "ubuntu", "16.04");
+//    }
+//
+//    @Test(groups={"Live"})
+//    public void testFailsForNonMatching() throws Exception {
+//        ImmutableMap<String, Object> conf = ImmutableMap.<String, Object>of(
+//                CloudFoundryLocationConfig.OS_FAMILY.getName(), "weirdOsFamiliy");
+//        try {
+//            runImage(conf, null, null);
+//            Asserts.shouldHaveFailedPreviously();
+//        } catch (Exception e) {
+//            Asserts.expectedFailureContains(e, "No matching image found");
+//        }
+//    }
+
+    protected void runImage(Map<String, ?> config, String expectedOs, String expectedVersion) throws Exception {
+        loc = newCloudFoundryLocation(ImmutableMap.<String, Object>of());
+        SshMachineLocation machine = newContainerMachine(loc, ImmutableMap.<String, Object>builder()
+                .putAll(config)
+                .put(LocationConfigKeys.CALLER_CONTEXT.getName(), app)
+                .build());
+
+        assertTrue(machine.isSshable(), "not sshable machine="+machine);
+        assertOsNameContains(machine, expectedOs, expectedVersion);
+        assertMachinePasswordSecure(machine);
     }
 
-    private void deleteApplicatin(final String applicationName) {
-        cloudFoundryPaasLocation.deleteApplication(applicationName);
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertFalse(cloudFoundryPaasLocation.isDeployed(applicationName));
-            }
-        });
-    }
+//    @Test(groups={"Live"})
+//    protected void testUsesSuppliedLoginPassword() throws Exception {
+//         Because defaulting to "cloudsoft/centos:7", it knows to set the loginUserPassword
+//         on container creation.
+//        String password = "myCustomP4ssword";
+//        loc = newCloudFoundryLocation(ImmutableMap.<String, Object>of());
+//        SshMachineLocation machine = newContainerMachine(loc, ImmutableMap.<String, Object>builder()
+//                .put(CloudFoundryLocationConfig.LOGIN_USER_PASSWORD.getName(), password)
+//                .put(LocationConfigKeys.CALLER_CONTEXT.getName(), app)
+//                .build());
+//
+//        assertTrue(machine.isSshable(), "not sshable machine="+machine);
+//        assertEquals(machine.config().get(SshMachineLocation.PASSWORD), password);
+//    }
 
-    private ConfigBag getDefaultResourcesProfile() {
-        ConfigBag params = new ConfigBag();
-        params.configure(VanillaCloudFoundryApplication.REQUIRED_INSTANCES, INSTANCES);
-        params.configure(VanillaCloudFoundryApplication.REQUIRED_MEMORY, MEMORY);
-        params.configure(VanillaCloudFoundryApplication.REQUIRED_DISK, DISK);
-        return params;
-    }
-
-    private ConfigBag getDefaultApplicationConfiguration() {
-        ConfigBag params = getDefaultResourcesProfile();
-        params.configure(VanillaCloudFoundryApplication.APPLICATION_NAME.getConfigKey(), applicationName);
-        params.configure(VanillaCloudFoundryApplication.ARTIFACT_PATH, artifactLocalPath);
-        params.configure(VanillaCloudFoundryApplication.BUILDPACK, JAVA_BUILDPACK);
-        return params;
-    }
-
-    private void createApplicationServiceBindAndCheck() {
-        ConfigBag params = getDefaultApplicationConfiguration();
-        createApplicationStartAndCheck(params.getAllConfig());
-        createServiceAndCheck(getDefaultClearDbServiceConfigMap());
-        assertFalse(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-        cloudFoundryPaasLocation.bindServiceToApplication(SERVICE_INSTANCE_NAME, applicationName);
-        assertTrue(cloudFoundryPaasLocation.isServiceBoundTo(SERVICE_INSTANCE_NAME, applicationName));
-    }
-
-    private Map<String, Object> getDefaultClearDbServiceConfigMap() {
-        return getDefaultClearDbServiceConfig().getAllConfig();
-    }
-
-    @SuppressWarnings("all")
-    public String getLocalPath(String filename) {
-        try {
-            return Paths.get(getClass().getClassLoader().getResource(filename).toURI()).toString();
-        } catch (URISyntaxException e) {
-            return Strings.EMPTY;
+    @Test(groups={"Live"})
+    public void testOpenPorts() throws Exception {
+        List<Integer> inboundPorts = ImmutableList.of(22, 443, 8000, 8081);
+        loc = newCloudFoundryLocation(ImmutableMap.<String, Object>of());
+        SshMachineLocation machine = newContainerMachine(loc, ImmutableMap.<String, Object>builder()
+//                .put(CloudFoundryLocationConfig.IMAGE.getName(), "cloudsoft/centos:7")
+//                .put(CloudFoundryLocationConfig.LOGIN_USER_PASSWORD.getName(), "p4ssw0rd")
+                .put(CloudFoundryLocationConfig.INBOUND_PORTS.getName(), inboundPorts)
+                .put(LocationConfigKeys.CALLER_CONTEXT.getName(), app)
+                .build());
+        assertTrue(machine.isSshable());
+        
+        String publicHostText = machine.getSshHostAndPort().getHostText();
+        PortForwardManager pfm = (PortForwardManager) mgmt.getLocationRegistry().getLocationManaged(PortForwardManagerLocationResolver.PFM_GLOBAL_SPEC);
+        for (int targetPort : inboundPorts) {
+            HostAndPort mappedPort = pfm.lookup(machine, targetPort);
+            assertNotNull(mappedPort, "no mapping for targetPort "+targetPort);
+            assertEquals(mappedPort.getHostText(), publicHostText);
+            assertTrue(mappedPort.hasPort(), "no port-part in "+mappedPort+" for targetPort "+targetPort);
         }
     }
 
+    protected void assertOsNameContains(SshMachineLocation machine, String expectedNamePart, String expectedVersionPart) {
+        MachineDetails machineDetails = app.getExecutionContext()
+                .submit(BasicMachineDetails.taskForSshMachineLocation(machine))
+                .getUnchecked();
+        OsDetails osDetails = machineDetails.getOsDetails();
+        String osName = osDetails.getName();
+        String osVersion = osDetails.getVersion();
+        assertTrue(osName != null && osName.toLowerCase().contains(expectedNamePart), "osDetails="+osDetails);
+        assertTrue(osVersion != null && osVersion.toLowerCase().contains(expectedVersionPart), "osDetails="+osDetails);
+    }
+    
+    protected SshMachineLocation newContainerMachine(CloudFoundryLocation loc, Map<?, ?> flags) throws Exception {
+        MachineLocation result = loc.obtain(flags);
+        machines.add(result);
+        return (SshMachineLocation) result;
+    }
+    
+    protected void assertMachinePasswordSecure(SshMachineLocation machine) {
+        String password = machine.config().get(SshMachineLocation.PASSWORD);
+        assertTrue(password.length() > 10, "password="+password);
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasNonAlphabetic = false;
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) hasUpper = true;
+            if (Character.isLowerCase(c)) hasLower = true;
+            if (!Character.isAlphabetic(c)) hasNonAlphabetic = true;
+        }
+        assertTrue(hasUpper && hasLower && hasNonAlphabetic, "password="+password);
+    }
 }

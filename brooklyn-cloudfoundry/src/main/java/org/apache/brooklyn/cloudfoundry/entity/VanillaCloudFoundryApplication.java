@@ -25,21 +25,19 @@ import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.annotation.Effector;
-import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
-import org.apache.brooklyn.util.text.Strings;
 
 import com.google.common.reflect.TypeToken;
 
 @Catalog(name = "Vanilla CloudFoundry Application entity")
 @ImplementedBy(VanillaCloudFoundryApplicationImpl.class)
-public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
+public interface VanillaCloudFoundryApplication extends SoftwareProcess {
 
     @SetFromFlag("nameApp")
     BasicAttributeSensorAndConfigKey<String> APPLICATION_NAME =
@@ -100,18 +98,18 @@ public interface VanillaCloudFoundryApplication extends CloudFoundryEntity {
     AttributeSensor<Integer> ALLOCATED_DISK =
             Sensors.newIntegerSensor("cloudfoundry.application.disk", "Application allocated disk (MB)");
 
-    @Effector(description = "Set an environment variable that can be retrieved by the web application")
-    public void setEnv(@EffectorParam(name = "name", description = "Name of the variable") String name,
-                       @EffectorParam(name = "value", description = "Value of the environment variable") String value);
-
-    @Effector(description = "Set the desired number of instances that will be user by the web application")
-    public void setInstancesNumber(@EffectorParam(name = "instancesNumber", description = "Number of " +
-            "instance that are being used by the application") int instancesNumber);
-
-    @Effector(description = "Set the desired disk quota that will be allocated")
-    public void setDiskQuota(@EffectorParam(name = "diskQuota", description = "Disk allocated" +
-            " that will be used by the web application") int diskQuota);
-
-    @Effector(description = "Set the desired memory that will be allocated")
-    public void setMemory(@EffectorParam(name = "memory", description = "Memory allocated") int memory);
+//    @Effector(description = "Set an environment variable that can be retrieved by the web application")
+//    public void setEnv(@EffectorParam(name = "name", description = "Name of the variable") String name,
+//                       @EffectorParam(name = "value", description = "Value of the environment variable") String value);
+//
+//    @Effector(description = "Set the desired number of instances that will be user by the web application")
+//    public void setInstancesNumber(@EffectorParam(name = "instancesNumber", description = "Number of " +
+//            "instance that are being used by the application") int instancesNumber);
+//
+//    @Effector(description = "Set the desired disk quota that will be allocated")
+//    public void setDiskQuota(@EffectorParam(name = "diskQuota", description = "Disk allocated" +
+//            " that will be used by the web application") int diskQuota);
+//
+//    @Effector(description = "Set the desired memory that will be allocated")
+//    public void setMemory(@EffectorParam(name = "memory", description = "Memory allocated") int memory);
 }

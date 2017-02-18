@@ -20,76 +20,67 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.apache.brooklyn.cloudfoundry.location.paas.PaasLocationConfig;
+import org.apache.brooklyn.cloudfoundry.suppliers.CloudFoundryClientSupplier;
+import org.apache.brooklyn.cloudfoundry.suppliers.CloudFoundryOperationsSupplier;
+import org.apache.brooklyn.cloudfoundry.suppliers.UaaClientSupplier;
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.operations.CloudFoundryOperations;
-import org.cloudfoundry.operations.DefaultCloudFoundryOperations;
-import org.cloudfoundry.reactor.DefaultConnectionContext;
-import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
-import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
-
-import com.google.common.base.Supplier;
+import org.cloudfoundry.uaa.UaaClient;
 
 public class CloudFoundryClientRegistryImpl implements CloudFoundryClientRegistry {
 
     public static final CloudFoundryClientRegistryImpl INSTANCE = new CloudFoundryClientRegistryImpl();
-    private CloudFoundryOperationsSupplier operationsSupplier;
+
+    private CloudFoundryClientSupplier cloudFoundryClientSupplier;
+    private UaaClientSupplier uaaClientSupplier;
+    private CloudFoundryOperationsSupplier cloudFoundryOperationsSupplier;
 
     protected CloudFoundryClientRegistryImpl() {
     }
 
     @Override
-    public synchronized CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
-        if (operationsSupplier == null) {
-            initSupplier(conf);
+    public synchronized CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse) {
+        if (cloudFoundryClientSupplier == null) {
+            initCloudFoundryClientSupplier(conf);
         }
-        return operationsSupplier.get();
+        return cloudFoundryClientSupplier.get();
     }
 
-    private void initSupplier(ConfigBag conf) {
-        String user = checkNotNull(conf.get(PaasLocationConfig.ACCESS_IDENTITY), "identity must not be null");
-        String password = checkNotNull(conf.get(PaasLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
-        String apiHost = checkNotNull(conf.get(PaasLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
-        String organization = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_ORG), "organization must not be null");
-        String space = checkNotNull(conf.get(CloudFoundryPaasLocationConfig.CF_SPACE), "space must not be null");
-
-        DefaultConnectionContext connectionContext = DefaultConnectionContext.builder()
-                .apiHost(apiHost)
-                .skipSslValidation(true) // TODO
-                .build();
-        PasswordGrantTokenProvider token = PasswordGrantTokenProvider.builder()
-                .username(user)
-                .password(password)
-                .build();
-        operationsSupplier =
-                new CloudFoundryOperationsSupplier(token, connectionContext, organization, space);
+    @Override
+    public synchronized UaaClient getUaaClient(ConfigBag conf, boolean allowReuse) {
+        if (uaaClientSupplier == null) {
+            initUaaClientSupplier(conf);
+        }
+        return uaaClientSupplier.get();
     }
 
-    protected static class CloudFoundryOperationsSupplier implements Supplier<CloudFoundryOperations> {
-
-        private final PasswordGrantTokenProvider token;
-        private final DefaultConnectionContext context;
-        private final String organization;
-        private final String space;
-
-        protected CloudFoundryOperationsSupplier(PasswordGrantTokenProvider token, DefaultConnectionContext context, String organization, String space) {
-            this.token = token;
-            this.context = context;
-            this.organization = organization;
-            this.space = space;
+    @Override
+    public CloudFoundryOperations getCloudFoundryOperations(ConfigBag conf, boolean allowReuse) {
+        if (cloudFoundryOperationsSupplier == null) {
+            initCloudFoundryOperationsSupplier(conf);
         }
+        return cloudFoundryOperationsSupplier.get();
+    }
 
-        @Override
-        public CloudFoundryOperations get() {
-            return DefaultCloudFoundryOperations.builder()
-                    .cloudFoundryClient(ReactorCloudFoundryClient.builder()
-                            .connectionContext(context)
-                            .tokenProvider(token)
-                            .build())
-                    .organization(organization)
-                    .space(space)
-                    .build();
-        }
+    private void initCloudFoundryClientSupplier(ConfigBag conf) {
+        String apiHost = checkNotNull(conf.get(CloudFoundryLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
+        String user = checkNotNull(conf.get(CloudFoundryLocationConfig.ACCESS_IDENTITY), "identity must not be null");
+        String password = checkNotNull(conf.get(CloudFoundryLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
+        cloudFoundryClientSupplier = new CloudFoundryClientSupplier(apiHost, user, password);
+    }
+
+    private void initUaaClientSupplier(ConfigBag conf) {
+        String apiHost = checkNotNull(conf.get(CloudFoundryLocationConfig.CLOUD_ENDPOINT), "endpoint must not be null");
+        String user = checkNotNull(conf.get(CloudFoundryLocationConfig.ACCESS_IDENTITY), "identity must not be null");
+        String password = checkNotNull(conf.get(CloudFoundryLocationConfig.ACCESS_CREDENTIAL), "credential must not be null");
+        uaaClientSupplier = new UaaClientSupplier(apiHost, user, password);
+    }
+
+    private void initCloudFoundryOperationsSupplier(ConfigBag conf) {
+        String organization = checkNotNull(conf.get(CloudFoundryLocationConfig.CF_ORG), "organization must not be null");
+        String space = checkNotNull(conf.get(CloudFoundryLocationConfig.CF_SPACE), "space must not be null");
+        cloudFoundryOperationsSupplier = new CloudFoundryOperationsSupplier(getCloudFoundryClient(conf, true), getUaaClient(conf, true), organization, space);
     }
 
 }

@@ -29,8 +29,6 @@ services:
 - type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication
   id: vanilla-app
   brooklyn.config:
-    nameApp: name
-    path: classpath://brooklyn-example-hello-world-sql-webapp-in-paas.war
+    nameApp: test
+    path: file:/Users/andrea/git/andreaturli/brooklyn-cloudfoundry/brooklyn-cloudfoundry/src/test/resources/brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
-    domain: domain
-    host: application-host

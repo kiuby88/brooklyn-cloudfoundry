@@ -16,4 +16,4 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-org.apache.brooklyn.cloudfoundry.location.CloudFoundryPaasLocationResolver
+org.apache.brooklyn.cloudfoundry.location.CloudFoundryLocationResolver

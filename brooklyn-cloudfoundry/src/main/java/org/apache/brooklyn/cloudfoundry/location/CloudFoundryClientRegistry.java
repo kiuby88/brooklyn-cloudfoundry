@@ -20,9 +20,13 @@ package org.apache.brooklyn.cloudfoundry.location;
 
 
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.operations.CloudFoundryOperations;
+import org.cloudfoundry.uaa.UaaClient;
 
 public interface CloudFoundryClientRegistry {
 
-    CloudFoundryOperations getCloudFoundryClient(ConfigBag conf, boolean allowReuse);
+    CloudFoundryClient getCloudFoundryClient(ConfigBag conf, boolean allowReuse);
+    UaaClient getUaaClient(ConfigBag conf, boolean allowReuse);
+    CloudFoundryOperations getCloudFoundryOperations(ConfigBag conf, boolean allowReuse);
 }

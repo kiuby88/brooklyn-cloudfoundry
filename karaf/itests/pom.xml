@@ -63,7 +63,13 @@
             <version>${pax.exam.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-atinject_1.0_spec</artifactId>
@@ -126,7 +132,7 @@
                         </goals>
                         <configuration>
                             <features>
-                                <feature>brooklyn-locations-cloudfoundry</feature>
+                                <feature>brooklyn-location-cloudfoundry</feature>
                             </features>
                             <descriptors>
                                 <descriptor>file:${project.build.directory}/features.xml</descriptor>

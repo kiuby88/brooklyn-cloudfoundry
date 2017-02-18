@@ -12,7 +12,7 @@
 
     <groupId>org.apache.brooklyn</groupId>
     <artifactId>brooklyn-cloudfoundry</artifactId>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
     <name>Brooklyn :: CloudFoundry :: Location</name>
 
     <repositories>
@@ -33,37 +33,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-core</artifactId>
-            <version>${brooklyn.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-api</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.cloudfoundry</groupId>
             <artifactId>cloudfoundry-client-reactor</artifactId>
             <version>${cloudfoundry.client.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.cloudfoundry</groupId>
             <artifactId>cloudfoundry-operations</artifactId>
@@ -80,52 +53,11 @@
             <version>${reactor.netty.version}</version>
         </dependency>
 
-        <dependency>
-            <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-logback-xml</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
-            <artifactId>mockwebserver</artifactId>
-            <version>${mockwebserver.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-launcher</artifactId>
-            <version>${brooklyn.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-launcher</artifactId>
-            <version>${brooklyn.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-camp</artifactId>
-            <version>${brooklyn.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <!--brooklyn-->
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-core</artifactId>
             <version>${brooklyn.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -140,6 +72,66 @@
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-software-base</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
+            <classifier>tests</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-launcher</artifactId>
+            <version>${brooklyn.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-camp</artifactId>
+            <version>${brooklyn.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-launcher</artifactId>
+            <version>${brooklyn.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-launcher</artifactId>
+            <version>${brooklyn.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -156,59 +148,82 @@
     </properties>
 
     <build>
+        <!--<plugins>-->
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-jar-plugin</artifactId>-->
+                <!--<version>${maven.jar.plugin.version}</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<goals>-->
+                            <!--<goal>test-jar</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+            <!--<plugin>-->
+                <!--<groupId>org.apache.felix</groupId>-->
+                <!--<artifactId>maven-bundle-plugin</artifactId>-->
+                <!--<version>2.5.4</version>-->
+                <!--<extensions>false</extensions>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>bundle</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>bundle</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--<instructions>-->
+                                <!--<Bundle-Name>${project.name}</Bundle-Name>-->
+                                <!--<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>-->
+                                <!--<Export-Package>${osgi.export}</Export-Package>-->
+                                <!--<Import-Package>${osgi.import}</Import-Package>-->
+                                <!--<DynamicImport-Package>${osgi.dynamic.import}</DynamicImport-Package>-->
+                                <!--<Private-Package>${osgi.private}</Private-Package>-->
+                                <!--<Require-Bundle>${osgi.bundles}</Require-Bundle>-->
+                                <!--<Bundle-Activator>${osgi.activator}</Bundle-Activator>-->
+                                <!--<Export-Service>${osgi.export.service}</Export-Service>-->
+                            <!--</instructions>-->
+                            <!--<classifier>bundle</classifier>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+            <!--<plugin>-->
+                <!--<groupId>org.codehaus.mojo</groupId>-->
+                <!--<artifactId>templating-maven-plugin</artifactId>-->
+                <!--<version>1.0.0</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<goals>-->
+                            <!--<goal>filter-sources</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+        <!--</plugins>-->
+        
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven.jar.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.5.4</version>
-                <extensions>false</extensions>
-                <executions>
-                    <execution>
-                        <id>bundle</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>bundle</goal>
-                        </goals>
-                        <configuration>
-                            <instructions>
-                                <Bundle-Name>${project.name}</Bundle-Name>
-                                <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-                                <Export-Package>${osgi.export}</Export-Package>
-                                <Import-Package>${osgi.import}</Import-Package>
-                                <DynamicImport-Package>${osgi.dynamic.import}</DynamicImport-Package>
-                                <Private-Package>${osgi.private}</Private-Package>
-                                <Require-Bundle>${osgi.bundles}</Require-Bundle>
-                                <Bundle-Activator>${osgi.activator}</Bundle-Activator>
-                                <Export-Service>${osgi.export.service}</Export-Service>
-                            </instructions>
-                            <classifier>bundle</classifier>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>templating-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>filter-sources</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <version>3.2.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <supportedProjectTypes>
+                        <supportedProjectType>bundle</supportedProjectType>
+                    </supportedProjectTypes>
+                    <instructions>
+                        <Import-Package>!Acme.Serve,!org.junit,!android.os,!android.util,*</Import-Package>
+                        <Brooklyn-Feature-Name>${project.name}</Brooklyn-Feature-Name>
+                        <Implementation-SHA-1>${buildNumber}</Implementation-SHA-1>
+                        <Implementation-Branch>${scmBranch}</Implementation-Branch>
+                        <!--<Embed-Transitive>true</Embed-Transitive>-->
+                        <!--<Embed-Dependency>*;scope=compile|runtime;groupId=!org.apache.brooklyn</Embed-Dependency>-->
+                        <Export-Package>org.apache.brooklyn.cloudfoundry*;-noimport:=true</Export-Package>
+                    </instructions>
+                </configuration>
             </plugin>
         </plugins>
     </build>
