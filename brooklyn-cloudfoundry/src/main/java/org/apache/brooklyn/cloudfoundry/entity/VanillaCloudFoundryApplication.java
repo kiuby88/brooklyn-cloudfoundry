@@ -29,7 +29,6 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
@@ -68,9 +67,8 @@ public interface VanillaCloudFoundryApplication extends SoftwareProcess {
                     "this value is empty the application name will be used like the host");
 
     @SetFromFlag("services")
-    ConfigKey<List<Object>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<Object>>() {
-                                                               },
-            "cloudFoundry.application.services", "Services to be bound", MutableList.<Object>of());
+    ConfigKey<List<Map<String, Object>>> SERVICES = ConfigKeys.newConfigKey(new TypeToken<List<Map<String, Object>>>() {},
+            "cloudFoundry.application.services", "Services to be bound");
 
     @SetFromFlag("instances")
     ConfigKey<Integer> REQUIRED_INSTANCES = ConfigKeys.newIntegerConfigKey(

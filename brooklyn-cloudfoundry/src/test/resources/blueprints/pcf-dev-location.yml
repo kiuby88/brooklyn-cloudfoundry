@@ -32,3 +32,8 @@ services:
     nameApp: test
     path: file:/Users/andrea/git/andreaturli/brooklyn-cloudfoundry/brooklyn-cloudfoundry/src/test/resources/brooklyn-example-hello-world-sql-webapp-in-paas.war
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
+    services:
+    - p-mysql:
+        plan: 512mb
+        instanceName: myMysql
+      

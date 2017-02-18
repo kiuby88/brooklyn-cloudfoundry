@@ -21,6 +21,7 @@ package org.apache.brooklyn.cloudfoundry.location;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -37,6 +38,7 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.config.ResolvingConfigBag;
+import org.apache.brooklyn.util.exceptions.PropagatedRuntimeException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
@@ -46,10 +48,13 @@ import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
 import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
 import org.cloudfoundry.operations.applications.GetApplicationRequest;
 import org.cloudfoundry.operations.applications.PushApplicationRequest;
+import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
+import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.UrlResource;
 
+import com.google.api.client.util.Lists;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -147,6 +152,29 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         }
         String buildpack = entity.config().get(VanillaCloudFoundryApplication.BUILDPACK);
 
+        // TODO createServiceInstanceRequest
+        List<String> serviceInstanceNames = Lists.newArrayList();
+        List<Map<String, Object>> services = entity.config().get(VanillaCloudFoundryApplication.SERVICES);
+        for (Map<String, Object> service : services) {
+            for (Map.Entry<String, Object> stringObjectEntry : service.entrySet()) {
+                String serviceInstanceName = ((Map<String, String>)stringObjectEntry.getValue()).get("instanceName");
+                serviceInstanceNames.add(serviceInstanceName);
+                try {
+                    getCloudFoundryOperations().services()
+                            .createInstance(CreateServiceInstanceRequest.builder()
+                                    .serviceName(stringObjectEntry.getKey())
+                                    .serviceInstanceName(serviceInstanceName)
+                                    .planName(((Map<String, String>)stringObjectEntry.getValue()).get("plan"))
+                                    .build())
+                            .block();
+
+                } catch (Exception e) {
+                    LOG.error("Error creating the service {}, the error was {}", "serviceInstanceName", e);
+                    throw new PropagatedRuntimeException(e);
+                }
+            }
+        }
+        
         // TODO createPushApplicationRequest
         PushApplicationRequest.Builder pushApplicationRequestBuilder = PushApplicationRequest.builder();
         if (!isVanillaCloudFoundryApplication(entity))
@@ -165,10 +193,9 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         // this is pushApplication
         getCloudFoundryOperations().applications().push(pushApplicationRequestBuilder.build()).block();
 
-        ApplicationDetail applicationDetail = getCloudFoundryOperations().applications()
-                .get(GetApplicationRequest.builder()
-                        .name(applicationName)
-                        .build())
+        ApplicationDetail applicationDetail = getCloudFoundryOperations()
+                .applications().get(
+                        GetApplicationRequest.builder().name(applicationName).build())
                 .block();
 
         // see https://docs.cloudfoundry.org/devguide/deploy-apps/ssh-apps.html#other-ssh-access
@@ -177,6 +204,22 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         String sshCode = getCloudFoundryOperations().advanced().sshCode().block();
         String address = Iterables.getOnlyElement(applicationDetail.getUrls());
         Integer port = Integer.parseInt(Iterables.get(Splitter.on(":").split(sshEndpoint), 1));
+
+        for (String serviceInstanceName : serviceInstanceNames) {
+            try {
+                getCloudFoundryOperations().services()
+                        .bind(
+                                BindServiceInstanceRequest.builder()
+                                        .applicationName(applicationName)
+                                        .serviceInstanceName(serviceInstanceName)
+                                        .build()
+                        ).block();
+            } catch (Exception e) {
+                LOG.error("Error getting environment for application {} the error was ", applicationName, e);
+                throw new PropagatedRuntimeException(e);
+            }
+        }
+        
         LocationSpec<SshMachineLocation> locationSpec = LocationSpec.create(SshMachineLocation.class)
                 .configure("address", address)
                 .configure(CloudFoundryLocationConfig.APPLICATION_NAME, applicationName)
@@ -202,8 +245,11 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
 
     @Override
     public void release(MachineLocation machine) {
+        String applicationName = machine.config().get(CloudFoundryLocationConfig.APPLICATION_NAME);
+        // TODO delete serviceInstance
+//        getCloudFoundryOperations().services().deleteInstance(DeleteServiceInstanceRequest.builder().name().build()).block();
         getCloudFoundryOperations().applications().delete(DeleteApplicationRequest.builder()
-                .name(machine.config().get(CloudFoundryLocationConfig.APPLICATION_NAME))
+                .name(applicationName)
                 .deleteRoutes(true)
                 .build()
         ).block();
