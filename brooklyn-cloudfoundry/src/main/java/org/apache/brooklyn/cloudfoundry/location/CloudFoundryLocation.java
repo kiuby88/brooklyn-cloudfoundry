@@ -48,6 +48,7 @@ import org.cloudfoundry.operations.applications.ApplicationHealthCheck;
 import org.cloudfoundry.operations.applications.DeleteApplicationRequest;
 import org.cloudfoundry.operations.applications.GetApplicationRequest;
 import org.cloudfoundry.operations.applications.PushApplicationRequest;
+import org.cloudfoundry.operations.applications.RestartApplicationRequest;
 import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
 import org.cloudfoundry.operations.services.CreateServiceInstanceRequest;
 import org.cloudfoundry.operations.services.DeleteServiceInstanceRequest;
@@ -207,21 +208,28 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         String address = Iterables.getOnlyElement(applicationDetail.getUrls());
         Integer port = Integer.parseInt(Iterables.get(Splitter.on(":").split(sshEndpoint), 1));
 
-        for (String serviceInstanceName : serviceInstanceNames) {
-            try {
-                getCloudFoundryOperations().services()
-                        .bind(
-                                BindServiceInstanceRequest.builder()
-                                        .applicationName(applicationName)
-                                        .serviceInstanceName(serviceInstanceName)
-                                        .build()
-                        ).block();
-            } catch (Exception e) {
-                LOG.error("Error getting environment for application {} the error was ", applicationName, e);
-                throw new PropagatedRuntimeException(e);
+        if (!serviceInstanceNames.isEmpty()) {
+            for (String serviceInstanceName : serviceInstanceNames) {
+                try {
+                    getCloudFoundryOperations().services()
+                            .bind(
+                                    BindServiceInstanceRequest.builder()
+                                            .applicationName(applicationName)
+                                            .serviceInstanceName(serviceInstanceName)
+                                            .build()
+                            ).block();
+                } catch (Exception e) {
+                    LOG.error("Error getting environment for application {} the error was ", applicationName, e);
+                    throw new PropagatedRuntimeException(e);
+                }
             }
+            getCloudFoundryOperations().applications()
+                    .restart(
+                            RestartApplicationRequest.builder()
+                                    .name(applicationName)
+                                    .build()
+                    ).block();
         }
-        
         LocationSpec<SshMachineLocation> locationSpec = LocationSpec.create(SshMachineLocation.class)
                 .configure("address", address)
                 .configure(CloudFoundryLocationConfig.APPLICATION_NAME, applicationName)

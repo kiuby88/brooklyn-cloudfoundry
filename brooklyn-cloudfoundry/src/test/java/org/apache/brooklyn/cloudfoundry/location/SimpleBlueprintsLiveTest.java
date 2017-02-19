@@ -26,4 +26,8 @@ public class SimpleBlueprintsLiveTest extends AbstractBlueprintTest {
         runTest("blueprints/pcf-dev-location.yml");
     }
 
+    public void testSpringMusicToDevLocation() throws Exception {
+        runTest("blueprints/spring-music-at-pcf-dev-location.yml");
+    }
+
 }
