@@ -30,4 +30,8 @@ public class SimpleBlueprintsLiveTest extends AbstractBlueprintTest {
         runTest("blueprints/spring-music-at-pcf-dev-location.yml");
     }
 
+    public void testSpringMusicWithBrooklynToDevLocation() throws Exception {
+        runTest("blueprints/spring-music-with-brooklyn-at-pcf-dev-location.yml");
+    }
+
 }

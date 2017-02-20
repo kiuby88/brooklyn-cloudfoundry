@@ -19,7 +19,6 @@
 name: PCF Dev Location example
 location:
   cloudfoundry:
-    provider: provider
     identity: admin
     credential: admin
     org: pcfdev-org

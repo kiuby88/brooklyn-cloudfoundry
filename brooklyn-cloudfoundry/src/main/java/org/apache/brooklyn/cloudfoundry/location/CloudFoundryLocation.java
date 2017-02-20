@@ -139,6 +139,8 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
             throw new IllegalStateException("Invalid caller context: " + callerContext);
         }
         Entity entity = (Entity) callerContext;
+        if (!isVanillaCloudFoundryApplication(entity))
+            throw new IllegalStateException("Can't deploy entity type different than " + VanillaCloudFoundryApplication.class.getSimpleName());
 
         String applicationName = entity.config().get(VanillaCloudFoundryApplication.APPLICATION_NAME);
         String host = entity.config().get(VanillaCloudFoundryApplication.APPLICATION_HOST);
@@ -154,47 +156,15 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
             throw Throwables.propagate(e);
         }
         String buildpack = entity.config().get(VanillaCloudFoundryApplication.BUILDPACK);
-
-        // TODO createServiceInstanceRequest
-        List<String> serviceInstanceNames = Lists.newArrayList();
         List<Map<String, Object>> services = entity.config().get(VanillaCloudFoundryApplication.SERVICES);
-        for (Map<String, Object> service : services) {
-            for (Map.Entry<String, Object> stringObjectEntry : service.entrySet()) {
-                String serviceInstanceName = ((Map<String, String>)stringObjectEntry.getValue()).get("instanceName");
-                serviceInstanceNames.add(serviceInstanceName);
-                try {
-                    getCloudFoundryOperations().services()
-                            .createInstance(CreateServiceInstanceRequest.builder()
-                                    .serviceName(stringObjectEntry.getKey())
-                                    .serviceInstanceName(serviceInstanceName)
-                                    .planName(((Map<String, String>)stringObjectEntry.getValue()).get("plan"))
-                                    .build())
-                            .block();
 
-                } catch (Exception e) {
-                    LOG.error("Error creating the service {}, the error was {}", serviceInstanceName, e);
-                    throw new PropagatedRuntimeException(e);
-                }
-            }
+        List<String> serviceInstanceNames = Lists.newArrayList();
+        if (!services.isEmpty()) {
+            serviceInstanceNames = createInstanceServices(services);
         }
-        
-        // TODO createPushApplicationRequest
-        PushApplicationRequest.Builder pushApplicationRequestBuilder = PushApplicationRequest.builder();
-        if (!isVanillaCloudFoundryApplication(entity))
-            throw new IllegalStateException("Can't deploy entity type different than " + VanillaCloudFoundryApplication.class.getSimpleName());
 
-        pushApplicationRequestBuilder
-                .name(applicationName)
-                .healthCheckType(ApplicationHealthCheck.NONE) // TODO is it needed?
-                .randomRoute(true)
-                .buildpack(buildpack)
-                .application(artifactLocalPath)
-                //.domain(domainName)
-                .diskQuota(disk)
-                .memory(memory);
-
-        // this is pushApplication
-        getCloudFoundryOperations().applications().push(pushApplicationRequestBuilder.build()).block();
+        PushApplicationRequest pushApplicationRequest = createPushApplicationRequest(applicationName, memory, disk, artifactLocalPath, buildpack);
+        getCloudFoundryOperations().applications().push(pushApplicationRequest).block();
 
         ApplicationDetail applicationDetail = getCloudFoundryOperations()
                 .applications().get(
@@ -209,27 +179,10 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         Integer port = Integer.parseInt(Iterables.get(Splitter.on(":").split(sshEndpoint), 1));
 
         if (!serviceInstanceNames.isEmpty()) {
-            for (String serviceInstanceName : serviceInstanceNames) {
-                try {
-                    getCloudFoundryOperations().services()
-                            .bind(
-                                    BindServiceInstanceRequest.builder()
-                                            .applicationName(applicationName)
-                                            .serviceInstanceName(serviceInstanceName)
-                                            .build()
-                            ).block();
-                } catch (Exception e) {
-                    LOG.error("Error getting environment for application {} the error was ", applicationName, e);
-                    throw new PropagatedRuntimeException(e);
-                }
-            }
-            getCloudFoundryOperations().applications()
-                    .restart(
-                            RestartApplicationRequest.builder()
-                                    .name(applicationName)
-                                    .build()
-                    ).block();
+            bindServices(applicationName, serviceInstanceNames);
+            restartApplication(applicationName);
         }
+        
         LocationSpec<SshMachineLocation> locationSpec = LocationSpec.create(SshMachineLocation.class)
                 .configure("address", address)
                 .configure(CloudFoundryLocationConfig.APPLICATION_NAME, applicationName)
@@ -242,6 +195,74 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
                 .configure(CALLER_CONTEXT, setup.get(CALLER_CONTEXT));
 
         return getManagementContext().getLocationManager().createLocation(locationSpec);
+    }
+
+    private void restartApplication(String applicationName) {
+        getCloudFoundryOperations().applications()
+                .restart(
+                        RestartApplicationRequest.builder()
+                                .name(applicationName)
+                                .build()
+                ).block();
+    }
+
+    private void bindServices(String applicationName, List<String> serviceInstanceNames) {
+        for (String serviceInstanceName : serviceInstanceNames) {
+            try {
+                getCloudFoundryOperations().services()
+                        .bind(
+                                BindServiceInstanceRequest.builder()
+                                        .applicationName(applicationName)
+                                        .serviceInstanceName(serviceInstanceName)
+                                        .build()
+                        ).block();
+            } catch (Exception e) {
+                LOG.error("Error getting environment for application {} the error was ", applicationName, e);
+                throw new PropagatedRuntimeException(e);
+            }
+        }
+    }
+
+    private PushApplicationRequest createPushApplicationRequest(String applicationName, int memory, int disk, Path artifactLocalPath, String buildpack) {
+        return PushApplicationRequest.builder()
+                .name(applicationName)
+                .healthCheckType(ApplicationHealthCheck.NONE) // TODO is it needed?
+                .randomRoute(true)
+                .buildpack(buildpack)
+                .application(artifactLocalPath)
+                //.command(command)
+                //.domain(domainName)
+                .diskQuota(disk)
+                .memory(memory)
+                .build();
+    }
+
+    private List<String> createInstanceServices(List<Map<String, Object>> services) {
+        // TODO createServiceInstanceRequest
+        List<String> serviceInstanceNames = Lists.newArrayList();
+        for (Map<String, Object> service : services) {
+            for (Map.Entry<String, Object> stringObjectEntry : service.entrySet()) {
+                String serviceInstanceName = ((Map<String, String>)stringObjectEntry.getValue()).get("instanceName");
+                serviceInstanceNames.add(serviceInstanceName);
+                String planName = ((Map<String, String>)stringObjectEntry.getValue()).get("plan");
+                Map<String, ?> parameters = (Map<String, ?>) ((Map<String, Object>)stringObjectEntry.getValue()).get("parameters");
+                try {
+                    getCloudFoundryOperations().services()
+                            .createInstance(CreateServiceInstanceRequest.builder()
+                                    .serviceName(stringObjectEntry.getKey())
+                                    .serviceInstanceName(serviceInstanceName)
+                                    .planName(planName)
+                                    .parameters(parameters)
+                                    .build())
+                            .block();
+
+                } catch (Exception e) {
+                    LOG.error("Error creating the service {}, the error was {}", serviceInstanceName, e);
+                    throw new PropagatedRuntimeException(e);
+                }
+            }
+        }
+        return serviceInstanceNames;
     }
 
     protected boolean isVanillaCloudFoundryApplication(Entity entity) {

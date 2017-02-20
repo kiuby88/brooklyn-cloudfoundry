@@ -16,7 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: Spring music with PCF Dev services
+name: Spring Music with Brooklyn services
 location:
   cloudfoundry:
     identity: admin
@@ -31,6 +31,10 @@ services:
     path: file:/Users/andrea/projects/cf/spring-music/build/libs/spring-music.jar
     buildpack: https://github.com/cloudfoundry/java-buildpack.git
     services:
-    - p-mysql:
-        plan: 512mb
-        instanceName: mysql-for-spring-music
+    - br_apache_brooklyn_blueprint:
+       plan: default
+       instanceName: br-mysql-for-spring-music
+       parameters:
+         location: localhost
+         services:
+         - type: org.apache.brooklyn.entity.database.mysql.MySqlNode
