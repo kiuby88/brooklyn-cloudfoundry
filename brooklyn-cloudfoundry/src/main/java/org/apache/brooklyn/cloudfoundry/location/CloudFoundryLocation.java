@@ -57,11 +57,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.UrlResource;
 
-import com.google.api.client.util.Lists;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 public class CloudFoundryLocation extends AbstractLocation implements MachineProvisioningLocation<MachineLocation>, CloudFoundryLocationConfig {
 
@@ -159,7 +159,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         List<Map<String, Object>> services = entity.config().get(VanillaCloudFoundryApplication.SERVICES);
 
         List<String> serviceInstanceNames = Lists.newArrayList();
-        if (!services.isEmpty()) {
+        if (services != null && !services.isEmpty()) {
             serviceInstanceNames = createInstanceServices(services);
         }
 

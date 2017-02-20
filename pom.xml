@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.brooklyn</groupId>
         <artifactId>brooklyn-downstream-parent</artifactId>
-        <version>0.10.0-20161121.1656</version> <!-- BROOKLYN_VERSION -->
+        <version>0.11.0-20170126.1332</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
     <artifactId>brooklyn-cloudfoundry-project</artifactId>
@@ -33,9 +33,9 @@
 
     <properties>
         <!--for AMP 3.5-->
-        <brooklyn.version>0.10.0-20161121.1656</brooklyn.version>
+        <!--<brooklyn.version>0.10.0-20161121.1656</brooklyn.version>-->
         <!--for AMP 4.3.0-atos-->
-        <!--<brooklyn.version>0.11.0.20170126_1332</brooklyn.version>-->
+        <brooklyn.version>0.11.0-20170126.1332</brooklyn.version>
         <java.version>1.8</java.version>
         <cloudfoundry.client.version>2.4.0.BUILD-SNAPSHOT</cloudfoundry.client.version>
         <reactor.core.version>3.0.5.RELEASE</reactor.core.version>
