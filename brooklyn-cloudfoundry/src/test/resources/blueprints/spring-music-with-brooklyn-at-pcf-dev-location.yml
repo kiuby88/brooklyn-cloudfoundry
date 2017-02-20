@@ -35,6 +35,5 @@ services:
        plan: default
        instanceName: br-mysql-for-spring-music
        parameters:
-         location: localhost
-         services:
-         - type: org.apache.brooklyn.entity.database.mysql.MySqlNode
+         $brooklyn:entitySpec:
+           type: org.apache.brooklyn.entity.database.mysql.MySqlNode

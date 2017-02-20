@@ -228,7 +228,6 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
     }
 
     private List<String> createInstanceServices(List<Map<String, Object>> services) {
-        // TODO createServiceInstanceRequest
         List<String> serviceInstanceNames = Lists.newArrayList();
         for (Map<String, Object> service : services) {
             for (Map.Entry<String, Object> stringObjectEntry : service.entrySet()) {
@@ -236,6 +235,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
                 serviceInstanceNames.add(serviceInstanceName);
                 String planName = ((Map<String, String>)stringObjectEntry.getValue()).get("plan");
                 Map<String, ?> parameters = (Map<String, ?>) ((Map<String, Object>)stringObjectEntry.getValue()).get("parameters");
+//                EntitySpec<?> entitySpec = (EntitySpec<?>) ((Map<String, Object>)stringObjectEntry.getValue()).get("parameters");
                 try {
                     getCloudFoundryOperations().services()
                             .createInstance(CreateServiceInstanceRequest.builder()

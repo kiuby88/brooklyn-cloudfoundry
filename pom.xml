@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.brooklyn</groupId>
         <artifactId>brooklyn-downstream-parent</artifactId>
-        <version>0.10.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
+        <version>0.10.0-20161121.1656</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
     <artifactId>brooklyn-cloudfoundry-project</artifactId>
@@ -32,7 +32,10 @@
     <name>Brooklyn :: CloudFoundry :: Project</name>
 
     <properties>
+        <!--for AMP 3.5-->
         <brooklyn.version>0.10.0-20161121.1656</brooklyn.version>
+        <!--for AMP 4.3.0-atos-->
+        <!--<brooklyn.version>0.11.0.20170126_1332</brooklyn.version>-->
         <java.version>1.8</java.version>
         <cloudfoundry.client.version>2.4.0.BUILD-SNAPSHOT</cloudfoundry.client.version>
         <reactor.core.version>3.0.5.RELEASE</reactor.core.version>
@@ -51,20 +54,6 @@
 
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        
-        <osgi.import>
-            !android.util*,
-            !org.python.core,
-            !io.projectreactor*,
-            !org.cloudfoundry*,
-            !reactor*,
-            *
-        </osgi.import>
-        <osgi.export>
-            org.apache.brooklyn.cloudfoundry*;-noimport:=true
-        </osgi.export>
-        <osgi.private>
-        </osgi.private>
     </properties>
 
     <modules>
@@ -93,69 +82,17 @@
             <name>Spring Milestones</name>
             <url>http://repo.spring.io/milestone</url>
         </repository>
+        <repository>
+            <id>cloudsoft-artifactory-repo</id>
+            <name>Cloudsoft Releases</name>
+            <url>https://artifactory.cloudsoftcorp.com/artifactory/libs-release-local</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
-    <build>
-        <plugins>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.felix</groupId>-->
-                <!--<artifactId>maven-bundle-plugin</artifactId>-->
-                <!--<version>3.0.1</version>-->
-                <!--<extensions>false</extensions>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>bundle</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>bundle</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<instructions>-->
-                                <!--<Bundle-Name>${project.name}</Bundle-Name>-->
-                                <!--<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>-->
-                                <!--<Export-Package>${osgi.export}</Export-Package>-->
-                                <!--<Import-Package>${osgi.import}</Import-Package>-->
-                                <!--<DynamicImport-Package>${osgi.dynamic.import}</DynamicImport-Package>-->
-                                <!--<Private-Package>${osgi.private}</Private-Package>-->
-                                <!--<Require-Bundle>${osgi.bundles}</Require-Bundle>-->
-                                <!--<Bundle-Activator>${osgi.activator}</Bundle-Activator>-->
-                                <!--<Export-Service>${osgi.export.service}</Export-Service>-->
-                            <!--</instructions>-->
-                            <!--<classifier>bundle</classifier>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <supportedProjectTypes>
-                        <supportedProjectType>jar</supportedProjectType>
-                    </supportedProjectTypes>
-                    <instructions>
-                        <!-- OSGi specific instruction -->
-                        <Import-Package>!com.maxmind.geoip2,*</Import-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.karaf.tooling</groupId>
-                <artifactId>karaf-maven-plugin</artifactId>
-                <version>${karaf.version}</version>
-                <extensions>true</extensions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
