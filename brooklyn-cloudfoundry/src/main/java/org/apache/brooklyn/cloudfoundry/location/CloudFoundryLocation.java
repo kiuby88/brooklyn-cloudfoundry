@@ -166,10 +166,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         PushApplicationRequest pushApplicationRequest = createPushApplicationRequest(applicationName, memory, disk, artifactLocalPath, buildpack);
         getCloudFoundryOperations().applications().push(pushApplicationRequest).block();
 
-        ApplicationDetail applicationDetail = getCloudFoundryOperations()
-                .applications().get(
-                        GetApplicationRequest.builder().name(applicationName).build())
-                .block();
+        ApplicationDetail applicationDetail = getApplicationDetail(applicationName);
 
         // see https://docs.cloudfoundry.org/devguide/deploy-apps/ssh-apps.html#other-ssh-access
         GetInfoResponse info = getCloudFoundryClient().info().get(GetInfoRequest.builder().build()).block();
@@ -197,44 +194,37 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         return getManagementContext().getLocationManager().createLocation(locationSpec);
     }
 
-    private void restartApplication(String applicationName) {
-        getCloudFoundryOperations().applications()
-                .restart(
-                        RestartApplicationRequest.builder()
-                                .name(applicationName)
-                                .build()
-                ).block();
-    }
+    @Override
+    public void release(MachineLocation machine) {
+        String applicationName = machine.config().get(CloudFoundryLocationConfig.APPLICATION_NAME);
 
-    private void bindServices(String applicationName, List<String> serviceInstanceNames) {
-        for (String serviceInstanceName : serviceInstanceNames) {
-            try {
-                getCloudFoundryOperations().services()
-                        .bind(
-                                BindServiceInstanceRequest.builder()
-                                        .applicationName(applicationName)
-                                        .serviceInstanceName(serviceInstanceName)
-                                        .build()
-                        ).block();
-            } catch (Exception e) {
-                LOG.error("Error getting environment for application {} the error was ", applicationName, e);
-                throw new PropagatedRuntimeException(e);
+        List<ServiceInstanceSummary> serviceInstanceSummaries = getCloudFoundryOperations().services().listInstances().collectList().block();
+        List<String> instancesToBeDeleted = Lists.newArrayList();
+
+        for (ServiceInstanceSummary serviceInstanceSummary : serviceInstanceSummaries) {
+            for (String appName : serviceInstanceSummary.getApplications()) {
+                if (applicationName.equalsIgnoreCase(appName)) {
+                    instancesToBeDeleted.add(serviceInstanceSummary.getName());
+                }
             }
+        }
+
+        getCloudFoundryOperations().applications().delete(DeleteApplicationRequest.builder()
+                .name(applicationName)
+                .deleteRoutes(true)
+                .build()
+        ).block();
+        // delete service instances bound to the application
+        for (String name : instancesToBeDeleted) {
+            getCloudFoundryOperations().services().deleteInstance(
+                    DeleteServiceInstanceRequest.builder()
+                            .name(name).build())
+                    .block();
         }
     }
 
-    private PushApplicationRequest createPushApplicationRequest(String applicationName, int memory, int disk, Path artifactLocalPath, String buildpack) {
-        return PushApplicationRequest.builder()
-                .name(applicationName)
-                .healthCheckType(ApplicationHealthCheck.NONE) // TODO is it needed?
-                .randomRoute(true)
-                .buildpack(buildpack)
-                .application(artifactLocalPath)
-                //.command(command)
-                //.domain(domainName)
-                .diskQuota(disk)
-                .memory(memory)
-                .build();
+    protected boolean isVanillaCloudFoundryApplication(Entity entity) {
+        return entity.getEntityType().getName().equalsIgnoreCase(VanillaCloudFoundryApplication.class.getName());
     }
 
     private List<String> createInstanceServices(List<Map<String, Object>> services) {
@@ -265,42 +255,57 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         return serviceInstanceNames;
     }
 
-    protected boolean isVanillaCloudFoundryApplication(Entity entity) {
-        return entity.getEntityType().getName().equalsIgnoreCase(VanillaCloudFoundryApplication.class.getName());
+    private PushApplicationRequest createPushApplicationRequest(String applicationName, int memory, int disk, Path artifactLocalPath, String buildpack) {
+        return PushApplicationRequest.builder()
+                .name(applicationName)
+                .healthCheckType(ApplicationHealthCheck.NONE) // TODO is it needed?
+                .randomRoute(true)
+                .buildpack(buildpack)
+                .application(artifactLocalPath)
+                //.command(command)
+                //.domain(domainName)
+                .diskQuota(disk)
+                .memory(memory)
+                .build();
     }
+
+    private ApplicationDetail getApplicationDetail(String applicationName) {
+        return getCloudFoundryOperations()
+                .applications().get(
+                        GetApplicationRequest.builder().name(applicationName).build())
+                .block();
+    }
+    
+    private void bindServices(String applicationName, List<String> serviceInstanceNames) {
+        for (String serviceInstanceName : serviceInstanceNames) {
+            try {
+                getCloudFoundryOperations().services()
+                        .bind(
+                                BindServiceInstanceRequest.builder()
+                                        .applicationName(applicationName)
+                                        .serviceInstanceName(serviceInstanceName)
+                                        .build()
+                        ).block();
+            } catch (Exception e) {
+                LOG.error("Error getting environment for application {} the error was ", applicationName, e);
+                throw new PropagatedRuntimeException(e);
+            }
+        }
+    }
+    
+    private void restartApplication(String applicationName) {
+        getCloudFoundryOperations().applications()
+                .restart(
+                        RestartApplicationRequest.builder()
+                                .name(applicationName)
+                                .build()
+                ).block();
+    }
+
 
     @Override
     public MachineProvisioningLocation<MachineLocation> newSubLocation(Map<?, ?> map) {
         return null;
-    }
-
-    @Override
-    public void release(MachineLocation machine) {
-        String applicationName = machine.config().get(CloudFoundryLocationConfig.APPLICATION_NAME);
-
-        List<ServiceInstanceSummary> serviceInstanceSummaries = getCloudFoundryOperations().services().listInstances().collectList().block();
-        List<String> instancesToBeDeleted = Lists.newArrayList();
-
-        for (ServiceInstanceSummary serviceInstanceSummary : serviceInstanceSummaries) {
-            for (String appName : serviceInstanceSummary.getApplications()) {
-                if (applicationName.equalsIgnoreCase(appName)) {
-                    instancesToBeDeleted.add(serviceInstanceSummary.getName());
-                }
-            }
-        }
-
-        getCloudFoundryOperations().applications().delete(DeleteApplicationRequest.builder()
-                .name(applicationName)
-                .deleteRoutes(true)
-                .build()
-        ).block();
-        // delete service instances bound to the application
-        for (String name : instancesToBeDeleted) {
-            getCloudFoundryOperations().services().deleteInstance(
-                    DeleteServiceInstanceRequest.builder()
-                            .name(name).build())
-                    .block();
-        }
     }
 
     @Override
