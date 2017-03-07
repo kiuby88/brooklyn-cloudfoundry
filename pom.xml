@@ -23,24 +23,43 @@
     <parent>
         <groupId>org.apache.brooklyn</groupId>
         <artifactId>brooklyn-downstream-parent</artifactId>
-        <version>0.10.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
+        <version>0.11.0-20170126.1332</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
-    <artifactId>brooklyn-cloudfoundry</artifactId>
-    <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
-
-    <name>Brooklyn CloudFoundry project</name>
+    <artifactId>brooklyn-cloudfoundry-project</artifactId>
+    <packaging>pom</packaging>
+    <version>0.2.0-SNAPSHOT</version>
+    <name>Brooklyn :: CloudFoundry :: Project</name>
 
     <properties>
-        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version>
+        <!--for AMP 3.5-->
+        <!--<brooklyn.version>0.10.0-20161121.1656</brooklyn.version>-->
+        <!--for AMP 4.3.0-atos-->
+        <brooklyn.version>0.11.0-20170126.1332</brooklyn.version>
         <java.version>1.8</java.version>
-        <cloudfoundry.client.version>2.0.0.BUILD-SNAPSHOT</cloudfoundry.client.version>
-        <reactor.core.version>3.0.0.RC1</reactor.core.version>
-        <reactor.netty.version>0.5.0.BUILD-SNAPSHOT</reactor.netty.version>
+        <cloudfoundry.client.version>2.4.0.RELEASE</cloudfoundry.client.version>
+        <reactor.core.version>3.0.5.RELEASE</reactor.core.version>
+        <reactor.netty.version>0.6.0.RELEASE</reactor.netty.version>
+
+        <jackson.version>2.8.5</jackson.version>
         <mockito.version>1.10.19</mockito.version>
         <mockwebserver.version>2.7.0</mockwebserver.version>
+
+        <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
+        <maven.buildhelper.plugin.version>1.10</maven.buildhelper.plugin.version>
+        <maven.jar.plugin.version>3.0.1</maven.jar.plugin.version>
+        <maven.resources.plugin.version>3.0.1</maven.resources.plugin.version>
+        <maven.surefire.plugin.version>2.19.1</maven.surefire.plugin.version>
+        <maven.scr.plugin.version>1.22.0</maven.scr.plugin.version>
+
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <modules>
+        <module>brooklyn-cloudfoundry</module>
+        <module>karaf</module>
+    </modules>
 
     <licenses>
         <license>
@@ -63,161 +82,17 @@
             <name>Spring Milestones</name>
             <url>http://repo.spring.io/milestone</url>
         </repository>
+        <repository>
+            <id>cloudsoft-artifactory-repo</id>
+            <name>Cloudsoft Releases</name>
+            <url>https://artifactory.cloudsoftcorp.com/artifactory/libs-release-local</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-all</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-core</artifactId>
-            <version>${project.parent.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-api</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.cloudfoundry</groupId>
-            <artifactId>cloudfoundry-client-reactor</artifactId>
-            <version>${cloudfoundry.client.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.cloudfoundry</groupId>
-            <artifactId>cloudfoundry-operations</artifactId>
-            <version>${cloudfoundry.client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>${reactor.core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.ipc</groupId>
-            <artifactId>reactor-netty</artifactId>
-            <version>${reactor.netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <!-- this gives us flexible and easy-to-use logging; just edit logback-custom.xml! -->
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-logback-xml</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
-            <artifactId>mockwebserver</artifactId>
-            <version>${mockwebserver.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-launcher</artifactId>
-            <version>${project.parent.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-core</artifactId>
-            <version>${brooklyn.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <excludes combine.children="append">
-                        <exclude>README.md</exclude>
-                        <exclude>**.log</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.1</version>
-                <configuration>
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -1,0 +1,36 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+name: Spring music with PCF Dev services
+location:
+  cloudfoundry:
+    identity: admin
+    credential: admin
+    org: pcfdev-org
+    endpoint: api.local.pcfdev.io
+    space: pcfdev-space
+services:
+- type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication
+  brooklyn.config:
+    nameApp: spring-music
+    path: file:/Users/andrea/projects/cf/spring-music/build/libs/spring-music.jar
+    buildpack: https://github.com/cloudfoundry/java-buildpack.git
+    services:
+    - p-mysql:
+        plan: 512mb
+        instanceName: mysql-for-spring-music
