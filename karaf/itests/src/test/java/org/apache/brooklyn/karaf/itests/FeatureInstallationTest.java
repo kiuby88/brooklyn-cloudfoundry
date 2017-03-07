@@ -17,11 +17,12 @@
 package org.apache.brooklyn.karaf.itests;
 
 import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.maven;
+import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.configureSecurity;
 import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.editConfigurationFileExtend;
 import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.editConfigurationFilePut;
 import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.karafDistributionConfiguration;
+import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.keepRuntimeFolder;
 import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.logLevel;
 
 import java.io.File;
@@ -29,6 +30,7 @@ import java.io.File;
 import javax.inject.Inject;
 
 import org.apache.karaf.features.FeaturesService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -36,38 +38,40 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.karaf.options.LogLevelOption;
 import org.ops4j.pax.exam.options.MavenArtifactUrlReference;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
 
 @RunWith(PaxExam.class)
-//@ExamReactorStrategy(PerClass.class)
-public class FeatureInstallationTest extends TestBase {
+@ExamReactorStrategy(PerClass.class)
+public class FeatureInstallationTest extends BasePaxExamTest {
 
     @Inject
     FeaturesService featuresService;
 
+    @Before
+    public void setUp() throws Exception {
+        featuresService.addRepository(getFeaturesFile("features.xml").toURI());
+    }
+
     @Test
     public void testBrooklynLocationsCloudfoundryFeature() throws Exception {
-        featuresService.addRepository(getFeaturesFile().toURI());
         featuresService.installFeature("brooklyn-location-cloudfoundry");
         assertTrue(featuresService.isInstalled(featuresService.getFeature("brooklyn-location-cloudfoundry")));
     }
-
+    
     @Configuration
     public Option[] config() {
-        MavenArtifactUrlReference karafUrl = maven()
-                .groupId("org.apache.karaf")
-                .artifactId("apache-karaf")
-                .versionAsInProject()
-                .type("tar.gz");
+        MavenArtifactUrlReference karafUrl = maven().groupId("org.apache.karaf").artifactId("apache-karaf").versionAsInProject().type("tar.gz");
         return new Option[]{
                 karafDistributionConfiguration().frameworkUrl(karafUrl).name("Apache Karaf").unpackDirectory(new File("target/exam")),
-                //configureSecurity().disableKarafMBeanServerBuilder(),
-//                keepRuntimeFolder(),
+                configureSecurity().disableKarafMBeanServerBuilder(),
+                keepRuntimeFolder(),
                 editConfigurationFilePut("etc/system.properties", "features.xml", System.getProperty("features.xml")),
                 editConfigurationFileExtend(
-                    "etc/org.ops4j.pax.url.mvn.cfg",
-                    "org.ops4j.pax.url.mvn.repositories",
-                    "file:"+System.getProperty("features.repo")+"@id=local@snapshots@releases"),
-                logLevel(LogLevelOption.LogLevel.DEBUG), junitBundles()
+                        "etc/org.ops4j.pax.url.mvn.cfg",
+                        "org.ops4j.pax.url.mvn.repositories",
+                        "file:" + System.getProperty("features-repo") + "@id=local@snapshots@releases"),
+                logLevel(LogLevelOption.LogLevel.INFO),
         };
     }
 }

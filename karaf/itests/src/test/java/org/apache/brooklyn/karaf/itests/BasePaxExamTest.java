@@ -21,12 +21,10 @@ import java.net.URISyntaxException;
 
 import org.junit.Assert;
 
-public class TestBase {
+public class BasePaxExamTest {
 
-    private static final String FEATURES_XML = "features.xml";
-
-    static File getFeaturesFile() throws URISyntaxException {
-        String featuresXml = System.getProperty(FEATURES_XML);
+    static File getFeaturesFile(String feature) throws URISyntaxException {
+        String featuresXml = System.getProperty(feature);
         Assert.assertNotNull(featuresXml);
         File featuresFile = new File(featuresXml);
         Assert.assertNotNull(featuresFile.exists());
