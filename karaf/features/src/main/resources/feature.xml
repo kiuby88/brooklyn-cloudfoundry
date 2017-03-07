@@ -68,7 +68,7 @@
 
     <feature name="brooklyn-location-cloudfoundry" description="Brooklyn Location Cloudfoundry" version="${project.version}">
         <feature prerequisite="true">brooklyn-cloudfoundry-dependencies</feature>
-        <bundle>mvn:org.apache.brooklyn/brooklyn-cloudfoundry/${project.parent.version}</bundle>
+        <bundle>mvn:org.apache.brooklyn/brooklyn-cloudfoundry/${project.version}</bundle>
     </feature>
 
 </features>
