@@ -31,6 +31,7 @@ import javax.inject.Inject;
 
 import org.apache.karaf.features.FeaturesService;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -53,7 +54,7 @@ public class FeatureInstallationTest extends BasePaxExamTest {
         featuresService.addRepository(getFeaturesFile("features.xml").toURI());
     }
 
-    @Test
+    @Test @Ignore("https://groups.google.com/forum/#!topic/ops4j/cLAKobCR5ns")
     public void testBrooklynLocationsCloudfoundryFeature() throws Exception {
         featuresService.installFeature("brooklyn-location-cloudfoundry");
         assertTrue(featuresService.isInstalled(featuresService.getFeature("brooklyn-location-cloudfoundry")));
