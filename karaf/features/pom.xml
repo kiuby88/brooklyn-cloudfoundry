@@ -11,6 +11,7 @@
 
     <groupId>org.apache.brooklyn</groupId>
     <artifactId>brooklyn-cloudfoundry-karaf-features</artifactId>
+    <packaging>feature</packaging>
     <name>Brooklyn :: Cloudfoundry :: Karaf :: Features</name>
 
     <build>
@@ -62,6 +63,12 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <version>${karaf.version}</version>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>
