@@ -75,6 +75,19 @@ import com.google.common.collect.Lists;
 
 public class CloudFoundryLocation extends AbstractLocation implements MachineProvisioningLocation<MachineLocation>, CloudFoundryLocationConfig {
 
+    public static final String SERVICES = "services";
+    public static final String ADDRESS = "address";
+    public static final String NAME = "name";
+    public static final String BUILDPACK = "buildpack";
+    public static final String MEMORY = "memory";
+    public static final String DISK = "disk";
+    public static final String PATH = "path";
+    public static final String DOMAIN = "domain";
+    public static final String INSTANCES = "instances";
+    public static final String PLAN = "plan";
+    public static final String INSTANCE_NAME = "instanceName";
+    public static final String PARAMETERS = "parameters";
+
     private static final Logger LOG = LoggerFactory.getLogger(CloudFoundryLocation.class);
 
     private CloudFoundryOperations cloudFoundryOperations;
@@ -179,7 +192,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         String sshCode = getCloudFoundryOperations().advanced().sshCode().block();
 
         return LocationSpec.create(SshMachineLocation.class)
-                .configure("address", address)
+                .configure(ADDRESS, address)
                 .configure(CloudFoundryLocationConfig.APPLICATION_NAME, applicationName)
                 .configure(SshMachineLocation.PRIVATE_ADDRESSES, ImmutableList.of(address))
                 .configure(CloudLocationConfig.USER, String.format("cf:%s/0", applicationDetail.getId()))
@@ -202,7 +215,7 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
     }
 
     private List getServiceInstancesFromManifest(Map<?, ?> manifestAsMap) {
-        return (List) manifestAsMap.get("services");
+        return (List) manifestAsMap.get(SERVICES);
     }
 
     private Entity lookUpEntityFromCallerContext(Object callerContext) {
@@ -226,13 +239,13 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
     }
 
     private PushApplicationRequest createPushApplicationRequestFromManifest(Map<?, ?> manifestAsMap) {
-        String applicationName = (String) manifestAsMap.get("name");
-        String buildpack = (String) manifestAsMap.get("buildpack");
-        Integer memory = MoreObjects.firstNonNull((Integer) manifestAsMap.get("memory"), 256);
-        Integer disk = MoreObjects.firstNonNull((Integer) manifestAsMap.get("disk"), 512);
-        String path = (String) manifestAsMap.get("path");
-        String domain = (String) manifestAsMap.get("domain");
-        Integer instances = MoreObjects.firstNonNull((Integer) manifestAsMap.get("instances"), 1);
+        String applicationName = (String) manifestAsMap.get(NAME);
+        String buildpack = (String) manifestAsMap.get(BUILDPACK);
+        Integer memory = MoreObjects.firstNonNull((Integer) manifestAsMap.get(MEMORY), 256);
+        Integer disk = MoreObjects.firstNonNull((Integer) manifestAsMap.get(DISK), 512);
+        String path = (String) manifestAsMap.get(PATH);
+        String domain = (String) manifestAsMap.get(DOMAIN);
+        Integer instances = MoreObjects.firstNonNull((Integer) manifestAsMap.get(INSTANCES), 1);
         Path artifactLocalPath = getArtifactLocalPath(path);
         return createPushApplicationRequest(applicationName, memory, disk, artifactLocalPath, buildpack, domain, instances);
     }
@@ -326,10 +339,10 @@ public class CloudFoundryLocation extends AbstractLocation implements MachinePro
         List<String> serviceInstanceNames = Lists.newArrayList();
         for (Map<String, Object> service : services) {
             for (Map.Entry<String, Object> stringObjectEntry : service.entrySet()) {
-                String serviceInstanceName = ((Map<String, String>)stringObjectEntry.getValue()).get("instanceName");
+                String serviceInstanceName = ((Map<String, String>)stringObjectEntry.getValue()).get(INSTANCE_NAME);
                 serviceInstanceNames.add(serviceInstanceName);
-                String planName = ((Map<String, String>)stringObjectEntry.getValue()).get("plan");
-                Map<String, ?> parameters = (Map<String, ?>) ((Map<String, Object>)stringObjectEntry.getValue()).get("parameters");
+                String planName = ((Map<String, String>)stringObjectEntry.getValue()).get(PLAN);
+                Map<String, ?> parameters = (Map<String, ?>) ((Map<String, Object>)stringObjectEntry.getValue()).get(PARAMETERS);
                 try {
                     getCloudFoundryOperations().services()
                             .createInstance(CreateServiceInstanceRequest.builder()
