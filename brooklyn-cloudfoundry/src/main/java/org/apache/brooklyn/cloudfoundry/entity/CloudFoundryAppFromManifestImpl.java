@@ -54,33 +54,6 @@ public class CloudFoundryAppFromManifestImpl extends EmptySoftwareProcessImpl im
     protected void connectSensors() {
         super.connectSensors();
         connectServiceUpIsRunning();
-
-//        Maybe<SshMachineLocation> machine = Locations.findUniqueSshMachineLocation(getLocations());
-//        if (machine.isPresent()) {
-//            addFeed(sshFeed = SshFeed.builder()
-//                    .entity(this)
-//                    .period(FEED_UPDATE_PERIOD)
-//                    .machine(machine.get())
-//                    .poll(new SshPollConfig<String>(SHOW)
-//                            .command(getDriver().makeCloudFoundryCommand("show -no-color"))
-//                            .onSuccess(new ShowSuccessFunction())
-//                            .onFailure(new ShowFailureFunction()))
-//                    .poll(new SshPollConfig<Map<String, Object>>(STATE)
-//                            .command(getDriver().makeCloudFoundryCommand("refresh -no-color"))
-//                            .onSuccess(new StateSuccessFunction())
-//                            .onFailure(new StateFailureFunction()))
-//                    .poll(new SshPollConfig<String>(PLAN)
-//                            .command(getDriver().makeCloudFoundryCommand("plan -no-color"))
-//                            .onSuccess(new PlanSuccessFunction())
-//                            .onFailure(new PlanFailureFunction()))
-//                    .poll(new SshPollConfig<String>(OUTPUT)
-//                            .command(getDriver().makeCloudFoundryCommand("output -no-color --json"))
-//                            .onSuccess(new OutputSuccessFunction())
-//                            .onFailure(new OutputFailureFunction()))
-//
-//                    .build());
-//        }
-
     }
 
     @Override
