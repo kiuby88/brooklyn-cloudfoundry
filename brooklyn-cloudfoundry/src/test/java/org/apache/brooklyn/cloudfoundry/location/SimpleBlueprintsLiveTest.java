@@ -22,6 +22,10 @@ import org.testng.annotations.Test;
 @Test(groups={"Live"})
 public class SimpleBlueprintsLiveTest extends AbstractBlueprintTest {
 
+    public void testPcfDevFromManifest() throws Exception {
+        runTest("blueprints/pcf-dev-from-manifest.yml");
+    }
+
     public void testPcfDevLocation() throws Exception {
         runTest("blueprints/pcf-dev-location.yml");
     }

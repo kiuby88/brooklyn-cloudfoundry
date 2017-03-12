@@ -25,10 +25,11 @@ location:
     endpoint: api.local.pcfdev.io
     space: pcfdev-space
 services:
-- type: org.apache.brooklyn.cloudfoundry.entity.VanillaCloudFoundryApplication
-  id: vanilla-app
+- type: org.apache.brooklyn.cloudfoundry.entity.CloudFoundryAppFromManifestImpl
   brooklyn.config:
-    nameApp: test
-    path: file:/Users/andrea/git/andreaturli/brooklyn-cloudfoundry/brooklyn-cloudfoundry/src/test/resources/brooklyn-example-hello-world-sql-webapp-in-paas.war
-    buildpack: https://github.com/cloudfoundry/java-buildpack.git
-
+    cf.manifest.contents: |
+      name: spring-music
+      path: file:/Users/andrea/projects/cf/spring-music/build/libs/spring-music.jar
+      memory: 512
+      services:
+      - mysql-for-spring-music

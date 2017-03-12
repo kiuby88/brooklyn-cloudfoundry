@@ -59,7 +59,7 @@ public class FeatureInstallationTest extends BasePaxExamTest {
         featuresService.installFeature("brooklyn-location-cloudfoundry");
         assertTrue(featuresService.isInstalled(featuresService.getFeature("brooklyn-location-cloudfoundry")));
     }
-    
+
     @Configuration
     public Option[] config() {
         MavenArtifactUrlReference karafUrl = maven().groupId("org.apache.karaf").artifactId("apache-karaf").versionAsInProject().type("tar.gz");

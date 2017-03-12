@@ -49,9 +49,11 @@ close the karaf shell and then launch AMP as usual
 ./bin/start
 ```
 
-# Brookyln CloudFoundry blueprint example: App with services
-This project defines some entities to manage the Cloud Foundry Application and services.
-Currently, a `VanillaCloudFoundryApplication` entity allows generic applications to be deployed and managed inside of the target plaform. Services  can also be managed through an entity, `CloudFoundryServices`. Following, you can see an YAML blueprint example of an application with a database:
+# Brookyln CloudFoundry blueprint examples
+
+## VanillaCloudFoundryApplication with services
+
+A `VanillaCloudFoundryApplication` entity allows generic applications to be deployed and managed inside of the target plaform. Services  can also be managed through an entity, `CloudFoundryServices`. Following, you can see an YAML blueprint example of an application with a database:
 ```
 location: my-cloudfoundry
 services:
@@ -72,6 +74,26 @@ Furthermore, `VanillaCloudFoundryApplication` allows to define the required reso
 `path` represents the application artifact that will be updated to the platform.
 `env` allows to define a map of environment variables that will be used by the deployed application.
 `services` allows to specify the service instances that will be bound to the application.
+
+## CloudFoundryAppFromManifest 
+Most likely as CF developer you have already defined some CF manifests. By using `CloudFoundryAppFromManifest` entity, you can execute that manifest from Apache Brooklyn
+
+```
+location: my-cloudfoundry
+services:
+- type: org.apache.brooklyn.cloudfoundry.entity.CloudFoundryAppFromManifestImpl
+  brooklyn.config:
+    cf.manifest.contents: |
+      name: spring-music
+      path: file:/Users/andrea/projects/cf/spring-music/build/libs/spring-music.jar
+      memory: 512
+      services:
+      - mysql-for-spring-music
+```
+
+Notice, `services` have a different semantic compared to `VanillaCloudFoundryApplication`. There you can define the `service` you want to instantiate by specifying 
+the `plan` and `instanceName` while here `services` refer to the `serviceInstanceNames` that needs to be created manually using 
+`cf` cli (i.e.: `cf create-service p-mysql 512mb mysql-for-spring-music`) 
 
 # TODO
 Currently, we are figuring out about how we should integrate this project in [apache/brooklyn](https://github.com/apache/brooklyn/) repository.
